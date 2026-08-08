@@ -1,1 +1,55 @@
-import streamlit as st from agent import TassaoutAgenticCore # تأكد من أن الوكيل الخاص بك جاهز للاستدعاء # إعدادات صفحة الموقع والتصميم العام st.set_page_config( page_title="سراغنة العقارية | المساعد الذكي", page_icon="🏢", layout="wide" ) # تصميم العنوان والترحيب st.title("🏢 مكتب تساوت للتنمية العقارية والرقمية") st.subheader("🤖 المساعد الذكي للعقارات (قلعة السراغنة ومراكش)") # شريط جانبي لعرض العروض العقارية المنظمة st.sidebar.title("📌 العروض المتاحة حالياً") st.sidebar.markdown("---") # قاعدة بيانات مصغرة أو جلب العروض من الوكيل الذكي featured_properties = [ {"title": "شقة عصرية في مراكش (جليز)", "price": "850,000 د.م", "type": "شقة", "desc": "3 غرف، صالون، ومطبخ مجهز بالكامل."}, {"title": "بقعة أرضية تجارية بقلعة السراغنة", "price": "400,000 د.م", "type": "أراضي", "desc": "مساحة 150 متر مربع على الشارع الرئيسي."}, {"title": "منزل تقليدي أصيل", "price": "1,200,000 د.م", "type": "منزل", "desc": "قريب من المركز الحضري، تصميم مغربي فاخر."} ] # عرض العقارات في الشريط الجانبي بشكل منظم for prop in featured_properties: with st.sidebar.expander(prop["title"]): st.write(f"🏷️ **النوع:** {prop['type']}") st.write(f"💰 **الثمن:** {prop['price']}") st.write(f"📄 {prop['desc']}") # تهيئة الذاكرة الخاصة بالمحادثة في سياق الجلسة if "messages" not in st.session_state: st.session_state.messages = [ {"role": "assistant", "content": "أهلاً بك! أنا مساعدك الذكي في سراغنة العقارية. كيف يمكنني مساعدتك في العثور على عقارك المناسب اليوم؟"} ] # عرض سجل المحادثات السابقة for message in st.session_state.messages: with st.chat_message(message["role"]): st.markdown(message["content"]) # استقبال مدخلات المستخدم من الشاشة التفاعلية if prompt := st.chat_input("اكتب استفسارك هنا (مثال: أبحث عن شقة في مراكش)..."): # إضافة رسالة المستخدم للسجل st.session_state.messages.append({"role": "user", "content": prompt}) with st.chat_message("user"): st.markdown(prompt) # معالجة الطلب وتوليد الرد من الوكيل الذكي with st.chat_message("assistant"): with st.spinner("جاري البحث في قاعدة البيانات العقارية..."): # هنا يتم استدعاء المنطق من agent.py (إذا كان جاهزاً) # رد افتراضي ذكي مبني على الكلمات المفتاحية if "شقة" in prompt or "مراكش" in prompt: response = "لدينا عدة شقق ممتازة في مراكش، خاصة في منطقة جليز وحي تاركة. هل تفضل مساحة معينة أو ميزانية محددة؟" elif "أرض" in prompt or "بقعة" in prompt or "السراغنة" in prompt: response = "نوفر بقعاً أرضية صالحة للبناء أو التجارة بقلعة السراغنة بأثمنة تنافسية. يمكنك مراجعة القائمة الجانبية للتفاصيل." else: response = f"لقد استلمت طلبك بشأن: '{prompt}'. بصفتي مساعدك الذكي، سأقوم بتوجيهك لأفضل الخيارات المتاحة لدينا في تساوت العقارية." st.markdown(response) st.session_state.messages.append({"role": "assistant", "content": response})
+import streamlit as st
+from agent import TassaoutAgenticCore
+
+# إعدادات الصفحة
+st.set_page_config(
+    page_title="سراغنة العقارية | المساعد الذكي",
+    page_icon="🏢",
+    layout="wide"
+)
+
+# إنشاء كائن من الوكيل الذكي
+agent = TassaoutAgenticCore()
+
+# عرض لوحة البيانات الميدانية والعقارية في الشريط الجانبي أو الأعلى
+st.sidebar.title("📌 إدارة المنظومة")
+page_choice = st.sidebar.radio("اختر العرض:", ["الدردشة الذكية مع الوكيل", "لوحة البيانات والسكور الميداني"])
+
+if page_choice == "لوحة البيانات والسكور الميداني":
+    # استدعاء دالة العرض الموجودة في agent.py لعرض كل السجلات التي كتبتها
+    agent.render_dashboard()
+
+else:
+    # شاشة الدردشة التفاعلية
+    st.title(f"🏢 {agent.commercial_name}")
+    st.subheader("🤖 المساعد الذكي للعمليات والعقارات (قلعة السراغنة ومراكش)")
+    st.markdown("---")
+
+    # تهيئة سجل المحادثة
+    if "messages" not in st.session_state:
+        st.session_state.messages = [
+            {"role": "assistant", "content": f"أهلاً بك في {agent.commercial_name}. أنا جاهز لإدارة الاستفسارات العقارية واللوجستية. كيف يمكنني خدمتك اليوم؟"}
+        ]
+
+    # عرض الرسائل السابقة
+    for message in st.session_state.messages:
+        with st.chat_message(message["role"]):
+            st.markdown(message["content"])
+
+    # استقبال مدخلات المستخدم
+    if prompt := st.chat_input("اطرح سؤالك أو استفسارك هنا..."):
+        st.session_state.messages.append({"role": "user", "content": prompt})
+        with st.chat_message("user"):
+            st.markdown(prompt)
+
+        with st.chat_message("assistant"):
+            # معالجة ذكية بناءً على البيانات الموجودة في الكلاس
+            if "هدى" in prompt or "عقار" in prompt:
+                response = "بخصوص العقارات، لدينا توثيق ميداني لتجزئة الهدى 1 و الهدى 2 وبقع البدر 1 مع إحداثيات ومتابعة دقيقة."
+            elif "شحن" in prompt or "لوجستيك" in prompt:
+                response = "بالنسبة للشحن الدولي، نتابع مسارات أوروبا - المغرب بدقة ومواعيد الإطلاق المجدولة."
+            else:
+                response = f"تم استقبال استفسارك بنجاح في {agent.commercial_name}. النظام يعمل بكفاءة عالية لتلبية طلباتكم في قلعة السراغنة ومراكش."
+            
+            st.markdown(response)
+            st.session_state.messages.append({"role": "assistant", "content": response})
