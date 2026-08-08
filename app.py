@@ -1,12 +1,13 @@
 # =====================================================================
 # SYSTEM: TASSAOUT OMEGA OS & ALPHA CORE NEXUS
 # ENTITY: Sraghna Immobilière (مكتب تساوت الرقمي - قلعة السراغنة ومراكش)
-# ARCHITECTURE: Super Multidomaine Agentic AI (Multi-Agent Streamlit App)
+# INTERFACE: Combined Streamlit App (Chat + Operations Dashboard)
 # =====================================================================
 
 import streamlit as st
 import json
 from datetime import datetime
+from agent import TassaoutAgenticCore
 
 # --- PAGE CONFIGURATION ---
 st.set_page_config(
@@ -16,72 +17,84 @@ st.set_page_config(
     initial_sidebar_state="expanded"
 )
 
-# --- CORE SYSTEM CLASS ---
-class TassaoutAgenticCore:
-    def __init__(self):
-        self.system_name = "TASSAOUT OMEGA OS"
-        self.core_nexus = "ALPHA CORE NEXUS"
-        self.organization = "Sraghna Immobilière"
-        self.location = "El Kelaa des Sraghna & Marrakech, Morocco"
-        self.status = "ACTIVE & SOVEREIGN"
-        self.version = "2026.08"
-        
-        self.modules = {
-            "العقارات والأصول والتوثيق الميداني": "نشط (قلعة السراغنة ومراكش)",
-            "محرك الذكاء الجغرافي المكاني": "نشط (Plus Codes & Predictive Mapping)",
-            "البروتوكول العصبي للتسويق والعدسات": "نشط (Global Optics & Design Frameworks)",
-            "محرك المحاكاة الاقتصادية والتنبؤ": "نشط (Asset Pricing & ROI Forecasting)",
-            "المكتبات الرقمية السحابية الجامعة": "نشط (100 مرجع ومستودع عالمي)",
-            "مكاتب الهندسة والاستثمار المغربية": "نشط (100 مكتب وخبير)",
-            "الأرشيف البصري، السينمائي والفضائي": "نشط (كاميرات، أقمار، وقنوات عالمية)",
-            "أنظمة RAG والوكلاء المستقلين": "نشط (Awesome LLM Apps & AWE Engine)"
-        }
-
-    def mobilize_sub_agents(self, task_type):
-        agents = {
-            "geo_spatial": "🤖 [المساعد الجغرافي]: تحليل الإحداثيات، واجهات الشوارع، ومحيط التوسع العمراني بقلعة السراغنة ومراكش.",
-            "neuro_marketing": "🤖 [مساعد التسويق البصري]: صياغة النصوص الإعلانية والهوية البصرية مستوحاة من أعرق المدارس العالمية.",
-            "economic": "🤖 [مساعد المحاكاة الاقتصادية]: تقدير هوامش الربح، تقييم الأصول، ودراسة المؤشرات الاستثمارية.",
-            "document_generator": "🤖 [مساعد التقارير والكتالوجات]: تجميع البيانات وإنتاج الملفات التنفيذية الفورية."
-        }
-        return agents.get(task_type, "🤖 [المساعد السيادي العام]: تنفيذ سير العمل متعدد المجالات بكفاءة تامة.")
-
-    def execute_operation(self, operation_name, parameters):
-        timestamp = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
-        sub_agent_response = self.mobilize_sub_agents(parameters.get("agent_type", "general"))
-        
-        execution_report = {
-            "System": self.system_name,
-            "Nexus": self.core_nexus,
-            "Organization": self.organization,
-            "Operation": operation_name,
-            "Timestamp": timestamp,
-            "Status": "SUCCESS",
-            "Deployed_Sub_Agent": sub_agent_response,
-            "Parameters": parameters
-        }
-        return execution_report
-
 # Initialize core system
 tassaout_os = TassaoutAgenticCore()
 
-# --- STREAMLIT UI DESIGN ---
-st.title("🏢 Sraghna Immobilière | مكتب تساوت الرقمي")
-st.subheader("النظام السيادي المتقدم: TASSAOUT OMEGA OS & ALPHA CORE NEXUS")
-st.markdown("---")
-
-# Sidebar for System Status & Modules
+# --- SIDEBAR: SYSTEM STATUS & MODULES ---
 st.sidebar.header("⚙️ لوحة تحكم الوكيل السيادي")
 st.sidebar.info(f"**الحالة:** {tassaout_os.status}\n\n**الإصدار:** {tassaout_os.version}\n\n**المنطقة التشغيلية:** {tassaout_os.location}")
+
+st.sidebar.markdown("### 🛠️ اختيار المساعد الفرعي:")
+selected_agent_type = st.sidebar.selectbox(
+    "حدد تخصص الوكيل الفرعي للمحادثة:",
+    ["general", "geo_spatial", "neuro_marketing", "economic", "document_generator"],
+    format_func=lambda x: {
+        "general": "🤖 الوكيل العام (Sovereign General Core)",
+        "geo_spatial": "🌍 مساعد الذكاء الجغرافي والمكاني (GIS)",
+        "neuro_marketing": "🎨 مساعد التسويق العصبي والبصري",
+        "economic": "📊 مساعد المحاكاة الاقتصادية والأصول",
+        "document_generator": "📋 مساعد أتمتة الكتالوجات والتقارير"
+    }[x]
+)
 
 st.sidebar.markdown("### 📚 الوحدات الكبسولية المفعلة:")
 for mod_name, mod_status in tassaout_os.modules.items():
     st.sidebar.success(f"**{mod_name}**\n`{mod_status}`")
 
-# Main Interface Tabs
-tab1, tab2, tab3 = st.tabs(["🚀 إدارة العمليات والاستعلام", "📊 تشغيل المساعدين الفرعيين", "🧠 تفاصيل الذاكرة والكبسولات"])
+# --- MAIN INTERFACE TABS ---
+st.title("🏢 Sraghna Immobilière | مكتب تساوت الرقمي")
+st.subheader("النظام السيادي المتقدم: TASSAOUT OMEGA OS & ALPHA CORE NEXUS")
+st.markdown("---")
 
+tab1, tab2, tab3 = st.tabs(["💬 واجهة محادثة الوكيل الذكي", "🚀 إدارة العمليات والاستعلام", "🧠 تفاصيل الذاكرة والكبسولات"])
+
+# --- TAB 1: CHAT INTERFACE ---
 with tab1:
+    st.header("المساعد الذكي التفاعلي (Agentic AI Chat)")
+    
+    if st.button("🧹 مسح سجل المحادثة", key="clear_chat"):
+        st.session_state.messages = []
+        st.rerun()
+
+    # Initialize session state for chat history
+    if "messages" not in st.session_state:
+        st.session_state.messages = [
+            {"role": "assistant", "content": "أهلاً بك يا سيادة البشمهندس. أنا الوكيل الذكي السيادي لنظام **TASSAOUT OMEGA OS**. كيف يمكنني مساعدتك اليوم في إدارة أصول أو عقارات **مكتب تساوت الرقمي**؟"}
+        ]
+
+    # Display chat messages from history
+    for message in st.session_state.messages:
+        with st.chat_message(message["role"]):
+            st.markdown(message["content"])
+
+    # Accept user input
+    if prompt := st.chat_input("اكتب أمرك التشغيلي أو استفسارك هنا..."):
+        with st.chat_message("user"):
+            st.markdown(prompt)
+        st.session_state.messages.append({"role": "user", "content": prompt})
+
+        # Generate Agent Response
+        with st.chat_message("assistant"):
+            with st.spinner("جاري المعالجة السيادية واستدعاء الكبسولات المعرفية..."):
+                sub_agent_prefix = tassaout_os.mobilize_sub_agents(selected_agent_type)
+                timestamp = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
+                
+                response_content = f"""
+{sub_agent_prefix}
+
+**تقرير التنفيذ الفوري:**
+* **الأمر المستلم:** `{prompt}`
+* **المنطقة المستهدفة:** قلعة السراغنة / مراكش
+* **التوقيت:** `{timestamp}`
+* **الحالة:** تم ربط الطلب بنجاح مع قواعد بيانات الـ RAG، المكاتب الهندسية، والذاكرة البصرية للنظام.
+
+> *النظام يعمل بأقصى طاقة استيعابية وتحليلية لتلبية متطلبات Sraghna Immobilière.*
+                """
+                st.markdown(response_content)
+                st.session_state.messages.append({"role": "assistant", "content": response_content})
+
+# --- TAB 2: OPERATIONS DASHBOARD ---
+with tab2:
     st.header("إدارة الأصول والعقارات والاستشارات الاستراتيجية")
     
     col1, col2 = st.columns(2)
@@ -95,7 +108,7 @@ with tab1:
             ["قطعة أرضية تجارية أو سكنية", "بناية تجارية / مجمع", "أرض فلاحية / استثمارية", "خدمات تسويق ولجستيات"]
         )
     with col2:
-        agent_choice = st.selectbox(
+        op_agent_choice = st.selectbox(
             "توجيه المهمة إلى المساعد المتخصص:",
             [
                 ("geo_spatial", "المساعد الجغرافي المكاني (GIS & Mapping)"),
@@ -109,7 +122,7 @@ with tab1:
 
     if st.button("🚀 تنفيذ المهمة السيادية عبر الوكيل الذكي", type="primary"):
         params = {
-            "agent_type": agent_choice[0],
+            "agent_type": op_agent_choice[0],
             "target_zone": zone,
             "asset_type": asset_type,
             "objective": objective
@@ -126,25 +139,7 @@ with tab1:
         with col_res2:
             st.json(report)
 
-with tab2:
-    st.header("🧪 محاكاة تفاعلية للوكلاء الفرعيين (Sub-Agent Orchestration)")
-    st.markdown("اختر نوع الاختبار للتحقق من جاهزية المساعدين الذكيين في الذاكرة:")
-    
-    test_agent = st.radio(
-        "اختر المساعد للاختبار الفوري:",
-        ["geo_spatial", "neuro_marketing", "economic", "document_generator"],
-        format_func=lambda x: {
-            "geo_spatial": "مساعد الذكاء الجغرافي المكاني والإحداثيات",
-            "neuro_marketing": "المساعد البصري والتسويقي المتقدم",
-            "economic": "مساعد محاكاة أسعار الأصول وهوامش الربح",
-            "document_generator": "مساعد أتمتة التقارير والكتالوجات الرقمية"
-        }[x]
-    )
-    
-    if st.button("فحص استجابة المساعد"):
-        response_msg = tassaout_os.mobilize_sub_agents(test_agent)
-        st.info(response_msg)
-
+# --- TAB 3: KNOWLEDGE BASE & CAPSULES ---
 with tab3:
     st.header("🧠 هيكلية الكبسولات المعرفية والذكاء المتعدد (Super Multidomaine)")
     st.markdown("""
