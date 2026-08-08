@@ -1,152 +1,104 @@
+import textwrap
+from datetime import datetime
 import urllib.parse
+from PIL import Image, ImageDraw
 import streamlit as st
-from agent import TassaoutAgenticCore
 
-# إعدادات الصفحة
-st.set_page_config(
-    page_title="سراغنة العقارية | المنصة الرقمية المتكاملة",
-    page_icon="🏢",
-    layout="wide",
-)
+# ==========================================
+# 1. دالة توليد الإعلان التسويقي
+# ==========================================
+def generate_marketing_ad(image1_path, image2_path, sector, city):
+    """Génère un Collage 2160x1080 + Message WhatsApp en Français"""
+    try:
+        img1 = Image.open(image1_path).resize((1080, 1080)) # Bien Immobilier
+        img2 = Image.open(image2_path).resize((1080, 1080)) # Fleurs/Nature
+    except: return None, "Veuillez télécharger les 2 images d'abord"
 
-# إنشاء كائن الوكيل الذكي
-agent = TassaoutAgenticCore()
-
-# شريط التنقل الجانبي للخدمات الرئيسية
-st.sidebar.title("📌 القائمة الرئيسية")
-selected_tab = st.sidebar.radio(
-    "اختر القسم المطلوب:",
-    [
-        "🤖 الوكيل الذكي (الدردشة)",
-        "📋 عروض العقارات، الفلاحية والأعمال",
-        "📸 شاشة تحميل وتوثيق الصور",
-        "💬 التواصل المباشر (واتساب)",
-    ],
-)
-
-st.sidebar.markdown("---")
-st.sidebar.info(
-    f"📍 {agent.commercial_name}\n\nإدارة العمليات بقلعة السراغنة ومراكش."
-)
-
-# --- القسم الأول: الوكيل الذكي (الدردشة) ---
-if selected_tab == "🤖 الوكيل الذكي (الدردشة)":
-  st.title(f"🏢 {agent.commercial_name}")
-  st.subheader("🤖 المساعد الذكي للعمليات والعقارات")
-  st.markdown("---")
-
-  if "messages" not in st.session_state:
-    st.session_state.messages = [{
-        "role": "assistant",
-        "content": (
-            f"أهلاً بك في {agent.commercial_name}. أنا جاهز لإدارة الاستفسارات"
-            " العقارية واللوجستية. كيف يمكنني خدمتك اليوم؟"
-        ),
-    }]
-
-  for message in st.session_state.messages:
-    with st.chat_message(message["role"]):
-      st.markdown(message["content"])
-
-  if prompt := st.chat_input(
-      "اطرح سؤالك أو استفسارك هنا (عقارات، أراضي فلاحية، أعمال)..."
-  ):
-    st.session_state.messages.append({"role": "user", "content": prompt})
-    with st.chat_message("user"):
-      st.markdown(prompt)
-
-    with st.chat_message("assistant"):
-      if "فلاح" in prompt or "أرض" in prompt or "بقعة" in prompt:
-        response = (
-            "نوفر عروضاً للأراضي الفلاحية والبقع الاستثمارية بقلعة السراغنة"
-            " ومحيطها بمعايير دقيقة."
-        )
-      elif "شحن" in prompt or "لوجستيك" in prompt:
-        response = (
-            "نتابع مسارات الشحن واللوجستيك وسلاسل الإمداد بدقة تامة."
-        )
-      else:
-        response = (
-            f"تم استلام طلبك بنجاح في {agent.commercial_name}. نعمل على"
-            " توفير أفضل الخدمات العقارية والتجارية لك."
-        )
-
-      st.markdown(response)
-      st.session_state.messages.append(
-          {"role": "assistant", "content": response}
-      )
-
-# --- القسم الثاني: عروض العقارات، الفلاحية والأعمال ---
-elif selected_tab == "📋 عروض العقارات، الفلاحية والأعمال":
-  st.title("🏡 عروض العقارات، الأراضي الفلاحية والأعمال")
-  st.markdown("استعرض أحدث السجلات والفرص المتاحة ضمن منظومة تساوت:")
-  st.markdown("---")
-
-  col1, col2 = st.columns(2)
-
-  with col1:
-    st.header("🌾 القطاع العقاري والفلاحي")
-    for item in agent.real_estate_listings:
-      with st.expander(f"📍 {item['title']} | {item['category']}"):
-        st.write(item["details"])
-
-  with col2:
-    st.header("🚚 الأعمال واللوجستيك")
-    for log in agent.logistics_routes:
-      with st.expander(f"🚛 {log['route']} - {log['schedule']}"):
-        st.write(log["details"])
-
-# --- القسم الثالث: شاشة تحميل وتوثيق الصور ---
-elif selected_tab == "📸 شاشة تحميل وتوثيق الصور":
-  st.title("📸 نظام رفع وتوثيق الصور الميدانية")
-  st.markdown(
-      "قم برفع الصور الخاصة بالعقارات، الأراضي، أو التوثيق الميداني لتخزينها"
-      " ومعالجتها:"
-  )
-  st.markdown("---")
-
-  uploaded_file = st.file_uploader(
-      "اختر صورة للرفع (PNG, JPG, JPEG):", type=["png", "jpg", "jpeg"]
-  )
-
-  if uploaded_file is not None:
-    st.success("تم رفع الصورة بنجاح وتوجيهها لنظام المعالجة الميدانية!")
-    # تم التحديث هنا لاستخدام المعامل الجديد use_container_width
-    st.image(
-        uploaded_file,
-        caption="معاينة الصورة المرفوعة",
-        use_container_width=True,
+    # Création du Collage "Contraste & Luxe"
+    collage = Image.new('RGB', (2160, 1080))
+    collage.paste(img1, (0, 0))
+    collage.paste(img2, (1080, 0))
+    
+    draw = ImageDraw.Draw(collage)
+    
+    # Texte sur l'image
+    ad_text_on_image = textwrap.fill(
+        f"Au cœur de {city}, nous allions la beauté de la nature à "
+        f"l'élégance du design moderne. Le Bureau Tassaout Digital vous propose "
+        f"des opportunités d'investissement en {sector} alliant luxe et authenticité.", width=45
     )
-    st.write(
-        "📌 **حالة التوثيق:** جاهزة للأرشفة والربط بملفات العقار أو التنسيق"
-        " الميداني."
-    )
+    
+    draw.rectangle([(50, 750), (2110, 1030)], fill=(0,0,0,180)) # Fond transparent
+    draw.text((100, 780), ad_text_on_image, fill="white") 
+    draw.text((100, 980), "📱 Contact: +212 691 897 126", fill="#FFD700") # Or
+    draw.text((100, 700), "👑 BUREAU TASSAOUT DIGITAL | IMMOBILIER & AFFAIRES", fill="#FFD700")
 
-# --- القسم الرابع: رابط التواصل مع الواتساب ---
-elif selected_tab == "💬 التواصل المباشر (واتساب)":
-  st.title("💬 خدمة العملاء والتواصل المباشر")
-  st.markdown(
-      "للتواصل الفوري مع إدارة المكتب أو طلب استشارة عقارية وتجارية عاجلة:"
-  )
-  st.markdown("---")
+    # Sauvegarde
+    ad_path = f"AD_{datetime.now().strftime('%Y%m%d_%H%M%S')}.jpg"
+    collage.save(ad_path, quality=95)
+    
+    # Message WhatsApp Officiel en Français
+    whatsapp_msg = f"""--- 👑 BUREAU TASSAOUT DIGITAL | IMMOBILIER & AFFAIRES À EL KELAA DES SRAGHNA 👑 ---
+[ TASSAOUT OMEGA PREMIUM - 100MP PRO-GRADE ]
 
-  whatsapp_number = "212691897126"
-  whatsapp_text = (
-      "مرحباً، أهلاً بك في سراغنة العقارية. أود الاستفسار عن العروض المتاحة."
-  )
-  whatsapp_url = f"https://wa.me/{whatsapp_number}?text={urllib.parse.quote(whatsapp_text)}"
+Secteur: {sector} | Ville: {city}
+Style Visuel: Mode Bright
+    
+📢 ANNONCE PROMOTIONNELLE:
+Ces deux images peuvent être utilisées de manière créative pour créer du matériel marketing unique pour le bureau "Tassaout Digital" à {city}. L'idée est de combiner la modernité du {sector} et l'élégance intemporelle pour positionner le bureau comme une destination offrant le meilleur des deux mondes.
 
-  st.markdown(
-      f"""
-        <div style="text-align: center; padding: 30px; background-color: #f0f2f6; border-radius: 10px;">
-            <h3>جاهز للتواصل الفوري؟</h3>
-            <p>انقر على الزر أدناه لمراسلتنا مباشرة عبر تطبيق الواتساب:</p>
-            <a href="{whatsapp_url}" target="_blank">
-                <button style="background-color: #25D366; color: white; padding: 12px 24px; font-size: 18px; border: none; border-radius: 5px; cursor: pointer; font-weight: bold;">
-                    💬 التواصل عبر الواتساب الآن
-                </button>
-            </a>
-        </div>
-        """,
-      unsafe_allow_html=True,
-  )
+Caméra tassaout omega go
+    
+📸 DOCUMENTATION VISUELLE:
+- Traitement: 100MP Super-Résolution
+- Équilibre Visuel: Mode Bright Optimisé
+
+✒️ Signature Officielle: Ameur signature
+⚡ Système TASSAOUT OMEGA OS"""
+
+    return ad_path, whatsapp_msg
+
+# ==========================================
+# 2. تعريف الألسنة (Tabs) والواجهة
+# ==========================================
+# تأكد من دمج هذه الألسنة مع الألسنة الموجودة لديك في المشروع
+tab1, tab2, tab3, tab4 = st.tabs([
+    "📸 التصوير أو تحميل الصور", 
+    "🧠 عروض الوكيل والتفاعل", 
+    "📦 الأرشيف",
+    "🎨 Centre de Création Publicitaire"
+])
+
+with tab4:
+    st.subheader("🎨 Centre de Création Publicitaire - Contraste & Luxe")
+    st.write("Téléchargez deux images : Propriété immobilière + Nature/Fleurs")
+
+    col1, col2 = st.columns(2)
+    with col1: 
+        ad_img1 = st.file_uploader("📷 1. Propriété / Immeuble", type=["jpg", "png"], key="ad1")
+    with col2: 
+        ad_img2 = st.file_uploader("🌹 2. Fleurs / Nature", type=["jpg", "png"], key="ad2")
+
+    # تحديد القوائم الافتراضية للقطاعات والمدن (تأكد من توافقها مع ملفك)
+    sectors_list = ["عقار سكني وتجاري", "أراضي فلاحية", "شقق للكراء"]
+    cities_list = ["قلعة السراغنة", "مراكش"]
+
+    ad_sector = st.selectbox("Secteur de l'annonce:", sectors_list, key="ad_sec")
+    ad_city = st.selectbox("Ville:", cities_list, key="ad_city")
+
+    if st.button("🚀 Générer l'Annonce Professionnelle", type="primary"):
+        if ad_img1 and ad_img2:
+            ad_path, ad_message = generate_marketing_ad(ad_img1, ad_img2, ad_sector, ad_city)
+            
+            if ad_path:
+                st.image(ad_path, caption="Annonce prête à être publiée", use_container_width=True)
+                st.success("✅ Annonce générée avec succès via TASSAOUT OMEGA OS !")
+                
+                st.code(ad_message, language="markdown")
+                
+                whatsapp_url = f"https://wa.me/212691897126?text={urllib.parse.quote(ad_message)}"
+                st.link_button("📱 Partager l'annonce sur WhatsApp", whatsapp_url)
+            else:
+                st.error(ad_message)
+        else:
+            st.error("Veuillez télécharger les deux images.")
