@@ -1,6 +1,3 @@
-تفضل الكود البرمجي التشغيلي والمحدث بالكامل لملف `app.py`، جاهز للنسخ واللصق المباشر في مشروعك:
-
-```python
 from datetime import datetime
 import io
 import os
@@ -228,5 +225,3 @@ with tab3:
             data=zip_buffer.getvalue(),
             file_name=f"ARCHIVE_TASSAOUT_{datetime.now().strftime('%Y-%m-%d')}.zip",
         )
-
-```
