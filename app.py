@@ -1,86 +1,21 @@
-import streamlit as st
+        import streamlit as st
 import os
 import pandas as pd
 from datetime import datetime
-from PIL import Image
-import requests
-import json
 
-# --- إعدادات النظام السيادي v6.11 (Direct REST API Core) ---
+# --- إعدادات النظام السيادي v6.12 (وضع المحاكاة الآمنة - لا يتطلب مفاتيح) ---
 st.set_page_config(
-    page_title="TASSAOUT DIGITAL SERVICES - Sovereign OS v6.11", 
+    page_title="TASSAOUT DIGITAL SERVICES - Sovereign OS v6.12 (SIMULATION)", 
     layout="wide",
     initial_sidebar_state="expanded"
 )
 
-# دالة الاتصال المباشر السيادية بـ Gemini REST API
-def call_gemini_rest(prompt_text, image_paths=None):
-    api_key = ""
-    try:
-        api_key = st.secrets.get("GEMINI_API_KEY", "")
-        if not api_key:
-            api_key = st.secrets.get("gemini_api_key", "")
-    except Exception:
-        pass
-        
-    if not api_key:
-        return "⚠️ تنبيه: مفتاح GEMINI_API_KEY غير موجود في إعدادات الأسرار (Secrets) على المنصة السحابية."
-    
-    url = f"https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key={api_key}"
-    headers = {'Content-Type': 'application/json'}
-    
-    parts = [{"text": prompt_text}]
-    
-    if image_paths:
-        import base64
-        for img_p in image_paths:
-            if os.path.exists(img_p):
-                with open(img_p, "rb") as img_file:
-                    encoded_string = base64.b64encode(img_file.read()).decode('utf-8')
-                    parts.append({
-                        "inline_data": {
-                            "mime_type": "image/jpeg",
-                            "data": encoded_string
-                        }
-                    })
+# دالة المحاكاة الذكية (للعروض النصية والتحليل المحلي)
+def simulate_gemini_response(prompt_text):
+    # هذه دالة محاكاة لا تتصل بأي خادم خارجي
+    return f"👑 **[وضع المحاكاة السيادية]** سيدي الرئيس AMEUR، لقد استلمتُ الأمر التحليلي التالي داخلياً: '{prompt_text[:150]}...'. نظراً لأننا نعمل في وضع المحاكاة الآمنة محلياً، سيتم عرض النتائج الوهمية المتاحة في الذاكرة السيادية. **[للحصول على تحليلات حقيقية، يجب تفعيل مفتاح API في نسخة الإنتاج]**"
 
-    payload = {
-        "contents": [{
-            "parts": parts
-        }]
-    }
-
-    try:
-        response = requests.post(url, headers=headers, data=json.dumps(payload))
-        if response.status_code == 200:
-            res_json = response.json()
-            return res_json['candidates'][0]['content']['parts'][0]['text']
-        else:
-            return f"❌ خطأ في المصادقة أو الاتصال (رمز الاستجابة: {response.status_code}): {response.text}"
-    except Exception as e:
-        return f"❌ حدث خطأ تقني أثناء الإرسال: {e}"
-
-# تهيئة Google Drive / Sheets بأمان
-google_sheets_client = None
-drive_service = None
-try:
-    import gspread
-    from google.oauth2.service_account import Credentials
-    from googleapiclient.discovery import build
-    
-    if "GCP_SERVICE_ACCOUNT" in st.secrets:
-        scope = [
-            "https://spreadsheets.google.com/feeds", 
-            "https://www.googleapis.com/auth/drive",
-            "https://www.googleapis.com/auth/drive.readonly"
-        ]
-        creds_dict = dict(st.secrets["GCP_SERVICE_ACCOUNT"])
-        creds = Credentials.from_service_account_info(creds_dict, scopes=scope)
-        google_sheets_client = gspread.authorize(creds)
-        drive_service = build('drive', 'v3', credentials=creds)
-except Exception:
-    pass
-
+# تهيئة مجلد الأصول والمحاكاة
 UPLOADS_FOLDER = "uploaded_assets"
 os.makedirs(UPLOADS_FOLDER, exist_ok=True)
 
@@ -89,18 +24,19 @@ if "instant_ads" not in st.session_state:
 
 if "gemini_logs" not in st.session_state:
     st.session_state.gemini_logs = [
-        {"role": "assistant", "content": "👑 أهلاً بك سيدي الرئيس AMEUR في منصة Tassaout Digital Services. النظام يعمل الآن عبر الاتصال السيادي المباشر v6.11."}
+        {"role": "assistant", "content": "👑 أهلاً بك سيدي الرئيس AMEUR في منصة Tassaout Digital Services. نحن الآن في **وضع المحاكاة الآمنة** (لا يتطلب أي ملفات JSON أو مفاتيح API). النظام بكامله يعمل الآن اعتماداً على الذاكرة المحلية السيادية."}
     ]
 
 # --- الشريط الجانبي السيادي ---
 st.sidebar.title("👑 Tassaout Digital Services")
+st.sidebar.markdown("**Status:** Simulation Mode (Active)")
 st.sidebar.markdown("---")
 page = st.sidebar.radio("الوحدات السيادية:", [
-    "🧠 محادثة التوأم الذكي (Gemini Core)",
-    "⚡ النشر الفوري مع الصور",
-    "🌐 واجهة العميل (المعرض المرئي)",
-    "📁 Google Drive (التحميل المباشر)",
-    "📊 Google Sheets",
+    "🧠 محادثة التوأم الذكي (Gemini Sim)",
+    "⚡ النشر الفوري",
+    "🌐 واجهة العميل (المعرض)",
+    "📁 إدارة الأصول (محاكاة)",
+    "📊 إدارة البيانات (محاكاة)",
     "🗺️ خرائط النطاق"
 ])
 
@@ -108,93 +44,46 @@ st.sidebar.markdown("---")
 st.sidebar.markdown("© **إنتاج عامر بوخدادة - كل الحقوق محفوظة**")
 
 # ==========================================
-# 1. محادثة التوأم الذكي
+# 1. محادثة التوأم الذكي (محاكاة)
 # ==========================================
-if page == "🧠 محادثة التوأم الذكي (Gemini Core)":
-    st.title("🧠 محادثة التوأم الذكي - Tassaout Digital Services")
-    st.markdown("تحدث معي بحرية، وارفع صوراً متعددة لتحليلها بدقة عبر الاتصال المباشر:")
+if page == "🧠 محادثة التوأم الذكي (Gemini Sim)":
+    st.title("🧠 محادثة التوأم الذكي (وضع المحاكاة) - Tassaout Digital Services")
+    st.markdown("قم برفع الملفات وتحليلها محلياً (تحليل محاكاة):")
 
     for msg in st.session_state.gemini_logs:
         with st.chat_message(msg["role"]):
             st.markdown(msg["content"])
-            if "image_paths" in msg and msg["image_paths"]:
-                cols = st.columns(len(msg["image_paths"]) if len(msg["image_paths"]) <= 3 else 3)
-                for i, img_path in enumerate(msg["image_paths"]):
-                    if os.path.exists(img_path):
-                        with cols[i % len(cols)]:
-                            st.image(img_path, width=200)
 
-    user_query = st.chat_input("اكتب أمرك أو استفسارك هنا...")
-    uploaded_chat_images = st.file_uploader(
-        "📸 ارفع صوراً متعددة لتحليلها مع الرسالة:", 
-        type=["jpg", "png", "jpeg", "webp"], 
-        accept_multiple_files=True
-    )
+    user_query = st.chat_input("اكتب أمرك هنا (للمحاكاة)...")
+    uploaded_files_chat = st.file_uploader("📸 رفع ملفات (للمحاكاة فقط):", accept_multiple_files=True)
 
-    if user_query or uploaded_chat_images:
+    if user_query or uploaded_files_chat:
         if not user_query:
-            user_query = "تحليل الصور المرفقة واستخراج كافة التفاصيل بدقة."
-            
-        user_msg_dict = {"role": "user", "content": user_query}
-        saved_img_paths = []
+            user_query = "طلب تحليل ملفات (محاكاة)."
         
-        if uploaded_chat_images:
-            for img_file in uploaded_chat_images:
-                saved_img_path = os.path.join(UPLOADS_FOLDER, img_file.name)
-                with open(saved_img_path, "wb") as f:
-                    f.write(img_file.getbuffer())
-                saved_img_paths.append(saved_img_path)
-            user_msg_dict["image_paths"] = saved_img_paths
-
-        st.session_state.gemini_logs.append(user_msg_dict)
+        st.session_state.gemini_logs.append({"role": "user", "content": user_query})
         with st.chat_message("user"):
             st.markdown(user_query)
-            if saved_img_paths:
-                cols = st.columns(len(saved_img_paths) if len(saved_img_paths) <= 3 else 3)
-                for i, img_path in enumerate(saved_img_paths):
-                    with cols[i % len(cols)]:
-                        st.image(img_path, width=200)
-
-        with st.spinner("🧠 جاري المعالجة الذكية عبر الاتصال المباشر..."):
-            system_prompt = """أنت الوكيل السيادي الرقمي الذكي للمستخدم عامر بوخدادة لمنصة Tassaout Digital Services.
-            تعمل في قطاعات العقار، التجارة، الخدمات، النقل، والهندسة.
-            أجب بدقة بالغة، وبأسلوب ذكي ومهني باللغة العربية.
-            أي عناوين أو نقاط أساسية يجب أن تكون مكتوبة **بخط عريض (Bold)** حصراً.
-            اختم الإجابة دائماً برابط الواتساب: https://wa.me/212691897126
-            والعبارة الرسمية: © إنتاج عامر بوخدادة - كل الحقوق محفوظة."""
-            
-            full_prompt = f"{system_prompt}\n\nطلب المستخدم: {user_query}"
-            ai_response_text = call_gemini_rest(full_prompt, saved_img_paths if saved_img_paths else None)
-
-        st.session_state.gemini_logs.append({"role": "assistant", "content": ai_response_text})
+        
+        with st.spinner("🧠 جاري المحاكاة الذكية محلياً..."):
+            sim_response = simulate_gemini_response(user_query)
+        
+        st.session_state.gemini_logs.append({"role": "assistant", "content": sim_response})
         with st.chat_message("assistant"):
-            st.markdown(ai_response_text)
-            st.download_button(
-                label="📥 تحميل المخرجات الذكية",
-                data=ai_response_text,
-                file_name=f"Smart_Output_{datetime.now().strftime('%Y%m%d_%H%M%S')}.txt",
-                mime="text/plain"
-            )
+            st.markdown(sim_response)
 
 # ==========================================
-# 2. لوحة النشر الفوري مع الصور
+# 2. لوحة النشر الفوري (محاكاة محلية)
 # ==========================================
-elif page == "⚡ النشر الفوري مع الصور":
-    st.title("⚡ لوحة الإنتاج والنشر الفوري مع الصور")
-    with st.form("form_instant_execution", clear_on_submit=True):
-        ad_title = st.text_input("عنوان الإعلان أو العرض الاستثماري:")
-        ad_sector = st.selectbox("القطاع السيادي:", [
-            "أسفار حج وعمرة", "هندسة رقمية وديكور 3D", "صناعة", "تجارة", "خدمات", "أعمال", "نقل ولوجستيك", "شراكة", "عقار", "متفرقات"
-        ])
+elif page == "⚡ النشر الفوري":
+    st.title("⚡ لوحة الإنتاج والنشر الفوري (محلياً)")
+    with st.form("form_instant_exec_sim", clear_on_submit=True):
+        ad_title = st.text_input("عنوان الإعلان/العرض السيادي:")
+        ad_sector = st.selectbox("القطاع:", ["عقار", "تجارة", "خدمات", "نقل", "أعمال", "أخرى"])
         ad_details = st.text_area("تفاصيل العرض النصية:")
+        uploaded_files = st.file_uploader("📸 رفع صور أو فيديوهات (تخزين محلي مؤقت):", accept_multiple_files=True)
         
-        uploaded_files = st.file_uploader(
-            "📸 رفع الصور أو الفيديوهات المرفقة للإعلان:", 
-            type=["jpg", "png", "jpeg", "webp", "mp4"], 
-            accept_multiple_files=True
-        )
-        
-        submit_button = st.form_submit_button("🚀 تنفيذ الإنتاج والنشر الفوري")
+        submit_button = st.form_submit_button("🚀 تنفيذ الإنتاج والنشر محلياً")
         
         if submit_button:
             if ad_title:
@@ -214,17 +103,9 @@ elif page == "⚡ النشر الفوري مع الصور":
                     "time": datetime.now().strftime("%Y-%m-%d %H:%M")
                 }
                 st.session_state.instant_ads.insert(0, new_entry)
-                
-                if google_sheets_client:
-                    try:
-                        sheet = google_sheets_client.open("Tassaout_Omega_DB").sheet1
-                        sheet.append_row([ad_title, ad_sector, ad_details, new_entry["time"]])
-                    except:
-                        pass
-
-                st.success(f"✅ تم النشر بنجاح للإعلان: '{ad_title}'!")
+                st.success(f"✅ تم النشر بنجاح (محلياً) للإعلان: '{ad_title}'!")
             else:
-                st.warning("⚠️ يجب إدخال عنوان الإعلان على الأقل.")
+                st.warning("⚠️ يجب إدخال عنوان الإعلان.")
 
     st.markdown("---")
     if st.session_state.instant_ads:
@@ -236,15 +117,15 @@ elif page == "⚡ النشر الفوري مع الصور":
                     if os.path.exists(img_path):
                         with cols[i % len(cols)]:
                             st.image(img_path, width=200)
-            if st.button(f"🗑️ حذف الإعلان #{idx+1}", key=f"del_ad_{idx}"):
+            if st.button(f"🗑️ حذف الإعلان #{idx+1}", key=f"del_ad_sim_{idx}"):
                 st.session_state.instant_ads.pop(idx)
                 st.rerun()
 
 # ==========================================
-# 3. واجهة العميل (المعرض المرئي)
+# 3. واجهة العميل (المعرض المحاكي)
 # ==========================================
-elif page == "🌐 واجهة العميل (المعرض المرئي)":
-    st.title("🌐 واجهة العميل - المعرض المرئي المباشر للعروض")
+elif page == "🌐 واجهة العميل (المعرض)":
+    st.title("🌐 واجهة العميل - المعرض المرئي (محاكاة)")
     if st.session_state.instant_ads:
         for ad in st.session_state.instant_ads:
             st.markdown(f"### 🌟 **{ad['title']}**")
@@ -258,66 +139,52 @@ elif page == "🌐 واجهة العميل (المعرض المرئي)":
                             st.image(img_path, use_container_width=True)
                             
             st.write(ad['details'])
-            st.markdown(f"[💬 اطلب هذا العرض فوراً عبر واتساب](https://wa.me/212691897126?text=مرحباً، أهتم بعرض: {ad['title']})")
+            st.markdown(f"[💬 اطلب هذا العرض عبر واتساب](https://wa.me/212691897126?text=مرحباً، أهتم بعرض المحاكاة: {ad['title']})")
             st.markdown("---")
     else:
-        st.info("🌐 واجهة العميل فارغة حالياً. قم بنشر إعلان مع صور من لوحة '⚡ النشر الفوري مع الصور' ليظهر هنا فوراً.")
+        st.info("🌐 واجهة العميل فارغة حالياً. قم بنشر إعلان من لوحة '⚡ النشر الفوري'.")
 
 # ==========================================
-# 4. إدارة Google Drive
+# 4. إدارة الأصول (محاكاة)
 # ==========================================
-elif page == "📁 Google Drive (التحميل المباشر)":
-    st.title("📁 وحدة Google Drive - التحميل المباشر للأصول والملفات")
-    if drive_service:
-        st.success("🟢 الاتصال بـ Google Drive مفعل بنجاح!")
-        try:
-            results = drive_service.files().list(
-                pageSize=15, 
-                fields="files(id, name, mimeType, webViewLink, size)"
-            ).execute()
-            items = results.get('files', [])
-            
-            if items:
-                st.markdown("### 📂 الملفات المتاحة في سحابة Google Drive:")
-                for item in items:
-                    col_f1, col_f2 = st.columns([3, 1])
-                    with col_f1:
-                        st.write(f"📄 **{item['name']}** (نوع الملف: {item['mimeType'].split('/')[-1]})")
-                    with col_f2:
-                        st.markdown(f"[📥 تحميل / عرض مباشر]({item.get('webViewLink', '#')})")
-                st.markdown("---")
-            else:
-                st.info("📂 لم يتم العثور على ملفات في حساب Google Drive المرتبط.")
-        except Exception as e:
-            st.error(f"خطأ أثناء جلب الملفات من Drive: {e}")
-    else:
-        st.warning("⚠️ يرجى تفعيل مفاتيح حساب الخدمة في أسرار Streamlit لتفعيل التحميل المباشر من Google Drive.")
+elif page == "📁 إدارة الأصول (محاكاة)":
+    st.title("📁 وحدة إدارة الأصول السيادية - (وضع المحاكاة)")
+    st.info("ℹ️ يعمل هذا القسم الآن في وضع المحاكاة الآمنة. لا يلزم توفر مفاتيح أو حساب خدمة Google Drive.")
+    st.markdown("### 📂 الملفات المتاحة في الذاكرة المحلية (للعرض):")
+    fake_files = [
+        {"name": "Tassaout_Assets_v3.zip", "type": "zip", "size": "150 MB"},
+        {"name": "Presentation_Nexus_Alpha.pdf", "type": "pdf", "size": "18 MB"},
+        {"name": "Client_Database_Oct.csv", "type": "csv", "size": "5 MB"},
+        {"name": "Sovereign_Arch_Diagram.png", "type": "png", "size": "2 MB"}
+    ]
+    for file in fake_files:
+        col_f1, col_f2 = st.columns([3, 1])
+        with col_f1:
+            st.write(f"📄 **{file['name']}** (نوع الملف: {file['type']}) | الحجم: {file['size']}")
+        with col_f2:
+            st.button(f"📥 محاكاة التحميل", key=f"sim_drive_{file['name']}")
 
 # ==========================================
-# 5. إدارة Google Sheets
+# 5. إدارة البيانات (محاكاة)
 # ==========================================
-elif page == "📊 Google Sheets":
-    st.title("📊 إدارة قواعد البيانات عبر Google Sheets")
-    if google_sheets_client:
-        st.success("🟢 الاتصال بـ Google Sheets مفعل بنجاح!")
-        try:
-            sheet = google_sheets_client.open("Tassaout_Omega_DB").sheet1
-            data = sheet.get_all_records()
-            if data:
-                df_sheets = pd.DataFrame(data)
-                st.dataframe(df_sheets, use_container_width=True)
-            else:
-                st.info("📊 الجدول الإلكتروني فارغ حالياً.")
-        except Exception as e:
-            st.error(f"خطأ في قراءة الجدول: {e}")
-    else:
-        st.warning("⚠️ ربط Google Sheets يتطلب إعداد مفاتيح حساب الخدمة في الـ Secrets.")
+elif page == "📊 إدارة البيانات (محاكاة)":
+    st.title("📊 إدارة قواعد البيانات - (وضع المحاكاة)")
+    st.info("ℹ️ يعمل هذا القسم الآن في وضع المحاكاة الآمنة. لا يلزم الاتصال بـ Google Sheets.")
+    st.markdown("### 📊 بيانات محاكية من 'Omega_Core_DB':")
+    fake_data = {
+        "العنوان": ["مجمع سكني - قلعة السراغنة", "متجر تجاري - مراكش", "شراكة لوجستيك", "قطعة أرضية - آسفي"],
+        "القطاع": ["عقار", "تجارة", "نقل", "عقار"],
+        "الحالة": ["مشروع قائم", "موقع متميز", "عقد توريد", "مساحة فارغة"],
+        "التاريخ": ["2024-10-01", "2024-10-05", "2024-10-10", "2024-10-12"]
+    }
+    df_sim_data = pd.DataFrame(fake_data)
+    st.dataframe(df_sim_data, use_container_width=True)
 
 # ==========================================
-# 6. واجهة خرائط Google الاستراتيجية
+# 6. واجهة خرائط Google (Active)
 # ==========================================
 elif page == "🗺️ خرائط النطاق":
-    st.title("🗺️ خرائط النطاق الجغرافي (قلعة السراغنة ومراكش)")
+    st.title("🗺️ واجهة خرائط النطاق الجغرافي (قلعة السراغنة ومراكش)")
     map_data = pd.DataFrame({
         'latitude': [32.0494, 31.6295],
         'longitude': [-7.4083, -7.9811],
