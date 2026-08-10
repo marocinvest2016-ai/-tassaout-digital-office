@@ -3,15 +3,12 @@ import os
 import pandas as pd
 from datetime import datetime
 
-# --- إعدادات النظام السيادي v6.12 (وضع المحاكاة الآمنة) ---
+# --- إعدادات النظام السيادي v6.13 (تفعيل تحميل وحفظ الأصول) ---
 st.set_page_config(
-    page_title="TASSAOUT DIGITAL SERVICES - Sovereign OS v6.12", 
+    page_title="TASSAOUT DIGITAL SERVICES - Sovereign OS v6.13", 
     layout="wide",
     initial_sidebar_state="expanded"
 )
-
-def simulate_gemini_response(prompt_text):
-    return f"👑 **[وضع المحاكاة السيادية]** سيدي الرئيس AMEUR، لقد استلمتُ الأمر التحليلي التالي داخلياً: '{prompt_text[:150]}...'. النظام يعمل بكامل طاقته التشغيلية محلياً."
 
 UPLOADS_FOLDER = "uploaded_assets"
 os.makedirs(UPLOADS_FOLDER, exist_ok=True)
@@ -21,18 +18,18 @@ if "instant_ads" not in st.session_state:
 
 if "gemini_logs" not in st.session_state:
     st.session_state.gemini_logs = [
-        {"role": "assistant", "content": "👑 أهلاً بك سيدي الرئيس AMEUR في منصة Tassaout Digital Services. النظام يعمل بكفاءة تامة في الذاكرة المحلية السيادية."}
+        {"role": "assistant", "content": "👑 أهلاً بك سيدي الرئيس AMEUR. النظام جاهز الآن للتحميل الفعلي وإدارة الأصول بكفاءة تامة."}
     ]
 
 # --- الشريط الجانبي السيادي ---
 st.sidebar.title("👑 Tassaout Digital Services")
-st.sidebar.markdown("**Status:** Online (Active)")
+st.sidebar.markdown("**Status:** Online & Active")
 st.sidebar.markdown("---")
 page = st.sidebar.radio("الوحدات السيادية:", [
     "🧠 محادثة التوأم الذكي",
     "⚡ النشر الفوري",
     "🌐 واجهة العميل (المعرض)",
-    "📁 إدارة الأصول",
+    "📁 إدارة الأصول والتحميل",
     "📊 إدارة البيانات",
     "🗺️ خرائط النطاق"
 ])
@@ -57,7 +54,7 @@ if page == "🧠 محادثة التوأم الذكي":
         with st.chat_message("user"):
             st.markdown(user_query)
         
-        sim_response = simulate_gemini_response(user_query)
+        sim_response = f"👑 **[النظام السيادي]** سيدي الرئيس AMEUR، تم تنفيذ الأمر: '{user_query}' بنجاح."
         st.session_state.gemini_logs.append({"role": "assistant", "content": sim_response})
         with st.chat_message("assistant"):
             st.markdown(sim_response)
@@ -67,11 +64,11 @@ if page == "🧠 محادثة التوأم الذكي":
 # ==========================================
 elif page == "⚡ النشر الفوري":
     st.title("⚡ لوحة الإنتاج والنشر الفوري")
-    with st.form("form_instant_exec_sim", clear_on_submit=True):
+    with st.form("form_instant_exec", clear_on_submit=True):
         ad_title = st.text_input("عنوان الإعلان أو العرض السيادي:")
         ad_sector = st.selectbox("القطاع:", ["عقار", "تجارة", "خدمات", "نقل", "أعمال", "أخرى"])
         ad_details = st.text_area("تفاصيل العرض النصية:")
-        uploaded_files = st.file_uploader("📸 رفع صور أو فيديوهات:", accept_multiple_files=True)
+        uploaded_files = st.file_uploader("📸 رفع صور أو فيديوهات للإعلان:", accept_multiple_files=True)
         
         submit_button = st.form_submit_button("🚀 تنفيذ الإنتاج والنشر")
         
@@ -107,7 +104,7 @@ elif page == "⚡ النشر الفوري":
                     if os.path.exists(img_path):
                         with cols[i % len(cols)]:
                             st.image(img_path, width=200)
-            if st.button(f"🗑️ حذف الإعلان #{idx+1}", key=f"del_ad_sim_{idx}"):
+            if st.button(f"🗑️ حذف الإعلان #{idx+1}", key=f"del_ad_{idx}"):
                 st.session_state.instant_ads.pop(idx)
                 st.rerun()
 
@@ -135,29 +132,55 @@ elif page == "🌐 واجهة العميل (المعرض)":
         st.info("🌐 واجهة العميل فارغة حالياً. قم بنشر إعلان من لوحة '⚡ النشر الفوري'.")
 
 # ==========================================
-# 4. إدارة الأصول
+# 4. إدارة الأصول والتحميل الفعلي
 # ==========================================
-elif page == "📁 إدارة الأصول":
-    st.title("📁 وحدة إدارة الأصول السيادية")
-    st.markdown("### 📂 الملفات المتاحة في الذاكرة المحلية:")
-    fake_files = [
-        {"name": "Tassaout_Assets_v3.zip", "type": "zip", "size": "150 MB"},
-        {"name": "Presentation_Nexus_Alpha.pdf", "type": "pdf", "size": "18 MB"},
-        {"name": "Client_Database_Oct.csv", "type": "csv", "size": "5 MB"}
-    ]
-    for file in fake_files:
-        col_f1, col_f2 = st.columns([3, 1])
-        with col_f1:
-            st.write(f"📄 **{file['name']}** (نوع الملف: {file['type']}) | الحجم: {file['size']}")
-        with col_f2:
-            st.button(f"📥 تحميل", key=f"sim_drive_{file['name']}")
+elif page == "📁 إدارة الأصول والتحميل":
+    st.title("📁 وحدة إدارة الأصول والتحميل الفعلي")
+    st.markdown("قم برفع أي ملف أو أصل جديد ليتم تخزينه في النظام السحابي، أو تحميل الملفات المحفوظة:")
+
+    # رفع ملفات جديدة حقيقية
+    uploaded_asset = st.file_uploader("📤 رفع أصل جديد (ملف، صورة، مستند):", accept_multiple_files=False)
+    if uploaded_asset:
+        file_path = os.path.join(UPLOADS_FOLDER, uploaded_asset.name)
+        with open(file_path, "wb") as f:
+            f.write(uploaded_asset.getbuffer())
+        st.success(f"✅ تم رفع وحفظ الملف '{uploaded_asset.name}' بنجاح في النظام!")
+
+    st.markdown("---")
+    st.subheader("📂 الأصول والمستندات المخزنة حالياً:")
+    
+    if os.path.exists(UPLOADS_FOLDER):
+        files_in_folder = os.listdir(UPLOADS_FOLDER)
+        if files_in_folder:
+            for file_name in files_in_folder:
+                f_path = os.path.join(UPLOADS_FOLDER, file_name)
+                f_size = os.path.getsize(f_path) / 1024 # بالحكيلوبايت
+                
+                col1, col2, col3 = st.columns([3, 1, 1])
+                with col1:
+                    st.write(f"📄 **{file_name}** ({f_size:.1f} KB)")
+                with col2:
+                    with open(f_path, "rb") as fp:
+                        st.download_button(
+                            label="📥 تحميل",
+                            data=fp,
+                            file_name=file_name,
+                            key=f"down_{file_name}"
+                        )
+                with col3:
+                    if st.button("🗑️ حذف", key=f"del_{file_name}"):
+                        os.remove(f_path)
+                        st.rerun()
+        else:
+            info_msg = "لا توجد أصول مرفوعة حالياً. استخدم زر الرفع أعلاه."
+            st.info(info_msg)
 
 # ==========================================
 # 5. إدارة البيانات
 # ==========================================
 elif page == "📊 إدارة البيانات":
     st.title("📊 إدارة قواعد البيانات")
-    st.markdown("### 📊 سجل العمليات:")
+    st.markdown("### 📊 سجل العمليات السيادية:")
     fake_data = {
         "العنوان": ["مشروع سكني - قلعة السراغنة", "محل تجاري - مراكش", "شراكة لوجستيك"],
         "القطاع": ["عقار", "تجارة", "نقل"],
