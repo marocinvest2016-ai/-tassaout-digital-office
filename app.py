@@ -3,29 +3,43 @@ import os
 import pandas as pd
 from datetime import datetime
 import google.generativeai as genai
+from PIL import Image
 
-# --- إعدادات النظام السيادي الفائق v6.3 ---
+# --- إعدادات النظام السيادي الفارق v6.8 (Twin Intelligence & Vision Core) ---
 st.set_page_config(
-    page_title="TASSAOUT OMEGA OS - Sovereign Command Center v6.3", 
+    page_title="TASSAOUT OMEGA OS - Twin Intelligence v6.8", 
     layout="wide",
     initial_sidebar_state="expanded"
 )
 
-# تهيئة عقل Gemini الذكي مع حماية فائقة وتجاوز أي أخطاء في المفتاح
+# تهيئة عقل Gemini الذكي
 gemini_model = None
 try:
     if "GEMINI_API_KEY" in st.secrets:
         genai.configure(api_key=st.secrets["GEMINI_API_KEY"])
+        # استخدام نموذج يدعم النصوص والصور بدقة فائقة
         gemini_model = genai.GenerativeModel("gemini-1.5-flash")
 except:
     pass
 
-# تهيئة مرنة لـ Supabase
-supabase_client = None
+# تهيئة Google Drive / Sheets
+google_sheets_client = None
+drive_service = None
 try:
-    from supabase import create_client
-    if "SUPABASE_URL" in st.secrets:
-        supabase_client = create_client(st.secrets["SUPABASE_URL"], st.secrets["SUPABASE_KEY"])
+    import gspread
+    from google.oauth2.service_account import Credentials
+    from googleapiclient.discovery import build
+    
+    if "GCP_SERVICE_ACCOUNT" in st.secrets:
+        scope = [
+            "https://spreadsheets.google.com/feeds", 
+            "https://www.googleapis.com/auth/drive",
+            "https://www.googleapis.com/auth/drive.readonly"
+        ]
+        creds_dict = dict(st.secrets["GCP_SERVICE_ACCOUNT"])
+        creds = Credentials.from_service_account_info(creds_dict, scopes=scope)
+        google_sheets_client = gspread.authorize(creds)
+        drive_service = build('drive', 'v3', credentials=creds)
 except:
     pass
 
@@ -37,61 +51,99 @@ if "instant_ads" not in st.session_state:
 
 if "gemini_logs" not in st.session_state:
     st.session_state.gemini_logs = [
-        {"role": "assistant", "content": "👑 أهلاً بك سيدي الرئيس AMEUR. أنا نظامك الذكي الخارق v6.3. تم ضبط الاتصال بفضل الشراكة الاستراتيجية وتفعيل نظام التوليد الفوري."}
+        {"role": "assistant", "content": "👑 أهلاً بك سيدي الرئيس AMEUR. تم تفعيل التوأمة الذكية الكاملة والنظام بصيغته الخارقة v6.8. أنا جاهز لتنفيذ أي أمر أو تحليل أي صورة بدقة فائقة."}
     ]
 
 # --- الشريط الجانبي السيادي ---
-st.sidebar.title("👑 قيادة Super Agent v6.3")
+st.sidebar.title("👑 قيادة Super Agent v6.8")
 st.sidebar.markdown("---")
 page = st.sidebar.radio("الوحدات السيادية:", [
-    "⚡ النشر الفوري",
-    "🌐 واجهة العميل",
-    "☁️ التخزين السحابي",
-    "🗺️ خرائط النطاق",
-    "🧠 عقل الوكيل الخارق"
+    "🧠 محادثة التوأم الذكي (Gemini Core)",
+    "⚡ النشر الفوري مع الصور",
+    "🌐 واجهة العميل (المعرض المرئي)",
+    "📁 Google Drive (التحميل المباشر)",
+    "📊 Google Sheets",
+    "🗺️ خرائط النطاق"
 ])
 
 st.sidebar.markdown("---")
 st.sidebar.markdown("© **إنتاج عامر بوخدادة - كل الحقوق محفوظة**")
 
-# --- دالة توليد الإعلانات الذكية والاحترافية ---
-def generate_sector_ad(sector_name, custom_prompt=""):
-    prompt_text = custom_prompt if custom_prompt else sector_name
-    
-    if gemini_model:
-        try:
-            system_instructions = """أنت الوكيل السيادي الرقمي لشركة Ameur Boukhaddada. 
-            تعمل في قطاعات متعددة وتشمل: أسفار الحج والعمرة، الهندسة الرقمية والديكور والنمذجة ثلاثية الأبعاد (Modélisation 3D)، الصناعة (STE RITA FER)، التجارة، الخدمات، الأعمال، النقل واللوجستيك، الشراكات الاستثمارية، العقار (تجزئة الهدى بقلعة السراغنة ومراكش)، والمتفرقات.
-            مهمتك: صياغة إعلانات تسويقية واحترافية للغاية باللغة العربية الفصحى مع لمسة تجارية ودولية جذابة للجمهور.
-            تعليمات صارمة للتنسيق: يجب أن يكون عنوان الإعلان وكل النقاط الأساسية مكتوبة **بخط عريض (Bold)** لجذب انتباه العملاء فوراً.
-            يجب أن ينتهي كل إعلان بعبارة واضحة للتواصل مع رقم الواتساب المعتمد: https://wa.me/212691897126
-            ويجب أن يُختتم الإعلان بالعبارة الرسمية: © إنتاج عامر بوخدادة - كل الحقوق محفوظة."""
-            
-            full_prompt = f"{system_instructions}\n\nالطلب المطلوب تنفيذه: {prompt_text}"
-            response = gemini_model.generate_content(full_prompt)
-            return response.text
-        except Exception:
-            pass
+# ==========================================
+# 1. محادثة التوأم الذكي (الذكاء الحقيقي وتحليل الصور)
+# ==========================================
+if page == "🧠 محادثة التوأم الذكي (Gemini Core)":
+    st.title("🧠 محادثة التوأم الذكي - ذكاء اصطناعي فائق ودقيق")
+    st.markdown("تحدث معي بحرية، اطلب أي صياغة تسويقية، أو ارفع صورة لتحليلها واستخراج البيانات منها تماماً مثل بيئتنا الحالية:")
 
-    # المولد الاحترافي المتكامل في حال التحديث أو صيانة المفتاح
-    return f"""**إعلان استثماري وخدماتي حصري - قطاع: {sector_name}**
+    # عرض سجل المحادثة
+    for msg in st.session_state.gemini_logs:
+        with st.chat_message(msg["role"]):
+            st.markdown(msg["content"])
+            if "image_path" in msg and msg["image_path"] and os.path.exists(msg["image_path"]):
+                st.image(msg["image_path"], width=300)
 
-يسر إدارة شركة عامر بوخدادة أن تقدم لعملائها الكرام أحدث العروض والخدمات الاحترافية المتميزة في قلعة السراغنة ومراكش وعموم ربوع المملكة.
+    # صندوق الإدخال المفتوح مع خيار رفع الصور في الدردشة
+    user_query = st.chat_input("اكتب أمرك أو استفسارك هنا...")
+    uploaded_chat_image = st.file_uploader("📸 ارفع صورة أو مستنداً لتحليله مع الرسالة (اختياري):", type=["jpg", "png", "jpeg", "webp"])
 
-* **الجودة العالية والموثوقية المطلقة:** نضمن لكم تنفيذ مشاريعكم وطلباتكم بأعلى معايير الإتقان الهندسي والتجاري.
-* **السرعة في الإنجاز والاحترافية:** فريق عمل محترف يسهر على تلبية احتياجاتكم في أسرع وقت وبأفضل المواصفات.
-* **الأسعار التنافسية والعروض الخاصة:** باقات مدروسة تلائم تطلعات الأفراد والمقاولات الاستثمارية.
+    if user_query:
+        # تسجيل رسالة المستخدم
+        user_msg_dict = {"role": "user", "content": user_query}
+        saved_img_path = None
+        
+        if uploaded_chat_image:
+            saved_img_path = os.path.join(UPLOADS_FOLDER, uploaded_chat_image.name)
+            with open(saved_img_path, "wb") as f:
+                f.write(uploaded_chat_image.getbuffer())
+            user_msg_dict["image_path"] = saved_img_path
 
-للتواصل والاستفادة من العرض فوراً عبر الواتساب:
-https://wa.me/212691897126
+        st.session_state.gemini_logs.append(user_msg_dict)
+        with st.chat_message("user"):
+            st.markdown(user_query)
+            if saved_img_path:
+                st.image(saved_img_path, width=300)
 
-© **إنتاج عامر بوخدادة - كل الحقوق محفوظة**"""
+        # توليد الإجابة الذكية عبر Gemini الحقيقي
+        with st.spinner("🧠 جاري المعالجة وتحليل الطلب بدقة فائقة..."):
+            ai_response_text = ""
+            if gemini_model:
+                try:
+                    system_prompt = """أنت الوكيل السيادي الرقمي الذكي للمستخدم عامر بوخدادة.
+                    تعمل في قطاعات العقار، التجارة، الخدمات، النقل، والهندسة.
+                    أجب بدقة بالغة، وبأسلوب ذكي ومهني باللغة العربية.
+                    أي عناوين أو نقاط أساسية يجب أن تكون مكتوبة **بخط عريض (Bold)** حصراً.
+                    اختم الإجابة دائماً برابط الواتساب: https://wa.me/212691897126
+                    والعبارة الرسمية: © إنتاج عامر بوخدادة - كل الحقوق محفوظة."""
+                    
+                    if saved_img_path:
+                        img_obj = Image.open(saved_img_path)
+                        response = gemini_model.generate_content([system_prompt, img_obj, user_query])
+                    else:
+                        response = gemini_model.generate_content(f"{system_prompt}\n\nالطلب: {user_query}")
+                    
+                    ai_response_text = response.text
+                except Exception as e:
+                    ai_response_text = f"عذراً سيدي الرئيس، حدث خطأ في الاتصال بمحرك الذكاء: {e}"
+            else:
+                ai_response_text = f"**رد النظام التلقائي:** تم استلام طلبك '{user_query}' بنجاح.\n\nللتواصل والاستفادة فوراً عبر الواتساب:\nhttps://wa.me/212691897126\n\n© **إنتاج عامر بوخدادة - كل الحقوق محفوظة**"
+
+        # تسجيل رد المساعد
+        st.session_state.gemini_logs.append({"role": "assistant", "content": ai_response_text})
+        with st.chat_message("assistant"):
+            st.markdown(ai_response_text)
+            st.download_button(
+                label="📥 تحميل المخرجات الذكية",
+                data=ai_response_text,
+                file_name=f"Smart_Output_{datetime.now().strftime('%Y%m%d_%H%M%S')}.txt",
+                mime="text/plain"
+            )
 
 # ==========================================
-# 1. لوحة النشر الفوري والرفع
+# 2. لوحة النشر الفوري مع الصور
 # ==========================================
-if page == "⚡ النشر الفوري":
-    st.title("⚡ لوحة الإنتاج والنشر الفوري")
+elif page == "⚡ النشر الفوري مع الصور":
+    st.title("⚡ لوحة الإنتاج والنشر الفوري مع الصور")
     with st.form("form_instant_execution", clear_on_submit=True):
         ad_title = st.text_input("عنوان الإعلان أو العرض الاستثماري:")
         ad_sector = st.selectbox("القطاع السيادي:", [
@@ -100,7 +152,7 @@ if page == "⚡ النشر الفوري":
         ad_details = st.text_area("تفاصيل العرض النصية:")
         
         uploaded_files = st.file_uploader(
-            "📸 رفع الأصول (صور أو فيديوهات mp4):", 
+            "📸 رفع الصور أو الفيديوهات المرفقة للإعلان:", 
             type=["jpg", "png", "jpeg", "webp", "mp4"], 
             accept_multiple_files=True
         )
@@ -109,29 +161,31 @@ if page == "⚡ النشر الفوري":
         
         if submit_button:
             if ad_title:
-                saved_filenames = []
+                saved_files_paths = []
                 if uploaded_files:
                     for file in uploaded_files:
-                        try:
-                            file_path = f"{datetime.now().strftime('%Y%m%d_%H%M%S')}_{file.name}"
-                            if supabase_client:
-                                supabase_client.storage.from_("assets").upload(file_path, file.getbuffer())
-                            saved_filenames.append(file_path)
-                        except:
-                            local_path = os.path.join(UPLOADS_FOLDER, file.name)
-                            with open(local_path, "wb") as f:
-                                f.write(file.getbuffer())
-                            saved_filenames.append(file.name)
+                        local_path = os.path.join(UPLOADS_FOLDER, file.name)
+                        with open(local_path, "wb") as f:
+                            f.write(file.getbuffer())
+                        saved_files_paths.append(local_path)
                 
                 new_entry = {
                     "title": ad_title,
                     "sector": ad_sector,
                     "details": ad_details + "\n\n© **إنتاج عامر بوخدادة - كل الحقوق محفوظة**",
-                    "images": saved_filenames,
+                    "images": saved_files_paths,
                     "time": datetime.now().strftime("%Y-%m-%d %H:%M")
                 }
                 st.session_state.instant_ads.insert(0, new_entry)
-                st.success(f"✅ تم الإنتاج والنشر بنجاح للإعلان: '{ad_title}'!")
+                
+                if google_sheets_client:
+                    try:
+                        sheet = google_sheets_client.open("Tassaout_Omega_DB").sheet1
+                        sheet.append_row([ad_title, ad_sector, ad_details, new_entry["time"]])
+                    except:
+                        pass
+
+                st.success(f"✅ تم النشر بنجاح للإعلان: '{ad_title}'!")
             else:
                 st.warning("⚠️ يجب إدخال عنوان الإعلان على الأقل.")
 
@@ -139,44 +193,89 @@ if page == "⚡ النشر الفوري":
     if st.session_state.instant_ads:
         for idx, ad in enumerate(st.session_state.instant_ads):
             st.info(f"### 🏷️ **{ad['title']}**\n* **القطاع:** {ad['sector']} | 🕒 {ad['time']}\n\n{ad['details']}")
+            if ad['images']:
+                for img_path in ad['images']:
+                    if os.path.exists(img_path):
+                        st.image(img_path, width=300)
             if st.button(f"🗑️ حذف الإعلان #{idx+1}", key=f"del_ad_{idx}"):
                 st.session_state.instant_ads.pop(idx)
                 st.rerun()
 
 # ==========================================
-# 2. واجهة العميل والمعرض المباشر
+# 3. واجهة العميل (المعرض المرئي)
 # ==========================================
-elif page == "🌐 واجهة العميل":
-    st.title("🌐 واجهة العميل - العروض الحية والصفقات")
+elif page == "🌐 واجهة العميل (المعرض المرئي)":
+    st.title("🌐 واجهة العميل - المعرض المرئي المباشر للعروض")
     if st.session_state.instant_ads:
         for ad in st.session_state.instant_ads:
             st.markdown(f"### 🌟 **{ad['title']}**")
             st.caption(f"القطاع: {ad['sector']} | تاريخ النشر: {ad['time']}")
+            
+            if ad['images']:
+                cols = st.columns(len(ad['images']) if len(ad['images']) <= 3 else 3)
+                for i, img_path in enumerate(ad['images']):
+                    if os.path.exists(img_path):
+                        with cols[i % len(cols)]:
+                            st.image(img_path, use_container_width=True)
+                            
             st.write(ad['details'])
             st.markdown(f"[💬 اطلب هذا العرض فوراً عبر واتساب](https://wa.me/212691897126?text=مرحباً، أهتم بعرض: {ad['title']})")
             st.markdown("---")
     else:
-        st.info("🌐 واجهة العميل فارغة حالياً.")
+        st.info("🌐 واجهة العميل فارغة حالياً. قم بنشر إعلان مع صور من لوحة '⚡ النشر الفوري مع الصور' ليظهر هنا فوراً.")
 
 # ==========================================
-# 3. الواجهة السحابية الشاملة (Cloud Vault)
+# 4. إدارة Google Drive
 # ==========================================
-elif page == "☁️ التخزين السحابي":
-    st.title("☁️ الواجهة السحابية الشاملة (Cloud Storage Vault)")
-    if supabase_client:
+elif page == "📁 Google Drive (التحميل المباشر)":
+    st.title("📁 وحدة Google Drive - التحميل المباشر للأصول والملفات")
+    if drive_service:
+        st.success("🟢 الاتصال بـ Google Drive مفعل بنجاح!")
         try:
-            files_list = supabase_client.storage.from_("assets").list()
-            if files_list:
-                st.success(f"إجمالي الملفات في سحابة Supabase: {len(files_list)}")
+            results = drive_service.files().list(
+                pageSize=15, 
+                fields="files(id, name, mimeType, webViewLink, size)"
+            ).execute()
+            items = results.get('files', [])
+            
+            if items:
+                st.markdown("### 📂 الملفات المتاحة في سحابة Google Drive:")
+                for item in items:
+                    col_f1, col_f2 = st.columns([3, 1])
+                    with col_f1:
+                        st.write(f"📄 **{item['name']}** (نوع الملف: {item['mimeType'].split('/')[-1]})")
+                    with col_f2:
+                        st.markdown(f"[📥 تحميل / عرض مباشر]({item.get('webViewLink', '#')})")
+                st.markdown("---")
             else:
-                st.info("سحابة Supabase فارغة.")
-        except Exception as ex:
-            st.error(f"خطأ في الاتصال: {ex}")
+                st.info("📂 لم يتم العثور على ملفات في حساب Google Drive المرتبط.")
+        except Exception as e:
+            st.error(f"خطأ أثناء جلب الملفات من Drive: {e}")
     else:
-        st.warning("⚠️ التخزين السحابي غير مفعل، يتم استخدام التخزين المحلي.")
+        st.warning("⚠️ يرجى تفعيل مفاتيح حساب الخدمة في أسرار Streamlit لتفعيل التحميل المباشر من Google Drive.")
 
 # ==========================================
-# 4. واجهة خرائط Google الاستراتيجية
+# 5. إدارة Google Sheets
+# ==========================================
+elif page == "📊 Google Sheets":
+    st.title("📊 إدارة قواعد البيانات عبر Google Sheets")
+    if google_sheets_client:
+        st.success("🟢 الاتصال بـ Google Sheets مفعل بنجاح!")
+        try:
+            sheet = google_sheets_client.open("Tassaout_Omega_DB").sheet1
+            data = sheet.get_all_records()
+            if data:
+                df_sheets = pd.DataFrame(data)
+                st.dataframe(df_sheets, use_container_width=True)
+            else:
+                st.info("📊 الجدول الإلكتروني فارغ حالياً.")
+        except Exception as e:
+            st.error(f"خطأ في قراءة الجدول: {e}")
+    else:
+        st.warning("⚠️ ربط Google Sheets يتطلب إعداد مفاتيح حساب الخدمة في الـ Secrets.")
+
+# ==========================================
+# 6. واجهة خرائط Google الاستراتيجية
 # ==========================================
 elif page == "🗺️ خرائط النطاق":
     st.title("🗺️ واجهة خرائط النطاق الجغرافي (قلعة السراغنة ومراكش)")
@@ -186,98 +285,6 @@ elif page == "🗺️ خرائط النطاق":
         'location': ['قلعة السراغنة (المركز الرئيسي)', 'مراكش (محور الاستثمار)']
     })
     st.map(map_data, zoom=8)
-
-# ==========================================
-# 5. محرك الوكيل الخارق (Super Agentic Core)
-# ==========================================
-elif page == "🧠 عقل الوكيل الخارق":
-    st.title("🧠 محرك الوكيل الخارق (Google Partner Integrated)")
-    st.markdown("اختر قطاع العمل لتوليد إعلان فوري بصياغة بارزة **بخط عريض (Bold)**، أو اكتب أمرك المفتوح:")
-    
-    # شبكة أزرار القطاعات الشاملة
-    st.markdown("### ⚡ أزرار القطاعات الاستراتيجية:")
-    
-    col_c1, col_c2, col_c3 = st.columns(3)
-    with col_c1:
-        if st.button("🕋 أسفار حج وعمرة"):
-            res = generate_sector_ad("رحلات أسفار الحج والعمرة المتميزة، تنظيم الحملات، الخدمات المتكاملة والإقامة الفاخرة لضيوف الرحمن")
-            st.session_state.gemini_logs.insert(1, {"role": "assistant", "content": f"**[قطاع: أسفار حج وعمرة]**\n\n{res}"})
-            st.rerun()
-    with col_c2:
-        if st.button("🏛️ هندسة وديكور 3D"):
-            res = generate_sector_ad("هندسة رقمية وديكور وتصميم داخلي وخارجي ونمذجة ثلاثية الأبعاد Modélisation 3D")
-            st.session_state.gemini_logs.insert(1, {"role": "assistant", "content": f"**[قطاع: هندسة وديكور 3D]**\n\n{res}"})
-            st.rerun()
-    with col_c3:
-        if st.button("🏠 عقار"):
-            res = generate_sector_ad("العقار والبقع الأرضية (تجزئة الهدى بقلعة السراغنة ومراكش)")
-            st.session_state.gemini_logs.insert(1, {"role": "assistant", "content": f"**[قطاع: عقار]**\n\n{res}"})
-            st.rerun()
-
-    col1, col2, col3, col4 = st.columns(4)
-    with col1:
-        if st.button("🏭 صناعة"):
-            res = generate_sector_ad("الصناعة (مثل مواد البناء والحديد STE RITA FER)")
-            st.session_state.gemini_logs.insert(1, {"role": "assistant", "content": f"**[قطاع: صناعة]**\n\n{res}"})
-            st.rerun()
-    with col2:
-        if st.button("🛒 تجارة"):
-            res = generate_sector_ad("التجارة والبيع بالجملة والتجزئة")
-            st.session_state.gemini_logs.insert(1, {"role": "assistant", "content": f"**[قطاع: تجارة]**\n\n{res}"})
-            st.rerun()
-    with col3:
-        if st.button("🛠️ خدمات"):
-            res = generate_sector_ad("الخدمات المهنية والرقمية والاستشارية")
-            st.session_state.gemini_logs.insert(1, {"role": "assistant", "content": f"**[قطاع: خدمات]**\n\n{res}"})
-            st.rerun()
-    with col4:
-        if st.button("💼 أعمال"):
-            res = generate_sector_ad("الأعمال والمشاريع الاستثمارية الكبرى")
-            st.session_state.gemini_logs.insert(1, {"role": "assistant", "content": f"**[قطاع: أعمال]**\n\n{res}"})
-            st.rerun()
-
-    col5, col6, col7 = st.columns(3)
-    with col5:
-        if st.button("🚚 نقل ولوجستيك"):
-            res = generate_sector_ad("النقل ولوجستيك ونقل البضائع والآليات")
-            st.session_state.gemini_logs.insert(1, {"role": "assistant", "content": f"**[قطاع: نقل ولوجستيك]**\n\n{res}"})
-            st.rerun()
-    with col6:
-        if st.button("🤝 شراكة"):
-            res = generate_sector_ad("الشراكة الاستثمارية وتوسيع الأنشطة التجارية والعقارية")
-            st.session_state.gemini_logs.insert(1, {"role": "assistant", "content": f"**[قطاع: شراكة]**\n\n{res}"})
-            st.rerun()
-    with col7:
-        if st.button("📌 متفرقات"):
-            res = generate_sector_ad("متفرقات وعروض متنوعة")
-            st.session_state.gemini_logs.insert(1, {"role": "assistant", "content": f"**[قطاع: متفرقات]**\n\n{res}"})
-            st.rerun()
-
-    st.markdown("---")
-    
-    # سجل الأوامر
-    for msg in st.session_state.gemini_logs:
-        with st.chat_message(msg["role"]):
-            st.markdown(msg["content"])
-            
-    # صندوق الإدخال المفتوح
-    if prompt := st.chat_input("اكتب تفاصيل إضافية أو طلباً مخصصاً لأي قطاع..."):
-        st.session_state.gemini_logs.append({"role": "user", "content": prompt})
-        with st.chat_message("user"):
-            st.markdown(prompt)
-            
-        with st.spinner("🧠 الوكيل السيادي يكتب الصياغة الاحترافية بخط عريض..."):
-            execution_output = generate_sector_ad(prompt, custom_prompt=f"طلب خاص: {prompt}")
-        
-        st.session_state.gemini_logs.append({"role": "assistant", "content": execution_output})
-        with st.chat_message("assistant"):
-            st.markdown(execution_output)
-            st.download_button(
-                label="📥 تحميل مخرجات الإنتاج الذكي",
-                data=execution_output,
-                file_name=f"Agentic_Production_{datetime.now().strftime('%Y%m%d_%H%M%S')}.txt",
-                mime="text/plain"
-            )
 
 st.markdown("---")
 st.markdown("<p style='text-align: center; color: gray;'>© <strong>إنتاج عامر بوخدادة - كل الحقوق محفوظة</strong></p>", unsafe_allow_html=True)
