@@ -3,21 +3,27 @@ import os
 import pandas as pd
 from datetime import datetime
 import google.generativeai as genai
-from supabase import create_client, Client
 
-# --- إعدادات النظام السيادي الفائق v5.1 ---
-st.set_page_config(page_title="TASSAOUT OMEGA OS - Super Agentic AI v5.1", layout="wide")
-
-# تهيئة اتصال Supabase الدائم للأرشيف
-try:
-    supabase_client: Client = create_client(st.secrets["SUPABASE_URL"], st.secrets["SUPABASE_KEY"])
-except Exception as e:
-    st.sidebar.error("⚠️ خطأ في اتصال Supabase (تأكد من إعداد Secrets)")
+# --- إعدادات النظام السيادي الفائق v5.9 ---
+st.set_page_config(
+    page_title="TASSAOUT OMEGA OS - Full Sovereign Command Center v5.9", 
+    layout="wide",
+    initial_sidebar_state="expanded"
+)
 
 # تهيئة عقل Gemini الذكي
 try:
     genai.configure(api_key=st.secrets["GEMINI_API_KEY"])
     gemini_model = genai.GenerativeModel("gemini-1.5-flash")
+except:
+    st.sidebar.error("⚠️ خطأ في تهيئة عقل Gemini. تأكد من ضبط GEMINI_API_KEY في Secrets.")
+
+# تهيئة مرنة لـ Supabase
+supabase_client = None
+try:
+    from supabase import create_client
+    if "SUPABASE_URL" in st.secrets:
+        supabase_client = create_client(st.secrets["SUPABASE_URL"], st.secrets["SUPABASE_KEY"])
 except:
     pass
 
@@ -29,40 +35,55 @@ if "instant_ads" not in st.session_state:
 
 if "gemini_logs" not in st.session_state:
     st.session_state.gemini_logs = [
-        {"role": "assistant", "content": "👑 أهلاً بك سيدي الرئيس AMEUR. أنا نظامك الذكي الخارق v5.1 (Super Multi-Domaine Agentic AI). العقل المدبر والأرشيف الدائم مفعلان بالكامل."}
+        {"role": "assistant", "content": "👑 أهلاً بك سيدي الرئيس AMEUR. أنا نظامك الذكي الخارق v5.9. وحدات أسفار الحج والعمرة والهندسة والقطاعات الشاملة مفعلة بالكامل."}
     ]
 
 # --- الشريط الجانبي السيادي ---
-st.sidebar.title("👑 قيادة Super Agentic v5.1")
+st.sidebar.title("👑 قيادة Super Agentic v5.9")
+st.sidebar.markdown("---")
 page = st.sidebar.radio("الوحدات السيادية:", [
-    "لوحة النشر الفوري والرفع الدائم",
-    "واجهة العميل والمعرض المباشر",
-    "الواجهة السحابية الشاملة (Cloud Vault)",
-    "واجهة خرائط Google (Maps Integration)",
-    "محرك الوكيل الخارق (Super Agentic Core)"
+    "⚡ لوحة النشر الفوري والرفع",
+    "🌐 واجهة العميل والمعرض المباشر",
+    "☁️ الواجهة السحابية الشاملة (Cloud Vault)",
+    "🗺️ واجهة خرائط Google الاستراتيجية",
+    "🧠 محرك الوكيل الخارق (Super Agentic Core)"
 ])
 
-# --- 1. وحدة النشر الفوري مع الرفع الدائم Supabase ---
-if page == "لوحة النشر الفوري والرفع الدائم":
-    st.title("⚡ لوحة الإنتاج والنشر الفوري (تخزين دائم)")
-    st.markdown("ارفع الأصول (صور وفيديوهات mp4)، يتم حفظها في Supabase للأبد مع النشر اللحظي.")
-    
+# --- دالة توليد الإعلانات الذكية حسب القطاعات (مع الحج والعمرة) ---
+def generate_sector_ad(sector_name, custom_prompt=""):
+    try:
+        system_instructions = """أنت الوكيل السيادي الرقمي لشركة Ameur Boukhaddada. 
+        تعمل في قطاعات متعددة وتشمل: أسفار الحج والعمرة، الهندسة الرقمية والديكور والنمذجة ثلاثية الأبعاد (Modélisation 3D)، الصناعة (STE RITA FER)، التجارة، الخدمات، الأعمال، النقل واللوجستيك، الشراكات الاستثمارية، العقار (تجزئة الهدى بقلعة السراغنة ومراكش)، والمتفرقات.
+        مهمتك: صياغة إعلانات تسويقية واحترافية للغاية باللغة العربية الفصحى مع لمسة تجارية ودولية جذابة للجمهور.
+        تعليمات صارمة للتنسيق: يجب أن يكون عنوان الإعلان وكل النقاط الأساسية مكتوبة **بخط عريض (Bold)** لجذب انتباه العملاء فوراً.
+        يجب أن ينتهي كل إعلان بعبارة واضحة للتواصل مع رقم الواتساب المعتمد: https://wa.me/212691897126"""
+        
+        target = custom_prompt if custom_prompt else f"قطاع أو خدمة: {sector_name}"
+        full_prompt = f"{system_instructions}\n\nالطلب المطلوب تنفيذه: {target}"
+        response = gemini_model.generate_content(full_prompt)
+        return response.text
+    except Exception as e:
+        return f"⚠️ تعذر توليد الإعلان عبر عقل Gemini حالياً: {e}"
+
+# ==========================================
+# 1. لوحة النشر الفوري والرفع
+# ==========================================
+if page == "⚡ لوحة النشر الفوري والرفع":
+    st.title("⚡ لوحة الإنتاج والنشر الفوري")
     with st.form("form_instant_execution", clear_on_submit=True):
-        ad_title = st.text_input("عنوان الإعلان أو العرض:")
+        ad_title = st.text_input("عنوان الإعلان أو العرض الاستثماري:")
         ad_sector = st.selectbox("القطاع السيادي:", [
-            "القطاع الفلاحي والآليات الثقيلة", 
-            "القطاع الصناعي (STE RITA FER)", 
-            "القطاع العقاري والاستثماري (تجزئة الهدى)"
+            "أسفار حج وعمرة", "هندسة رقمية وديكور 3D", "صناعة", "تجارة", "خدمات", "أعمال", "نقل ولوجستيك", "شراكة", "عقار", "متفرقات"
         ])
         ad_details = st.text_area("تفاصيل العرض النصية:")
         
         uploaded_files = st.file_uploader(
-            "📸 رفع الأصول (صور / فيديو mp4):", 
+            "📸 رفع الأصول (صور أو فيديوهات mp4):", 
             type=["jpg", "png", "jpeg", "webp", "mp4"], 
             accept_multiple_files=True
         )
         
-        submit_button = st.form_submit_button("🚀 تنفيذ الإنتاج والنشر الدائم")
+        submit_button = st.form_submit_button("🚀 تنفيذ الإنتاج والنشر الفوري")
         
         if submit_button:
             if ad_title:
@@ -71,9 +92,10 @@ if page == "لوحة النشر الفوري والرفع الدائم":
                     for file in uploaded_files:
                         try:
                             file_path = f"{datetime.now().strftime('%Y%m%d_%H%M%S')}_{file.name}"
-                            supabase_client.storage.from_("assets").upload(file_path, file.getbuffer())
+                            if supabase_client:
+                                supabase_client.storage.from_("assets").upload(file_path, file.getbuffer())
                             saved_filenames.append(file_path)
-                        except Exception as ex:
+                        except:
                             local_path = os.path.join(UPLOADS_FOLDER, file.name)
                             with open(local_path, "wb") as f:
                                 f.write(file.getbuffer())
@@ -87,132 +109,143 @@ if page == "لوحة النشر الفوري والرفع الدائم":
                     "time": datetime.now().strftime("%Y-%m-%d %H:%M")
                 }
                 st.session_state.instant_ads.insert(0, new_entry)
-                st.success(f"✅ تم الإنتاج والنشر بنجاح للإعلان: '{ad_title}' مع تأمين الأصول للأبد.")
+                st.success(f"✅ تم الإنتاج والنشر بنجاح للإعلان: '{ad_title}'!")
             else:
-                st.warning("⚠️ يجب إدخال عنوان الإعلان لتنفيذ العملية.")
+                st.warning("⚠️ يجب إدخال عنوان الإعلان على الأقل.")
 
     st.markdown("---")
-    st.subheader("📢 الإدارة والتحكم في المنشورات:")
     if st.session_state.instant_ads:
         for idx, ad in enumerate(st.session_state.instant_ads):
-            st.info(f"### 🏷️ {ad['title']}\n* **القطاع:** {ad['sector']} | 🕒 {ad['time']}\n\n{ad['details']}")
-            if ad["images"]:
-                cols = st.columns(min(len(ad["images"]), 3))
-                for i, img_name in enumerate(ad["images"]):
-                    try:
-                        public_url = supabase_client.storage.from_("assets").get_public_url(img_name)
-                        if img_name.lower().endswith('.mp4'):
-                            cols[i % 3].video(public_url)
-                        else:
-                            cols[i % 3].image(public_url, caption=img_name, use_container_width=True)
-                    except:
-                        local_p = os.path.join(UPLOADS_FOLDER, img_name)
-                        if os.path.exists(local_p):
-                            if img_name.lower().endswith('.mp4'):
-                                cols[i % 3].video(local_p)
-                            else:
-                                cols[i % 3].image(local_p, caption=img_name, use_container_width=True)
+            st.info(f"### 🏷️ **{ad['title']}**\n* **القطاع:** {ad['sector']} | 🕒 {ad['time']}\n\n{ad['details']}")
             if st.button(f"🗑️ حذف الإعلان #{idx+1}", key=f"del_ad_{idx}"):
                 st.session_state.instant_ads.pop(idx)
                 st.rerun()
-            st.markdown("---")
-    else:
-        st.info("لا توجد إعلانات منشورة حالياً.")
 
-# --- 2. واجهة العميل والمعرض المباشر ---
-elif page == "واجهة العميل والمعرض المباشر":
+# ==========================================
+# 2. واجهة العميل والمعرض المباشر
+# ==========================================
+elif page == "🌐 واجهة العميل والمعرض المباشر":
     st.title("🌐 واجهة العميل - العروض الحية والصفقات")
-    st.markdown("استعراض كافة العروض والمنتجات المنشورة لحظياً:")
-    
     if st.session_state.instant_ads:
-        for idx_ad, ad in enumerate(st.session_state.instant_ads):
-            st.markdown(f"### 🌟 {ad['title']}")
+        for ad in st.session_state.instant_ads:
+            st.markdown(f"### 🌟 **{ad['title']}**")
             st.caption(f"القطاع: {ad['sector']} | تاريخ النشر: {ad['time']}")
             st.write(ad['details'])
-            
-            if ad["images"]:
-                cols = st.columns(min(len(ad["images"]), 3))
-                for i, img_name in enumerate(ad["images"]):
-                    try:
-                        public_url = supabase_client.storage.from_("assets").get_public_url(img_name)
-                        if img_name.lower().endswith('.mp4'):
-                            cols[i % 3].video(public_url)
-                        else:
-                            cols[i % 3].image(public_url, caption=img_name, use_container_width=True)
-                    except:
-                        local_p = os.path.join(UPLOADS_FOLDER, img_name)
-                        if os.path.exists(local_p):
-                            if img_name.lower().endswith('.mp4'):
-                                cols[i % 3].video(local_p)
-                            else:
-                                cols[i % 3].image(local_p, caption=img_name, use_container_width=True)
-            
-            st.markdown(f"[💬 اطلب هذا العرض عبر واتساب](https://wa.me/212691897126?text=مرحباً، أهتم بعرض: {ad['title']})")
+            st.markdown(f"[💬 اطلب هذا العرض فوراً عبر واتساب](https://wa.me/212691897126?text=مرحباً، أهتم بعرض: {ad['title']})")
             st.markdown("---")
     else:
-        st.info("🌐 لا توجد عروض منشورة في واجهة العميل حالياً.")
+        st.info("🌐 واجهة العميل فارغة حالياً.")
 
-# --- 3. الواجهة السحابية الشاملة (Cloud Vault) ---
-elif page == "الواجهة السحابية الشاملة (Cloud Vault)":
-    st.title("☁️ الواجهة السحابية الشاملة (Supabase Storage Vault)")
-    st.markdown("إدارة الأرشيف الدائم في السحابة:")
-    
-    try:
-        files_list = supabase_client.storage.from_("assets").list()
-        if files_list:
-            st.success(f"إجمالي الأصول المؤمنة للأبد في سحابة Supabase: {len(files_list)} ملف.")
-            cols_cloud = st.columns(4)
-            for i, file_obj in enumerate(files_list):
-                f_name = file_obj['name']
-                if f_name != ".emptyFolderPlaceholder":
-                    public_url = supabase_client.storage.from_("assets").get_public_url(f_name)
-                    if f_name.lower().endswith('.mp4'):
-                        cols_cloud[i % 4].video(public_url)
-                    else:
-                        cols_cloud[i % 4].image(public_url, caption=f_name, use_container_width=True)
-                    cols_cloud[i % 4].markdown(f"[📥 تحميل دائم]({public_url})")
-        else:
-            st.info("السحابة فارغة حالياً.")
-    except Exception as ex:
-        st.error(f"تعذر جلب قائمة الملفات من Supabase: {ex}")
+# ==========================================
+# 3. الواجهة السحابية الشاملة (Cloud Vault)
+# ==========================================
+elif page == "☁️ الواجهة السحابية الشاملة (Cloud Vault)":
+    st.title("☁️ الواجهة السحابية الشاملة (Cloud Storage Vault)")
+    if supabase_client:
+        try:
+            files_list = supabase_client.storage.from_("assets").list()
+            if files_list:
+                st.success(f"إجمالي الملفات في سحابة Supabase: {len(files_list)}")
+            else:
+                st.info("سحابة Supabase فارغة.")
+        except Exception as ex:
+            st.error(f"خطأ في الاتصال: {ex}")
+    else:
+        st.warning("⚠️ التخزين السحابي غير مفعل، يتم استخدام التخزين المحلي.")
 
-# --- 4. واجهة خرائط Google (Maps Integration) ---
-elif page == "واجهة خرائط Google (Maps Integration)":
+# ==========================================
+# 4. واجهة خرائط Google الاستراتيجية
+# ==========================================
+elif page == "🗺️ واجهة خرائط Google الاستراتيجية":
     st.title("🗺️ واجهة خرائط النطاق الجغرافي (قلعة السراغنة ومراكش)")
-    st.markdown("النطاق الاستراتيجي لعمليات الاستثمار العقاري والفلاحي:")
-    
     map_data = pd.DataFrame({
         'latitude': [32.0494, 31.6295],
         'longitude': [-7.4083, -7.9811],
         'location': ['قلعة السراغنة (المركز الرئيسي)', 'مراكش (محور الاستثمار)']
     })
     st.map(map_data, zoom=8)
-    st.success("📍 الخريطة مفعلة ضمن النطاق الجغرافي المعتمد.")
 
-# --- 5. محرك الوكيل الخارق (Super Agentic Core مع Gemini API) ---
-elif page == "محرك الوكيل الخارق (Super Agentic Core)":
+# ==========================================
+# 5. محرك الوكيل الخارق (Super Agentic Core)
+# ==========================================
+elif page == "🧠 محرك الوكيل الخارق (Super Agentic Core)":
     st.title("🧠 محرك الوكيل الخارق (Gemini 1.5 Flash Enabled)")
-    st.markdown("الوكيل يفكر، يولد، ويكتب الإعلانات والتقارير تلقائياً بناءً على أوامرك.")
+    st.markdown("اختر قطاع العمل أو أسفار الحج والعمرة لتوليد إعلان فوري بصياغة بارزة **بخط عريض (Bold)**، أو اكتب أمرك المفتوح:")
     
+    # شبكة أزرار القطاعات الشاملة مع إضافة الحج والعمرة
+    st.markdown("### ⚡ أزرار القطاعات الاستراتيجية:")
+    
+    col_c1, col_c2, col_c3 = st.columns(3)
+    with col_c1:
+        if st.button("🕋 أسفار حج وعمرة"):
+            res = generate_sector_ad("رحلات أسفار الحج والعمرة المتميزة، تنظيم الحملات، الخدمات المتكاملة والإقامة الفاخرة لضيوف الرحمن")
+            st.session_state.gemini_logs.insert(1, {"role": "assistant", "content": f"**[قطاع: أسفار حج وعمرة]**\n\n{res}"})
+            st.rerun()
+    with col_c2:
+        if st.button("🏛️ هندسة وديكور 3D"):
+            res = generate_sector_ad("هندسة رقمية وديكور وتصميم داخلي وخارجي ونمذجة ثلاثية الأبعاد Modélisation 3D")
+            st.session_state.gemini_logs.insert(1, {"role": "assistant", "content": f"**[قطاع: هندسة وديكور 3D]**\n\n{res}"})
+            st.rerun()
+    with col_c3:
+        if st.button("🏠 عقار"):
+            res = generate_sector_ad("العقار والبقع الأرضية (تجزئة الهدى بقلعة السراغنة ومراكش)")
+            st.session_state.gemini_logs.insert(1, {"role": "assistant", "content": f"**[قطاع: عقار]**\n\n{res}"})
+            st.rerun()
+
+    col1, col2, col3, col4 = st.columns(4)
+    with col1:
+        if st.button("🏭 صناعة"):
+            res = generate_sector_ad("الصناعة (مثل مواد البناء والحديد STE RITA FER)")
+            st.session_state.gemini_logs.insert(1, {"role": "assistant", "content": f"**[قطاع: صناعة]**\n\n{res}"})
+            st.rerun()
+    with col2:
+        if st.button("🛒 تجارة"):
+            res = generate_sector_ad("التجارة والبيع بالجملة والتجزئة")
+            st.session_state.gemini_logs.insert(1, {"role": "assistant", "content": f"**[قطاع: تجارة]**\n\n{res}"})
+            st.rerun()
+    with col3:
+        if st.button("🛠️ خدمات"):
+            res = generate_sector_ad("الخدمات المهنية والرقمية والاستشارية")
+            st.session_state.gemini_logs.insert(1, {"role": "assistant", "content": f"**[قطاع: خدمات]**\n\n{res}"})
+            st.rerun()
+    with col4:
+        if st.button("💼 أعمال"):
+            res = generate_sector_ad("الأعمال والمشاريع الاستثمارية الكبرى")
+            st.session_state.gemini_logs.insert(1, {"role": "assistant", "content": f"**[قطاع: أعمال]**\n\n{res}"})
+            st.rerun()
+
+    col5, col6, col7 = st.columns(3)
+    with col5:
+        if st.button("🚚 نقل ولوجستيك"):
+            res = generate_sector_ad("النقل ولوجستيك ونقل البضائع والآليات")
+            st.session_state.gemini_logs.insert(1, {"role": "assistant", "content": f"**[قطاع: نقل ولوجستيك]**\n\n{res}"})
+            st.rerun()
+    with col6:
+        if st.button("🤝 شراكة"):
+            res = generate_sector_ad("الشراكة الاستثمارية وتوسيع الأنشطة التجارية والعقارية")
+            st.session_state.gemini_logs.insert(1, {"role": "assistant", "content": f"**[قطاع: شراكة]**\n\n{res}"})
+            st.rerun()
+    with col7:
+        if st.button("📌 متفرقات"):
+            res = generate_sector_ad("متفرقات وعروض متنوعة")
+            st.session_state.gemini_logs.insert(1, {"role": "assistant", "content": f"**[قطاع: متفرقات]**\n\n{res}"})
+            st.rerun()
+
+    st.markdown("---")
+    
+    # سجل الأوامر
     for msg in st.session_state.gemini_logs:
         with st.chat_message(msg["role"]):
             st.markdown(msg["content"])
             
-    if prompt := st.chat_input("اكتب الأمر السيادي: 'ولد إعلان فلاحي لجرارات Massey Ferguson'"):
+    # صندوق الإدخال المفتوح
+    if prompt := st.chat_input("اكتب تفاصيل إضافية أو طلباً مخصصاً لأي قطاع أو رحلات حج وعمرة..."):
         st.session_state.gemini_logs.append({"role": "user", "content": prompt})
         with st.chat_message("user"):
             st.markdown(prompt)
             
-        with st.spinner("🧠 الوكيل السيادي يحلل ويكتب الآن..."):
-            try:
-                system_prompt = f"""أنت الوكيل السيادي TASSAOUT OMEGA OS v5.1 لشركة Ameur Boukhaddada. 
-                القطاعات: فلاحي، صناعي STE RITA FER، عقاري تجزئة الهدى بقلعة السراغنة ومراكش.
-                مهمتك: توليد إعلان احترافي جاهز للواتساب بالعربية الفصحى مع تضمين رابط التواصل: https://wa.me/212691897126"""
-                
-                response = gemini_model.generate_content(system_prompt + "\n\nالأمر: " + prompt)
-                execution_output = response.text
-            except Exception as e:
-                execution_output = f"⚠️ حدث خطأ في اتصال Gemini API (تأكد من إدخال المفتاح الصحيح في Secrets): {e}"
+        with st.spinner("🧠 الوكيل السيادي يكتب الصياغة الاحترافية بخط عريض..."):
+            execution_output = generate_sector_ad(prompt, custom_prompt=f"طلب خاص: {prompt}")
         
         st.session_state.gemini_logs.append({"role": "assistant", "content": execution_output})
         with st.chat_message("assistant"):
@@ -225,4 +258,4 @@ elif page == "محرك الوكيل الخارق (Super Agentic Core)":
             )
 
 st.sidebar.markdown("---")
-st.sidebar.caption("TASSAOUT OMEGA OS - Super Agentic AI v5.1 Active ⚡")
+st.sidebar.caption("TASSAOUT OMEGA OS v5.9 Active ⚡")
