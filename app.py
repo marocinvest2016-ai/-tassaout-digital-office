@@ -4,9 +4,9 @@ import pandas as pd
 from datetime import datetime
 import google.generativeai as genai
 
-# --- إعدادات النظام السيادي الفائق v6.0 (مُحسّن للهواتف والشاشات) ---
+# --- إعدادات النظام السيادي الفائق v6.1 ---
 st.set_page_config(
-    page_title="TASSAOUT OMEGA OS - Sovereign Command Center v6.0", 
+    page_title="TASSAOUT OMEGA OS - Sovereign Command Center v6.1", 
     layout="wide",
     initial_sidebar_state="expanded"
 )
@@ -35,11 +35,11 @@ if "instant_ads" not in st.session_state:
 
 if "gemini_logs" not in st.session_state:
     st.session_state.gemini_logs = [
-        {"role": "assistant", "content": "👑 أهلاً بك سيدي الرئيس AMEUR. أنا نظامك الذكي الخارق v6.0. تم تحسين العرض والشاشات المحمولة بالكامل."}
+        {"role": "assistant", "content": "👑 أهلاً بك سيدي الرئيس AMEUR. أنا نظامك الذكي الخارق v6.1. حقوق الإنتاج (إنتاج عامر بوخدادة - كل الحقوق محفوظة) موثقة ومعتمدة بالكامل."}
     ]
 
-# --- الشريط الجانبي السيادي (أسماء مختصرة وواضحة للهواتف) ---
-st.sidebar.title("👑 قيادة Super Agent v6.0")
+# --- الشريط الجانبي السيادي ---
+st.sidebar.title("👑 قيادة Super Agent v6.1")
 st.sidebar.markdown("---")
 page = st.sidebar.radio("الوحدات السيادية:", [
     "⚡ النشر الفوري",
@@ -49,6 +49,9 @@ page = st.sidebar.radio("الوحدات السيادية:", [
     "🧠 عقل الوكيل الخارق"
 ])
 
+st.sidebar.markdown("---")
+st.sidebar.markdown("© **إنتاج عامر بوخدادة - كل الحقوق محفوظة**")
+
 # --- دالة توليد الإعلانات الذكية حسب القطاعات ---
 def generate_sector_ad(sector_name, custom_prompt=""):
     try:
@@ -56,7 +59,8 @@ def generate_sector_ad(sector_name, custom_prompt=""):
         تعمل في قطاعات متعددة وتشمل: أسفار الحج والعمرة، الهندسة الرقمية والديكور والنمذجة ثلاثية الأبعاد (Modélisation 3D)، الصناعة (STE RITA FER)، التجارة، الخدمات، الأعمال، النقل واللوجستيك، الشراكات الاستثمارية، العقار (تجزئة الهدى بقلعة السراغنة ومراكش)، والمتفرقات.
         مهمتك: صياغة إعلانات تسويقية واحترافية للغاية باللغة العربية الفصحى مع لمسة تجارية ودولية جذابة للجمهور.
         تعليمات صارمة للتنسيق: يجب أن يكون عنوان الإعلان وكل النقاط الأساسية مكتوبة **بخط عريض (Bold)** لجذب انتباه العملاء فوراً.
-        يجب أن ينتهي كل إعلان بعبارة واضحة للتواصل مع رقم الواتساب المعتمد: https://wa.me/212691897126"""
+        يجب أن ينتهي كل إعلان بعبارة واضحة للتواصل مع رقم الواتساب المعتمد: https://wa.me/212691897126
+        ويجب أن يُختتم الإعلان بعبارة رسمية: © إنتاج عامر بوخدادة - كل الحقوق محفوظة."""
         
         target = custom_prompt if custom_prompt else f"قطاع أو خدمة: {sector_name}"
         full_prompt = f"{system_instructions}\n\nالطلب المطلوب تنفيذه: {target}"
@@ -104,7 +108,7 @@ if page == "⚡ النشر الفوري":
                 new_entry = {
                     "title": ad_title,
                     "sector": ad_sector,
-                    "details": ad_details,
+                    "details": ad_details + "\n\n© **إنتاج عامر بوخدادة - كل الحقوق محفوظة**",
                     "images": saved_filenames,
                     "time": datetime.now().strftime("%Y-%m-%d %H:%M")
                 }
@@ -257,5 +261,5 @@ elif page == "🧠 عقل الوكيل الخارق":
                 mime="text/plain"
             )
 
-st.sidebar.markdown("---")
-st.sidebar.caption("TASSAOUT OMEGA OS v6.0 Active ⚡")
+st.markdown("---")
+st.markdown("<p style='text-align: center; color: gray;'>© <strong>إنتاج عامر بوخدادة - كل الحقوق محفوظة</strong></p>", unsafe_allow_html=True)
