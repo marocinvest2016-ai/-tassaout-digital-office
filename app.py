@@ -2,27 +2,34 @@ import streamlit as st
 import os
 import pandas as pd
 from datetime import datetime
-import google.generativeai as genai
 from PIL import Image
 
-# --- إعدادات النظام السيادي الفارق v6.8 (Twin Intelligence & Vision Core) ---
+# محاولة استيراد مكتبة الذكاء الاصطناعي بأمان تام
+gemini_available = False
+try:
+    import google.generativeai as genai
+    gemini_available = True
+except ImportError:
+    pass
+
+# --- إعدادات النظام السيادي v6.10 (Multi-Image Vision Support) ---
 st.set_page_config(
-    page_title="TASSAOUT OMEGA OS - Twin Intelligence v6.8", 
+    page_title="TASSAOUT OMEGA OS - Sovereign Vision v6.10", 
     layout="wide",
     initial_sidebar_state="expanded"
 )
 
 # تهيئة عقل Gemini الذكي
 gemini_model = None
-try:
-    if "GEMINI_API_KEY" in st.secrets:
-        genai.configure(api_key=st.secrets["GEMINI_API_KEY"])
-        # استخدام نموذج يدعم النصوص والصور بدقة فائقة
-        gemini_model = genai.GenerativeModel("gemini-1.5-flash")
-except:
-    pass
+if gemini_available:
+    try:
+        if "GEMINI_API_KEY" in st.secrets:
+            genai.configure(api_key=st.secrets["GEMINI_API_KEY"])
+            gemini_model = genai.GenerativeModel("gemini-1.5-flash")
+    except Exception:
+        pass
 
-# تهيئة Google Drive / Sheets
+# تهيئة Google Drive / Sheets بأمان
 google_sheets_client = None
 drive_service = None
 try:
@@ -40,7 +47,7 @@ try:
         creds = Credentials.from_service_account_info(creds_dict, scopes=scope)
         google_sheets_client = gspread.authorize(creds)
         drive_service = build('drive', 'v3', credentials=creds)
-except:
+except Exception:
     pass
 
 UPLOADS_FOLDER = "uploaded_assets"
@@ -51,11 +58,11 @@ if "instant_ads" not in st.session_state:
 
 if "gemini_logs" not in st.session_state:
     st.session_state.gemini_logs = [
-        {"role": "assistant", "content": "👑 أهلاً بك سيدي الرئيس AMEUR. تم تفعيل التوأمة الذكية الكاملة والنظام بصيغته الخارقة v6.8. أنا جاهز لتنفيذ أي أمر أو تحليل أي صورة بدقة فائقة."}
+        {"role": "assistant", "content": "👑 أهلاً بك سيدي الرئيس AMEUR. تم تفعيل نظام رفع وتحليل الصور المتعددة دفعة واحدة في الإصدار v6.10."}
     ]
 
 # --- الشريط الجانبي السيادي ---
-st.sidebar.title("👑 قيادة Super Agent v6.8")
+st.sidebar.title("👑 قيادة Super Agent v6.10")
 st.sidebar.markdown("---")
 page = st.sidebar.radio("الوحدات السيادية:", [
     "🧠 محادثة التوأم الذكي (Gemini Core)",
@@ -70,42 +77,55 @@ st.sidebar.markdown("---")
 st.sidebar.markdown("© **إنتاج عامر بوخدادة - كل الحقوق محفوظة**")
 
 # ==========================================
-# 1. محادثة التوأم الذكي (الذكاء الحقيقي وتحليل الصور)
+# 1. محادثة التوأم الذكي (دعم صور متعددة)
 # ==========================================
 if page == "🧠 محادثة التوأم الذكي (Gemini Core)":
-    st.title("🧠 محادثة التوأم الذكي - ذكاء اصطناعي فائق ودقيق")
-    st.markdown("تحدث معي بحرية، اطلب أي صياغة تسويقية، أو ارفع صورة لتحليلها واستخراج البيانات منها تماماً مثل بيئتنا الحالية:")
+    st.title("🧠 محادثة التوأم الذكي - تحليل الصور المتعددة والذكاء الفائق")
+    st.markdown("تحدث معي بحرية، وارفع **عدة صور معاً** لتحليلها واستخراج البيانات منها دفعة واحدة:")
 
     # عرض سجل المحادثة
     for msg in st.session_state.gemini_logs:
         with st.chat_message(msg["role"]):
             st.markdown(msg["content"])
-            if "image_path" in msg and msg["image_path"] and os.path.exists(msg["image_path"]):
-                st.image(msg["image_path"], width=300)
+            if "image_paths" in msg and msg["image_paths"]:
+                cols = st.columns(len(msg["image_paths"]) if len(msg["image_paths"]) <= 3 else 3)
+                for i, img_path in enumerate(msg["image_paths"]):
+                    if os.path.exists(img_path):
+                        with cols[i % len(cols)]:
+                            st.image(img_path, width=200)
 
-    # صندوق الإدخال المفتوح مع خيار رفع الصور في الدردشة
     user_query = st.chat_input("اكتب أمرك أو استفسارك هنا...")
-    uploaded_chat_image = st.file_uploader("📸 ارفع صورة أو مستنداً لتحليله مع الرسالة (اختياري):", type=["jpg", "png", "jpeg", "webp"])
+    uploaded_chat_images = st.file_uploader(
+        "📸 ارفع صوراً متعددة لتحليلها مع الرسالة:", 
+        type=["jpg", "png", "jpeg", "webp"], 
+        accept_multiple_files=True
+    )
 
-    if user_query:
-        # تسجيل رسالة المستخدم
+    if user_query or uploaded_chat_images:
+        if not user_query:
+            user_query = "تحليل الصور المرفقة واستخراج كافة التفاصيل بدقة."
+            
         user_msg_dict = {"role": "user", "content": user_query}
-        saved_img_path = None
+        saved_img_paths = []
         
-        if uploaded_chat_image:
-            saved_img_path = os.path.join(UPLOADS_FOLDER, uploaded_chat_image.name)
-            with open(saved_img_path, "wb") as f:
-                f.write(uploaded_chat_image.getbuffer())
-            user_msg_dict["image_path"] = saved_img_path
+        if uploaded_chat_images:
+            for img_file in uploaded_chat_images:
+                saved_img_path = os.path.join(UPLOADS_FOLDER, img_file.name)
+                with open(saved_img_path, "wb") as f:
+                    f.write(img_file.getbuffer())
+                saved_img_paths.append(saved_img_path)
+            user_msg_dict["image_paths"] = saved_img_paths
 
         st.session_state.gemini_logs.append(user_msg_dict)
         with st.chat_message("user"):
             st.markdown(user_query)
-            if saved_img_path:
-                st.image(saved_img_path, width=300)
+            if saved_img_paths:
+                cols = st.columns(len(saved_img_paths) if len(saved_img_paths) <= 3 else 3)
+                for i, img_path in enumerate(saved_img_paths):
+                    with cols[i % len(cols)]:
+                        st.image(img_path, width=200)
 
-        # توليد الإجابة الذكية عبر Gemini الحقيقي
-        with st.spinner("🧠 جاري المعالجة وتحليل الطلب بدقة فائقة..."):
+        with st.spinner("🧠 جاري معالجة النص والصور المتعددة بدقة فائقة..."):
             ai_response_text = ""
             if gemini_model:
                 try:
@@ -116,19 +136,19 @@ if page == "🧠 محادثة التوأم الذكي (Gemini Core)":
                     اختم الإجابة دائماً برابط الواتساب: https://wa.me/212691897126
                     والعبارة الرسمية: © إنتاج عامر بوخدادة - كل الحقوق محفوظة."""
                     
-                    if saved_img_path:
-                        img_obj = Image.open(saved_img_path)
-                        response = gemini_model.generate_content([system_prompt, img_obj, user_query])
-                    else:
-                        response = gemini_model.generate_content(f"{system_prompt}\n\nالطلب: {user_query}")
+                    content_payload = [system_prompt]
+                    if saved_img_paths:
+                        for img_p in saved_img_paths:
+                            content_payload.append(Image.open(img_p))
+                    content_payload.append(user_query)
                     
+                    response = gemini_model.generate_content(content_payload)
                     ai_response_text = response.text
                 except Exception as e:
-                    ai_response_text = f"عذراً سيدي الرئيس، حدث خطأ في الاتصال بمحرك الذكاء: {e}"
+                    ai_response_text = f"عذراً سيدي الرئيس، حدث خطأ أثناء المعالجة الذكية: {e}"
             else:
-                ai_response_text = f"**رد النظام التلقائي:** تم استلام طلبك '{user_query}' بنجاح.\n\nللتواصل والاستفادة فوراً عبر الواتساب:\nhttps://wa.me/212691897126\n\n© **إنتاج عامر بوخدادة - كل الحقوق محفوظة**"
+                ai_response_text = f"**رد النظام:** تم استلام طلبك والصور بنجاح.\n\nللتواصل والاستفادة فوراً عبر الواتساب:\nhttps://wa.me/212691897126\n\n© **إنتاج عامر بوخدادة - كل الحقوق محفوظة**"
 
-        # تسجيل رد المساعد
         st.session_state.gemini_logs.append({"role": "assistant", "content": ai_response_text})
         with st.chat_message("assistant"):
             st.markdown(ai_response_text)
@@ -194,9 +214,11 @@ elif page == "⚡ النشر الفوري مع الصور":
         for idx, ad in enumerate(st.session_state.instant_ads):
             st.info(f"### 🏷️ **{ad['title']}**\n* **القطاع:** {ad['sector']} | 🕒 {ad['time']}\n\n{ad['details']}")
             if ad['images']:
-                for img_path in ad['images']:
+                cols = st.columns(len(ad['images']) if len(ad['images']) <= 3 else 3)
+                for i, img_path in enumerate(ad['images']):
                     if os.path.exists(img_path):
-                        st.image(img_path, width=300)
+                        with cols[i % len(cols)]:
+                            st.image(img_path, width=200)
             if st.button(f"🗑️ حذف الإعلان #{idx+1}", key=f"del_ad_{idx}"):
                 st.session_state.instant_ads.pop(idx)
                 st.rerun()
