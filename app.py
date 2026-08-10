@@ -1,104 +1,232 @@
-import textwrap
+تفضل الكود البرمجي التشغيلي والمحدث بالكامل لملف `app.py`، جاهز للنسخ واللصق المباشر في مشروعك:
+
+```python
 from datetime import datetime
+import io
+import os
 import urllib.parse
-from PIL import Image, ImageDraw
+import zipfile
+from PIL import Image, ImageEnhance
 import streamlit as st
 
-# ==========================================
-# 1. دالة توليد الإعلان التسويقي
-# ==========================================
-def generate_marketing_ad(image1_path, image2_path, sector, city):
-    """Génère un Collage 2160x1080 + Message WhatsApp en Français"""
-    try:
-        img1 = Image.open(image1_path).resize((1080, 1080)) # Bien Immobilier
-        img2 = Image.open(image2_path).resize((1080, 1080)) # Fleurs/Nature
-    except: return None, "Veuillez télécharger les 2 images d'abord"
+# 1. إعداد النظام السيادي بشاشة عريضة
+st.set_page_config(
+    page_title="TASSAOUT OMEGA OS", page_icon="👑", layout="wide"
+)
+GALLERY_FOLDER = "gallery"
+os.makedirs(GALLERY_FOLDER, exist_ok=True)
 
-    # Création du Collage "Contraste & Luxe"
-    collage = Image.new('RGB', (2160, 1080))
-    collage.paste(img1, (0, 0))
-    collage.paste(img2, (1080, 0))
-    
-    draw = ImageDraw.Draw(collage)
-    
-    # Texte sur l'image
-    ad_text_on_image = textwrap.fill(
-        f"Au cœur de {city}, nous allions la beauté de la nature à "
-        f"l'élégance du design moderne. Le Bureau Tassaout Digital vous propose "
-        f"des opportunités d'investissement en {sector} alliant luxe et authenticité.", width=45
-    )
-    
-    draw.rectangle([(50, 750), (2110, 1030)], fill=(0,0,0,180)) # Fond transparent
-    draw.text((100, 780), ad_text_on_image, fill="white") 
-    draw.text((100, 980), "📱 Contact: +212 691 897 126", fill="#FFD700") # Or
-    draw.text((100, 700), "👑 BUREAU TASSAOUT DIGITAL | IMMOBILIER & AFFAIRES", fill="#FFD700")
+# 2. قاعدة المعرفة والعروض المتاحة
+CORE_DB = {
+    "sectors": [
+        "عقار",
+        "سيارات",
+        "خدمات",
+        "تسويق",
+        "فلاحة",
+        "لوجستيك",
+        "تعاونيات",
+        "قطع غيار",
+        "مواد إنشائية",
+    ],
+    "cities": ["مراكش", "قلعة السراغنة", "الدار البيضاء", "أكادير", "طنجة"],
+    "tech": {
+        "عقار": "Hasselblad X2D",
+        "سيارات": "Sony A1",
+        "فلاحة": "Phase One IQ4",
+        "قطع غيار": "Canon R5",
+        "مواد إنشائية": "DJI Drone + Sony A1",
+        "عام": "Universal Sensor",
+    },
+    "listings": {
+        "عقار": [
+            "أرض فلاحية 5 هكتارات بقلعة السراغنة - محفيقة ومجهزة",
+            "بقعة تجارية وسط مراكش - واجهة رئيسية",
+        ],
+        "سيارات": [
+            "شاحنة نقل بضائع دولية - حالة ممتازة موديل حديث",
+            "سيارة نفعية رباعية الدفع - صيانة دورية متميزة",
+        ],
+        "مواد إنشائية": [
+            "مواد بناء وأسمنت وحديد تسليح - توريد مباشر بقلعة السراغنة",
+            "معدات وتجهيزات الورش الكبرى",
+        ],
+        "فلاحة": [
+            "تجهيز سقي بقطرة الماء لأنظمة الأراضي الكبرى",
+            "معدات حراثة وتسميد رقمية متطورة",
+        ],
+    },
+}
 
-    # Sauvegarde
-    ad_path = f"AD_{datetime.now().strftime('%Y%m%d_%H%M%S')}.jpg"
-    collage.save(ad_path, quality=95)
-    
-    # Message WhatsApp Officiel en Français
-    whatsapp_msg = f"""--- 👑 BUREAU TASSAOUT DIGITAL | IMMOBILIER & AFFAIRES À EL KELAA DES SRAGHNA 👑 ---
-[ TASSAOUT OMEGA PREMIUM - 100MP PRO-GRADE ]
+# 3. إعدادات الكاميرا والتوثيق البصري الفائق
+ENVIRONMENT_PRESETS = {
+    "عقار فخم": {
+        "camera": "Hasselblad X2D",
+        "sharpness": 2.2,
+        "contrast": 1.6,
+        "color": 1.3,
+    },
+    "قطع غيار/سيارات": {
+        "camera": "Sony A1",
+        "sharpness": 1.9,
+        "contrast": 1.8,
+        "color": 1.2,
+    },
+    "مواد إنشائية/ميدان": {
+        "camera": "DJI Drone + Sony A1",
+        "sharpness": 1.5,
+        "contrast": 1.8,
+        "color": 1.2,
+    },
+}
 
-Secteur: {sector} | Ville: {city}
-Style Visuel: Mode Bright
-    
-📢 ANNONCE PROMOTIONNELLE:
-Ces deux images peuvent être utilisées de manière créative pour créer du matériel marketing unique pour le bureau "Tassaout Digital" à {city}. L'idée est de combiner la modernité du {sector} et l'élégance intemporelle pour positionner le bureau comme une destination offrant le meilleur des deux mondes.
+def apply_agentic_vision(image, preset):
+    enhancer = ImageEnhance.Sharpness(image)
+    image = enhancer.enhance(preset["sharpness"])
+    enhancer = ImageEnhance.Contrast(image)
+    image = enhancer.enhance(preset["contrast"])
+    enhancer = ImageEnhance.Color(image)
+    image = enhancer.enhance(preset["color"])
+    return image
 
-Caméra tassaout omega go
-    
-📸 DOCUMENTATION VISUELLE:
-- Traitement: 100MP Super-Résolution
-- Équilibre Visuel: Mode Bright Optimisé
+def save_to_gallery(image, env_name):
+    timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
+    filename = f"{GALLERY_FOLDER}/MEGA_{timestamp}_{env_name.replace(' ', '_')}.jpg"
+    image.save(filename, quality=95)
+    return filename
 
-✒️ Signature Officielle: Ameur signature
-⚡ Système TASSAOUT OMEGA OS"""
+# 4. قوالب التقارير الاحترافية والمؤسساتية
+xl_templates = {
+    "عقار": lambda city, gear, details: (
+        f"--- 👑 مكتب تساوت الرقمي العقار والأعمال بقلعة السراغنة 👑 ---\n"
+        f"[ TASSAOUT OMEGA PREMIUM - 100MP PRO-GRADE ]\n\n"
+        f"القطاع: عقار | المدينة: {city}\n"
+        f"النمط البصري: Dark/Cinematic\n\n"
+        f"📢 الإعلان الترويجي:\n"
+        f"العرض المعني: {details}\n"
+        f"caméra tassaout méga go\n\n"
+        f"📸 التوثيق البصري:\n"
+        f"- تقنية التوثيق: {gear}\n"
+        f"- المعالجة: 100MP Super-Resolution\n"
+        f"- التوازن البصري: Dark/Cinematic Mode Optimized\n"
+        f"--------------------------------------------------\n"
+        f"✒️ التوقيع الرسمي: Ameur signature\n"
+        f"⚡ نظام TASSAOUT OMEGA OS"
+    ),
+    "مواد إنشائية": lambda city, gear, details: (
+        f"--- 👑 مكتب تساوت الرقمي العقار والأعمال بقلعة السراغنة 👑 ---\n"
+        f"[ TASSAOUT OMEGA PREMIUM - 100MP PRO-GRADE ]\n\n"
+        f"القطاع: مواد إنشائية | المدينة: {city}\n"
+        f"النمط البصري: Dark/Cinematic\n\n"
+        f"📢 الإعلان الترويجي:\n"
+        f"العرض المعني: {details}\n"
+        f"caméra tassaout méga go\n\n"
+        f"📸 التوثيق البصري:\n"
+        f"- تقنية التوثيق: {gear}\n"
+        f"- المعالجة: 100MP Super-Resolution\n"
+        f"- التوازن البصري: Dark/Cinematic Mode Optimized\n"
+        f"--------------------------------------------------\n"
+        f"✒️ التوقيع الرسمي: Ameur signature\n"
+        f"⚡ نظام TASSAOUT OMEGA OS"
+    ),
+}
 
-    return ad_path, whatsapp_msg
+# 5. حالة النظام
+if "last_action" not in st.session_state:
+    st.session_state["last_action"] = "System Idle - Monitoring All Sectors..."
 
-# ==========================================
-# 2. تعريف الألسنة (Tabs) والواجهة
-# ==========================================
-# تأكد من دمج هذه الألسنة مع الألسنة الموجودة لديك في المشروع
-tab1, tab2, tab3, tab4 = st.tabs([
-    "📸 التصوير أو تحميل الصور", 
-    "🧠 عروض الوكيل والتفاعل", 
-    "📦 الأرشيف",
-    "🎨 Centre de Création Publicitaire"
+# 6. واجهة المستخدم المركزية
+st.title("👑 TASSAOUT OMEGA OS | Field Agent v3.0")
+st.sidebar.success("System Status: Online & Secured ✅")
+st.sidebar.metric("الصور المؤرشفة ميدانياً", len(os.listdir(GALLERY_FOLDER)))
+
+tab1, tab2, tab3 = st.tabs([
+    "📸 الكاميرا والتوثيق الشامل", 
+    "🧠 شاشة تفاعل الوكيل وإرسال التقارير", 
+    "📦 الأرشيف والتحميل"
 ])
 
-with tab4:
-    st.subheader("🎨 Centre de Création Publicitaire - Contraste & Luxe")
-    st.write("Téléchargez deux images : Propriété immobilière + Nature/Fleurs")
-
+with tab1:
+    st.subheader("📷 مركز التصوير والتوثيق الميداني العالي")
     col1, col2 = st.columns(2)
-    with col1: 
-        ad_img1 = st.file_uploader("📷 1. Propriété / Immeuble", type=["jpg", "png"], key="ad1")
-    with col2: 
-        ad_img2 = st.file_uploader("🌹 2. Fleurs / Nature", type=["jpg", "png"], key="ad2")
+    with col1:
+        selected_env = st.selectbox("اختر بيئة التصوير:", list(ENVIRONMENT_PRESETS.keys()))
+    with col2:
+        selected_sector = st.selectbox("اختر القطاع:", CORE_DB["sectors"])
 
-    # تحديد القوائم الافتراضية للقطاعات والمدن (تأكد من توافقها مع ملفك)
-    sectors_list = ["عقار سكني وتجاري", "أراضي فلاحية", "شقق للكراء"]
-    cities_list = ["قلعة السراغنة", "مراكش"]
+    current_preset = ENVIRONMENT_PRESETS.get(selected_env, list(ENVIRONMENT_PRESETS.values())[0])
 
-    ad_sector = st.selectbox("Secteur de l'annonce:", sectors_list, key="ad_sec")
-    ad_city = st.selectbox("Ville:", cities_list, key="ad_city")
+    photo = st.camera_input("التقط المشهد بوضوح تام (الكاميرا مفعلة)", key="mega_cam_screen")
 
-    if st.button("🚀 Générer l'Annonce Professionnelle", type="primary"):
-        if ad_img1 and ad_img2:
-            ad_path, ad_message = generate_marketing_ad(ad_img1, ad_img2, ad_sector, ad_city)
-            
-            if ad_path:
-                st.image(ad_path, caption="Annonce prête à être publiée", use_container_width=True)
-                st.success("✅ Annonce générée avec succès via TASSAOUT OMEGA OS !")
-                
-                st.code(ad_message, language="markdown")
-                
-                whatsapp_url = f"https://wa.me/212691897126?text={urllib.parse.quote(ad_message)}"
-                st.link_button("📱 Partager l'annonce sur WhatsApp", whatsapp_url)
-            else:
-                st.error(ad_message)
-        else:
-            st.error("Veuillez télécharger les deux images.")
+    if photo:
+        raw_image = Image.open(photo)
+        processed_image = apply_agentic_vision(raw_image, current_preset)
+        image_path = save_to_gallery(processed_image, selected_env)
+        st.image(
+            processed_image,
+            caption=f"✅ تم التوثيق بنجاح عبر عدسة {current_preset['camera']}",
+            use_container_width=True,
+        )
+        st.success("تم حفظ الصورة في الأرشيف الميداني تلقائياً.")
+
+with tab2:
+    st.subheader("🧠 شاشة التفاعل المباشر مع الوكيل (TASSAOUT MEGA GO)")
+
+    active_sector = st.selectbox("استعراض العروض المسجلة في النظام:", CORE_DB["sectors"], key="sec_view")
+    available_items = CORE_DB["listings"].get(active_sector, ["عروض عامة متوفرة في النظام للتطوير والتسويق"])
+    selected_item = st.selectbox("اختر العنصر للعمل عليه:", available_items)
+
+    user_input = st.text_area(
+        "أدخل تعليماتك للوكيل (أو الكود السري):",
+        value=f"caméra tassaout méga go {active_sector} قلعة السراغنة - {selected_item}",
+        height=100,
+    )
+
+    if st.button("🚀 تنفيذ أمر الوكيل وتجهيز التقرير"):
+        city = next((c for c in CORE_DB["cities"] if c in user_input), "قلعة السراغنة")
+        gear = CORE_DB["tech"].get(active_sector, "Universal Sensor")
+
+        generator = xl_templates.get(
+            active_sector,
+            lambda c, g, d: (
+                f"--- 👑 مكتب تساوت الرقمي العقار والأعمال بقلعة السراغنة 👑 ---\n"
+                f"[ TASSAOUT OMEGA PREMIUM - 100MP PRO-GRADE ]\n\n"
+                f"القطاع: {active_sector} | المدينة: {c}\n"
+                f"النمط البصري: Dark/Cinematic\n\n"
+                f"📢 الإعلان الترويجي:\n"
+                f"العرض: {d}\n"
+                f"caméra tassaout méga go\n\n"
+                f"📸 التوثيق البصري:\n"
+                f"- التوثيق: {g}\n"
+                f"- المعالجة: 100MP Super-Resolution\n"
+                f"--------------------------------------------------\n"
+                f"✒️ التوقيع الرسمي: Ameur signature\n"
+                f"⚡ نظام TASSAOUT OMEGA OS"
+            ),
+        )
+        report_text = generator(city, gear, selected_item)
+        st.session_state["last_action"] = report_text
+
+        st.success("🎯 تم توليد التقرير المؤسساتي بنجاح بواسطة الوكيل!")
+        st.code(report_text, language="markdown")
+
+        whatsapp_number = "212691897126"
+        encoded_text = urllib.parse.quote(report_text)
+        whatsapp_url = f"https://wa.me/{whatsapp_number}?text={encoded_text}"
+        st.link_button("📱 اضغط هنا لإرسال التقرير فوراً عبر الواتساب", whatsapp_url)
+
+with tab3:
+    st.subheader("📦 الأرشيف الذكي والتحميل")
+    st.write("جميع الصور والتقارير الميدانية تُحفظ هنا بشكل منظم.")
+    if st.button("📦 توليد وتحميل حزمة الأرشيف الكاملة (ZIP)"):
+        zip_buffer = io.BytesIO()
+        with zipfile.ZipFile(zip_buffer, "w") as zip_file:
+            for file in os.listdir(GALLERY_FOLDER):
+                zip_file.write(os.path.join(GALLERY_FOLDER, file), file)
+        st.download_button(
+            "⬇️ تحميل الأرشيف البرمجي والميداني الآن",
+            data=zip_buffer.getvalue(),
+            file_name=f"ARCHIVE_TASSAOUT_{datetime.now().strftime('%Y-%m-%d')}.zip",
+        )
+
+```
