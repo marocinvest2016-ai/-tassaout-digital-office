@@ -70,12 +70,10 @@ if page == "لوحة النشر الفوري والرفع الدائم":
                 if uploaded_files:
                     for file in uploaded_files:
                         try:
-                            # رفع دائم إلى Supabase Storage
                             file_path = f"{datetime.now().strftime('%Y%m%d_%H%M%S')}_{file.name}"
                             supabase_client.storage.from_("assets").upload(file_path, file.getbuffer())
                             saved_filenames.append(file_path)
                         except Exception as ex:
-                            # حفظ محلي احتياطي في حال تأخر الاتصال السحابي
                             local_path = os.path.join(UPLOADS_FOLDER, file.name)
                             with open(local_path, "wb") as f:
                                 f.write(file.getbuffer())
@@ -101,7 +99,6 @@ if page == "لوحة النشر الفوري والرفع الدائم":
             if ad["images"]:
                 cols = st.columns(min(len(ad["images"]), 3))
                 for i, img_name in enumerate(ad["images"]):
-                    # جلب الرابط العام من Supabase أو المحلي
                     try:
                         public_url = supabase_client.storage.from_("assets").get_public_url(img_name)
                         cols[i % 3].image(public_url, caption=img_name, use_container_width=True)
@@ -162,7 +159,7 @@ elif page == "الواجهة السحابية الشاملة (Cloud Vault)":
         else:
             st.info("السحابة فارغة حالياً.")
     except Exception as ex:
-        st.error(fج"تعذر جلب قائمة الملفات من Supabase: {ex}")
+        st.error(f"تعذر جلب قائمة الملفات من Supabase: {ex}")
 
 # --- 4. واجهة خرائط Google (Maps Integration) ---
 elif page == "واجهة خرائط Google (Maps Integration)":
