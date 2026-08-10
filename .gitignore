@@ -1,15 +1,6 @@
-# مفاتيح الأمان والبيانات السرية
 .streamlit/secrets.toml
-
-# مجلدات الرفع والملفات المؤقتة للمستخدمين
 uploads/*
-!uploads/.gitkeep
-
-# مجلدات تقارير PDF المولدّة محلياً
 documents_officiels/*
-!documents_officiels/.gitkeep
-
-# مخلفات لغة بايثون ونظام التشغيل
 __pycache__/
 *.pyc
 .DS_Store
