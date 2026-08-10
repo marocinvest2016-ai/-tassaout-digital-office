@@ -13,7 +13,7 @@ st.set_page_config(
     initial_sidebar_state="expanded"
 )
 
-# دالة الاتصال المباشر السيادية بـ Gemini REST API (لضمان عمل مفاتيح AQ بدون أخطاء)
+# دالة الاتصال المباشر السيادية بـ Gemini REST API
 def call_gemini_rest(prompt_text, image_paths=None):
     api_key = st.secrets.get("GEMINI_API_KEY", "")
     if not api_key:
@@ -24,7 +24,6 @@ def call_gemini_rest(prompt_text, image_paths=None):
     
     parts = [{"text": prompt_text}]
     
-    # التعامل مع الصور وتحويلها بصيغة Base64 إذا وجدت
     if image_paths:
         import base64
         for img_p in image_paths:
