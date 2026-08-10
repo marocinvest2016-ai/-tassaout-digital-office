@@ -4,9 +4,9 @@ import pandas as pd
 from datetime import datetime
 import google.generativeai as genai
 
-# --- إعدادات النظام السيادي الفائق v5.9 ---
+# --- إعدادات النظام السيادي الفائق v6.0 (مُحسّن للهواتف والشاشات) ---
 st.set_page_config(
-    page_title="TASSAOUT OMEGA OS - Full Sovereign Command Center v5.9", 
+    page_title="TASSAOUT OMEGA OS - Sovereign Command Center v6.0", 
     layout="wide",
     initial_sidebar_state="expanded"
 )
@@ -35,21 +35,21 @@ if "instant_ads" not in st.session_state:
 
 if "gemini_logs" not in st.session_state:
     st.session_state.gemini_logs = [
-        {"role": "assistant", "content": "👑 أهلاً بك سيدي الرئيس AMEUR. أنا نظامك الذكي الخارق v5.9. وحدات أسفار الحج والعمرة والهندسة والقطاعات الشاملة مفعلة بالكامل."}
+        {"role": "assistant", "content": "👑 أهلاً بك سيدي الرئيس AMEUR. أنا نظامك الذكي الخارق v6.0. تم تحسين العرض والشاشات المحمولة بالكامل."}
     ]
 
-# --- الشريط الجانبي السيادي ---
-st.sidebar.title("👑 قيادة Super Agentic v5.9")
+# --- الشريط الجانبي السيادي (أسماء مختصرة وواضحة للهواتف) ---
+st.sidebar.title("👑 قيادة Super Agent v6.0")
 st.sidebar.markdown("---")
 page = st.sidebar.radio("الوحدات السيادية:", [
-    "⚡ لوحة النشر الفوري والرفع",
-    "🌐 واجهة العميل والمعرض المباشر",
-    "☁️ الواجهة السحابية الشاملة (Cloud Vault)",
-    "🗺️ واجهة خرائط Google الاستراتيجية",
-    "🧠 محرك الوكيل الخارق (Super Agentic Core)"
+    "⚡ النشر الفوري",
+    "🌐 واجهة العميل",
+    "☁️ التخزين السحابي",
+    "🗺️ خرائط النطاق",
+    "🧠 عقل الوكيل الخارق"
 ])
 
-# --- دالة توليد الإعلانات الذكية حسب القطاعات (مع الحج والعمرة) ---
+# --- دالة توليد الإعلانات الذكية حسب القطاعات ---
 def generate_sector_ad(sector_name, custom_prompt=""):
     try:
         system_instructions = """أنت الوكيل السيادي الرقمي لشركة Ameur Boukhaddada. 
@@ -68,7 +68,7 @@ def generate_sector_ad(sector_name, custom_prompt=""):
 # ==========================================
 # 1. لوحة النشر الفوري والرفع
 # ==========================================
-if page == "⚡ لوحة النشر الفوري والرفع":
+if page == "⚡ النشر الفوري":
     st.title("⚡ لوحة الإنتاج والنشر الفوري")
     with st.form("form_instant_execution", clear_on_submit=True):
         ad_title = st.text_input("عنوان الإعلان أو العرض الاستثماري:")
@@ -124,7 +124,7 @@ if page == "⚡ لوحة النشر الفوري والرفع":
 # ==========================================
 # 2. واجهة العميل والمعرض المباشر
 # ==========================================
-elif page == "🌐 واجهة العميل والمعرض المباشر":
+elif page == "🌐 واجهة العميل":
     st.title("🌐 واجهة العميل - العروض الحية والصفقات")
     if st.session_state.instant_ads:
         for ad in st.session_state.instant_ads:
@@ -139,7 +139,7 @@ elif page == "🌐 واجهة العميل والمعرض المباشر":
 # ==========================================
 # 3. الواجهة السحابية الشاملة (Cloud Vault)
 # ==========================================
-elif page == "☁️ الواجهة السحابية الشاملة (Cloud Vault)":
+elif page == "☁️ التخزين السحابي":
     st.title("☁️ الواجهة السحابية الشاملة (Cloud Storage Vault)")
     if supabase_client:
         try:
@@ -156,7 +156,7 @@ elif page == "☁️ الواجهة السحابية الشاملة (Cloud Vault
 # ==========================================
 # 4. واجهة خرائط Google الاستراتيجية
 # ==========================================
-elif page == "🗺️ واجهة خرائط Google الاستراتيجية":
+elif page == "🗺️ خرائط النطاق":
     st.title("🗺️ واجهة خرائط النطاق الجغرافي (قلعة السراغنة ومراكش)")
     map_data = pd.DataFrame({
         'latitude': [32.0494, 31.6295],
@@ -168,11 +168,11 @@ elif page == "🗺️ واجهة خرائط Google الاستراتيجية":
 # ==========================================
 # 5. محرك الوكيل الخارق (Super Agentic Core)
 # ==========================================
-elif page == "🧠 محرك الوكيل الخارق (Super Agentic Core)":
+elif page == "🧠 عقل الوكيل الخارق":
     st.title("🧠 محرك الوكيل الخارق (Gemini 1.5 Flash Enabled)")
-    st.markdown("اختر قطاع العمل أو أسفار الحج والعمرة لتوليد إعلان فوري بصياغة بارزة **بخط عريض (Bold)**، أو اكتب أمرك المفتوح:")
+    st.markdown("اختر قطاع العمل لتوليد إعلان فوري بصياغة بارزة **بخط عريض (Bold)**، أو اكتب أمرك المفتوح:")
     
-    # شبكة أزرار القطاعات الشاملة مع إضافة الحج والعمرة
+    # شبكة أزرار القطاعات الشاملة
     st.markdown("### ⚡ أزرار القطاعات الاستراتيجية:")
     
     col_c1, col_c2, col_c3 = st.columns(3)
@@ -239,7 +239,7 @@ elif page == "🧠 محرك الوكيل الخارق (Super Agentic Core)":
             st.markdown(msg["content"])
             
     # صندوق الإدخال المفتوح
-    if prompt := st.chat_input("اكتب تفاصيل إضافية أو طلباً مخصصاً لأي قطاع أو رحلات حج وعمرة..."):
+    if prompt := st.chat_input("اكتب تفاصيل إضافية أو طلباً مخصصاً لأي قطاع..."):
         st.session_state.gemini_logs.append({"role": "user", "content": prompt})
         with st.chat_message("user"):
             st.markdown(prompt)
@@ -258,4 +258,4 @@ elif page == "🧠 محرك الوكيل الخارق (Super Agentic Core)":
             )
 
 st.sidebar.markdown("---")
-st.sidebar.caption("TASSAOUT OMEGA OS v5.9 Active ⚡")
+st.sidebar.caption("TASSAOUT OMEGA OS v6.0 Active ⚡")
