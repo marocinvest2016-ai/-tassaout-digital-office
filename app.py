@@ -3,31 +3,56 @@ import os
 import pandas as pd
 from datetime import datetime
 from PIL import Image
+import requests
+import json
 
-# محاولة استيراد مكتبة الذكاء الاصطناعي بأمان تام
-gemini_available = False
-try:
-    import google.generativeai as genai
-    gemini_available = True
-except ImportError:
-    pass
-
-# --- إعدادات النظام السيادي v6.10 (Multi-Image Vision Support) ---
+# --- إعدادات النظام السيادي v6.11 (Direct REST API Core) ---
 st.set_page_config(
-    page_title="TASSAOUT OMEGA OS - Sovereign Vision v6.10", 
+    page_title="TASSAOUT DIGITAL SERVICES - Sovereign OS v6.11", 
     layout="wide",
     initial_sidebar_state="expanded"
 )
 
-# تهيئة عقل Gemini الذكي
-gemini_model = None
-if gemini_available:
+# دالة الاتصال المباشر السيادية بـ Gemini REST API (لضمان عمل مفاتيح AQ بدون أخطاء)
+def call_gemini_rest(prompt_text, image_paths=None):
+    api_key = st.secrets.get("GEMINI_API_KEY", "")
+    if not api_key:
+        return "⚠️ تنبيه: مفتاح GEMINI_API_KEY غير موجود في إعدادات الأسرار (Secrets)."
+    
+    url = f"https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key={api_key}"
+    headers = {'Content-Type': 'application/json'}
+    
+    parts = [{"text": prompt_text}]
+    
+    # التعامل مع الصور وتحويلها بصيغة Base64 إذا وجدت
+    if image_paths:
+        import base64
+        for img_p in image_paths:
+            if os.path.exists(img_p):
+                with open(img_p, "rb") as img_file:
+                    encoded_string = base64.b64encode(img_file.read()).decode('utf-8')
+                    parts.append({
+                        "inline_data": {
+                            "mime_type": "image/jpeg",
+                            "data": encoded_string
+                        }
+                    })
+
+    payload = {
+        "contents": [{
+            "parts": parts
+        }]
+    }
+
     try:
-        if "GEMINI_API_KEY" in st.secrets:
-            genai.configure(api_key=st.secrets["GEMINI_API_KEY"])
-            gemini_model = genai.GenerativeModel("gemini-1.5-flash")
-    except Exception:
-        pass
+        response = requests.post(url, headers=headers, data=json.dumps(payload))
+        if response.status_code == 200:
+            res_json = response.json()
+            return res_json['candidates'][0]['content']['parts'][0]['text']
+        else:
+            return f"❌ خطأ في الاتصال بالخادم (رمز الاستجابة: {response.status_code}): {response.text}"
+    except Exception as e:
+        return f"❌ حدث خطأ تقني أثناء الإرسال: {e}"
 
 # تهيئة Google Drive / Sheets بأمان
 google_sheets_client = None
@@ -58,11 +83,11 @@ if "instant_ads" not in st.session_state:
 
 if "gemini_logs" not in st.session_state:
     st.session_state.gemini_logs = [
-        {"role": "assistant", "content": "👑 أهلاً بك سيدي الرئيس AMEUR. تم تفعيل نظام رفع وتحليل الصور المتعددة دفعة واحدة في الإصدار v6.10."}
+        {"role": "assistant", "content": "👑 أهلاً بك سيدي الرئيس AMEUR في منصة Tassaout Digital Services. النظام يعمل الآن عبر الاتصال السيادي المباشر v6.11."}
     ]
 
 # --- الشريط الجانبي السيادي ---
-st.sidebar.title("👑 قيادة Super Agent v6.10")
+st.sidebar.title("👑 Tassaout Digital Services")
 st.sidebar.markdown("---")
 page = st.sidebar.radio("الوحدات السيادية:", [
     "🧠 محادثة التوأم الذكي (Gemini Core)",
@@ -77,13 +102,12 @@ st.sidebar.markdown("---")
 st.sidebar.markdown("© **إنتاج عامر بوخدادة - كل الحقوق محفوظة**")
 
 # ==========================================
-# 1. محادثة التوأم الذكي (دعم صور متعددة)
+# 1. محادثة التوأم الذكي
 # ==========================================
 if page == "🧠 محادثة التوأم الذكي (Gemini Core)":
-    st.title("🧠 محادثة التوأم الذكي - تحليل الصور المتعددة والذكاء الفائق")
-    st.markdown("تحدث معي بحرية، وارفع **عدة صور معاً** لتحليلها واستخراج البيانات منها دفعة واحدة:")
+    st.title("🧠 محادثة التوأم الذكي - Tassaout Digital Services")
+    st.markdown("تحدث معي بحرية، وارفع صوراً متعددة لتحليلها بدقة عبر الاتصال المباشر:")
 
-    # عرض سجل المحادثة
     for msg in st.session_state.gemini_logs:
         with st.chat_message(msg["role"]):
             st.markdown(msg["content"])
@@ -125,29 +149,16 @@ if page == "🧠 محادثة التوأم الذكي (Gemini Core)":
                     with cols[i % len(cols)]:
                         st.image(img_path, width=200)
 
-        with st.spinner("🧠 جاري معالجة النص والصور المتعددة بدقة فائقة..."):
-            ai_response_text = ""
-            if gemini_model:
-                try:
-                    system_prompt = """أنت الوكيل السيادي الرقمي الذكي للمستخدم عامر بوخدادة.
-                    تعمل في قطاعات العقار، التجارة، الخدمات، النقل، والهندسة.
-                    أجب بدقة بالغة، وبأسلوب ذكي ومهني باللغة العربية.
-                    أي عناوين أو نقاط أساسية يجب أن تكون مكتوبة **بخط عريض (Bold)** حصراً.
-                    اختم الإجابة دائماً برابط الواتساب: https://wa.me/212691897126
-                    والعبارة الرسمية: © إنتاج عامر بوخدادة - كل الحقوق محفوظة."""
-                    
-                    content_payload = [system_prompt]
-                    if saved_img_paths:
-                        for img_p in saved_img_paths:
-                            content_payload.append(Image.open(img_p))
-                    content_payload.append(user_query)
-                    
-                    response = gemini_model.generate_content(content_payload)
-                    ai_response_text = response.text
-                except Exception as e:
-                    ai_response_text = f"عذراً سيدي الرئيس، حدث خطأ أثناء المعالجة الذكية: {e}"
-            else:
-                ai_response_text = f"**رد النظام:** تم استلام طلبك والصور بنجاح.\n\nللتواصل والاستفادة فوراً عبر الواتساب:\nhttps://wa.me/212691897126\n\n© **إنتاج عامر بوخدادة - كل الحقوق محفوظة**"
+        with st.spinner("🧠 جاري المعالجة الذكية عبر الاتصال المباشر..."):
+            system_prompt = """أنت الوكيل السيادي الرقمي الذكي للمستخدم عامر بوخدادة لمنصة Tassaout Digital Services.
+            تعمل في قطاعات العقار، التجارة، الخدمات، النقل، والهندسة.
+            أجب بدقة بالغة، وبأسلوب ذكي ومهني باللغة العربية.
+            أي عناوين أو نقاط أساسية يجب أن تكون مكتوبة **بخط عريض (Bold)** حصراً.
+            اختم الإجابة دائماً برابط الواتساب: https://wa.me/212691897126
+            والعبارة الرسمية: © إنتاج عامر بوخدادة - كل الحقوق محفوظة."""
+            
+            full_prompt = f"{system_prompt}\n\nطلب المستخدم: {user_query}"
+            ai_response_text = call_gemini_rest(full_prompt, saved_img_paths if saved_img_paths else None)
 
         st.session_state.gemini_logs.append({"role": "assistant", "content": ai_response_text})
         with st.chat_message("assistant"):
