@@ -3,14 +3,14 @@ import os
 import pandas as pd
 from datetime import datetime
 import google.generativeai as genai
-import supabase
+from supabase import create_client, Client
 
 # --- إعدادات النظام السيادي الفائق v5.1 ---
 st.set_page_config(page_title="TASSAOUT OMEGA OS - Super Agentic AI v5.1", layout="wide")
 
-# تهيئة اتصال Supabase للأرشيف الدائم
+# تهيئة اتصال Supabase الدائم للأرشيف
 try:
-    supabase_client = supabase.create_client(st.secrets["SUPABASE_URL"], st.secrets["SUPABASE_KEY"])
+    supabase_client: Client = create_client(st.secrets["SUPABASE_URL"], st.secrets["SUPABASE_KEY"])
 except Exception as e:
     st.sidebar.error("⚠️ خطأ في اتصال Supabase (تأكد من إعداد Secrets)")
 
@@ -45,14 +45,14 @@ page = st.sidebar.radio("الوحدات السيادية:", [
 # --- 1. وحدة النشر الفوري مع الرفع الدائم Supabase ---
 if page == "لوحة النشر الفوري والرفع الدائم":
     st.title("⚡ لوحة الإنتاج والنشر الفوري (تخزين دائم)")
-    st.markdown("ارفع الأصول (صور وفيديوهات)، يتم حفظها في Supabase للأبد مع النشر اللحظي.")
+    st.markdown("ارفع الأصول (صور وفيديوهات mp4)، يتم حفظها في Supabase للأبد مع النشر اللحظي.")
     
     with st.form("form_instant_execution", clear_on_submit=True):
         ad_title = st.text_input("عنوان الإعلان أو العرض:")
         ad_sector = st.selectbox("القطاع السيادي:", [
             "القطاع الفلاحي والآليات الثقيلة", 
             "القطاع الصناعي (STE RITA FER)", 
-            "القطاع العقاري والاستثماري"
+            "القطاع العقاري والاستثماري (تجزئة الهدى)"
         ])
         ad_details = st.text_area("تفاصيل العرض النصية:")
         
@@ -101,11 +101,17 @@ if page == "لوحة النشر الفوري والرفع الدائم":
                 for i, img_name in enumerate(ad["images"]):
                     try:
                         public_url = supabase_client.storage.from_("assets").get_public_url(img_name)
-                        cols[i % 3].image(public_url, caption=img_name, use_container_width=True)
+                        if img_name.lower().endswith('.mp4'):
+                            cols[i % 3].video(public_url)
+                        else:
+                            cols[i % 3].image(public_url, caption=img_name, use_container_width=True)
                     except:
                         local_p = os.path.join(UPLOADS_FOLDER, img_name)
                         if os.path.exists(local_p):
-                            cols[i % 3].image(local_p, caption=img_name, use_container_width=True)
+                            if img_name.lower().endswith('.mp4'):
+                                cols[i % 3].video(local_p)
+                            else:
+                                cols[i % 3].image(local_p, caption=img_name, use_container_width=True)
             if st.button(f"🗑️ حذف الإعلان #{idx+1}", key=f"del_ad_{idx}"):
                 st.session_state.instant_ads.pop(idx)
                 st.rerun()
@@ -129,11 +135,17 @@ elif page == "واجهة العميل والمعرض المباشر":
                 for i, img_name in enumerate(ad["images"]):
                     try:
                         public_url = supabase_client.storage.from_("assets").get_public_url(img_name)
-                        cols[i % 3].image(public_url, caption=img_name, use_container_width=True)
+                        if img_name.lower().endswith('.mp4'):
+                            cols[i % 3].video(public_url)
+                        else:
+                            cols[i % 3].image(public_url, caption=img_name, use_container_width=True)
                     except:
                         local_p = os.path.join(UPLOADS_FOLDER, img_name)
                         if os.path.exists(local_p):
-                            cols[i % 3].image(local_p, caption=img_name, use_container_width=True)
+                            if img_name.lower().endswith('.mp4'):
+                                cols[i % 3].video(local_p)
+                            else:
+                                cols[i % 3].image(local_p, caption=img_name, use_container_width=True)
             
             st.markdown(f"[💬 اطلب هذا العرض عبر واتساب](https://wa.me/212691897126?text=مرحباً، أهتم بعرض: {ad['title']})")
             st.markdown("---")
@@ -154,7 +166,10 @@ elif page == "الواجهة السحابية الشاملة (Cloud Vault)":
                 f_name = file_obj['name']
                 if f_name != ".emptyFolderPlaceholder":
                     public_url = supabase_client.storage.from_("assets").get_public_url(f_name)
-                    cols_cloud[i % 4].image(public_url, caption=f_name, use_container_width=True)
+                    if f_name.lower().endswith('.mp4'):
+                        cols_cloud[i % 4].video(public_url)
+                    else:
+                        cols_cloud[i % 4].image(public_url, caption=f_name, use_container_width=True)
                     cols_cloud[i % 4].markdown(f"[📥 تحميل دائم]({public_url})")
         else:
             st.info("السحابة فارغة حالياً.")
@@ -191,7 +206,7 @@ elif page == "محرك الوكيل الخارق (Super Agentic Core)":
         with st.spinner("🧠 الوكيل السيادي يحلل ويكتب الآن..."):
             try:
                 system_prompt = f"""أنت الوكيل السيادي TASSAOUT OMEGA OS v5.1 لشركة Ameur Boukhaddada. 
-                القطاعات: فلاحي، صناعي STE RITA FER، عقاري تجزئة الهدى.
+                القطاعات: فلاحي، صناعي STE RITA FER، عقاري تجزئة الهدى بقلعة السراغنة ومراكش.
                 مهمتك: توليد إعلان احترافي جاهز للواتساب بالعربية الفصحى مع تضمين رابط التواصل: https://wa.me/212691897126"""
                 
                 response = gemini_model.generate_content(system_prompt + "\n\nالأمر: " + prompt)
