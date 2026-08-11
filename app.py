@@ -14,7 +14,8 @@ API_KEY = st.secrets.get("GEMINI_API_KEY", "YOUR_GEMINI_API_KEY_HERE")
 
 try:
     genai.configure(api_key=API_KEY)
-    model = genai.GenerativeModel('gemini-1.5-flash')
+    # استخدام النموذج القياسي المعتمد
+    model = genai.GenerativeModel('gemini-1.5-flash-latest')
 except Exception:
     model = None
 
@@ -56,9 +57,9 @@ with col_ai:
                 response = model.generate_content(f"{system_prompt}\n\nالسؤال/الأمر: {user_query}")
                 ai_reply = response.text
             except Exception as e:
-                ai_reply = f"👑 سيدي الرئيس، حدث خطأ في الاتصال بالسحابة الذكية تأكد من مفتاح الـ API. (الخطأ: {str(e)})"
+                ai_reply = f"👑 سيدي الرئيس، حدث خطأ في الاتصال بالسحابة الذكية: {str(e)}"
         else:
-            ai_reply = f"👑 سيدي الرئيس عامر بوخدادة، بصفتي وكيلك الذكي، أؤكد لك استلام الأمر ('{user_query}'). يرجى إدخال مفتاح Google Gemini API الفعلي في الـ Secrets لتفعيل الذكاء الاصطناعي الحقيقي."
+            ai_reply = f"👑 سيدي الرئيس عامر بوخدادة، أرجو إضافة مفتاح الـ API في إعدادات Secrets الخاصة بـ Streamlit ليعمل التوأم الذكي الحقيقي."
 
         st.session_state.gemini_logs.append({"role": "assistant", "content": ai_reply})
         st.rerun()
