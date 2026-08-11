@@ -1,118 +1,66 @@
-import os
 import streamlit as st
-from google import genai
-from supabase import create_client, Client
+import google.generativeai as genai
+from supabase import create_client
 
-# إعدادات الصفحة
-st.set_page_config(
-    page_title="نظام الإعلانات السيادي", page_icon="👑", layout="centered"
-)
+# 1. إعدادات الصفحة والاتصال
+st.set_page_config(page_title="نظام الإعلانات السيادي 👑", layout="wide")
 
-# 1. جلب المفاتيح من Streamlit Secrets أو متغيرات البيئة
-gemini_key = (
-    st.secrets.get("GEMINI_API_KEY")
-    or st.secrets.get("GOOGLE_API_KEY")
-    or os.environ.get("GEMINI_API_KEY")
-)
-supabase_url = st.secrets.get("SUPABASE_URL") or os.environ.get("SUPABASE_URL")
-supabase_key = st.secrets.get("SUPABASE_KEY") or os.environ.get("SUPABASE_KEY")
-
-# التحقق من توفر المفاتيح الأساسية
-if not gemini_key:
-    st.error(
-        "❌ مفتاح Gemini API غير موجود في إعدادات Secrets. يرجى إضافته باسم"
-        " GEMINI_API_KEY"
-    )
-    st.stop()
-
-if not supabase_url or not supabase_key:
-    st.error("❌ مفاتيح Supabase غير مكتملة في إعدادات Secrets.")
-    st.stop()
-
-# تهيئة العملاء (Clients)
-client = genai.Client(api_key=gemini_key)
-supabase: Client = create_client(supabase_url, supabase_key)
-
-
-def create_and_save_ad(prompt):
-  try:
-    with st.spinner("🤖 جاري توليد الإعلان عبر الذكاء الاصطناعي..."):
-      # توليد المحتوى باستخدام نموذج Gemini الحديث
-      response = client.models.generate_content(
-          model="gemini-2.0-flash",
-          contents=(
-              f"قم بصياغة إعلان عقاري أو تجاري جذاب وقصير بناءً على: {prompt}."
-              " أعطني العنوان في السطر الأول، وباقي التفاصيل في المحتوى."
-          ),
-      )
-
-      full_text = response.text
-      lines = full_text.strip().split("\n")
-      title = lines[0] if lines else "إعلان جديد"
-      content = "\n".join(lines[1:]) if len(lines) > 1 else full_text
-
-    with st.spinner("💾 جاري الحفظ في قاعدة بيانات Supabase..."):
-      # حفظ الإعلان في جدول ads
-      data = {"title": title, "content": content}
-      result = supabase.table("ads").insert(data).execute()
-
-      if result:
-        st.success("✨ تم توليد ونشر الإعلان بنجاح!")
-        st.rerun()
-
-  except Exception as e:
-    st.error(f"حدث خطأ أثناء التنفيذ: {e}")
-
-
-# --- واجهة التطبيق ---
-st.markdown(
-    "<h1 style='text-align: center;'>نظام الإعلانات السيادي 👑</h1>",
-    unsafe_allow_html=True,
-)
-st.subheader("🤖 توليد إعلان فوري")
-
-user_input = st.text_area(
-    "أدخل تفاصيل أو فكرة الإعلان:",
-    placeholder=(
-        "مثال: شقة للبيع في القليعة بمساحة واسعة وبسعر مناسب..."
-    ),
-)
-
-col1, col2 = st.columns([1, 1])
-with col1:
-  if st.button("توليد ونشر الإعلان فوراً", use_container_width=True):
-    if user_input.strip():
-      create_and_save_ad(user_input)
-    else:
-      st.warning("⚠️ الرجاء إدخال تفاصيل الإعلان أولاً.")
-
-with col2:
-  if st.button("🔄 تحديث اللوحة", use_container_width=True):
-    st.rerun()
-
-st.markdown("---")
-st.markdown("### 📋 لوحة الإعلانات الحالية")
-
+# 2. تهيئة المفاتيح من Secrets
 try:
-  # جلب الإعلانات المخزنة من Supabase
-  response = (
-      supabase.table("ads")
-      .select("*")
-      .order("created_at", desc=True)
-      .execute()
-  )
-  ads = response.data
+    SUPABASE_URL = st.secrets["SUPABASE_URL"]
+    SUPABASE_KEY = st.secrets["SUPABASE_KEY"]
+    GEMINI_API_KEY = st.secrets["GEMINI_API_KEY"]
 
-  if ads:
-    for ad in ads:
-      with st.expander(f"📌 {ad.get('title', 'بدون عنوان')}"):
-        st.write(ad.get("content", ""))
-        st.caption(f"تاريخ النشر: {ad.get('created_at', '')}")
-  else:
-    st.info("لا توجد إعلانات حالياً. استخدم الذكاء الاصطناعي لإنشاء أول إعلان!")
-
+    supabase = create_client(SUPABASE_URL, SUPABASE_KEY)
+    genai.configure(api_key=GEMINI_API_KEY)
+    model = genai.GenerativeModel('gemini-1.5-flash')
 except Exception as e:
-  st.info(
-      "لا توجد إعلانات حالياً أو أن جدول (ads) غير مضاف في قاعدة بيانات"
-      " Supabase."
-  )
+    st.error(f"خطأ في تحميل المفاتيح: {e}")
+    st.stop()
+
+st.title("👑 مولد إعلانات العقارات السيادي")
+
+# 3. وظيفة الجلب من قاعدة البيانات
+def load_ads_from_db():
+    try:
+        res = supabase.table("instant_ads").select("*").order("created_at", desc=True).execute()
+        return res.data
+    except Exception as e:
+        st.error(f"خطأ في الاتصال بقاعدة البيانات: {e}")
+        return []
+
+# 4. وظيفة التوليد والحفظ
+def create_and_save_ad(prompt):
+    response = model.generate_content(f"قم بصياغة إعلان عقاري جذاب وقصير بناءً على: {prompt}. العنوان في السطر الأول، والتفاصيل بعده.")
+    ai_text = response.text
+    lines = ai_text.strip().split('\n')
+    title = lines[0].replace("#", "").strip() if lines else "إعلان جديد"
+    content = "\n".join(lines[1:]).strip()
+
+    supabase.table("instant_ads").insert({"title": title, "content": content}).execute()
+    return title, content
+
+# 5. الواجهة
+col_ai, col_display = st.columns(2, gap="large")
+
+with col_ai:
+    st.subheader("🤖 توليد إعلان فوري")
+    user_input = st.text_area("أدخل تفاصيل العقار:")
+    if st.button("توليد ونشر الإعلان فوراً"):
+        if user_input:
+            with st.spinner("جاري التوليد والنشر..."):
+                create_and_save_ad(user_input)
+                st.success("تم نشر الإعلان بنجاح!")
+                st.rerun()
+        else:
+            st.warning("يرجى إدخال تفاصيل العقار.")
+
+with col_display:
+    st.subheader("📋 لوحة الإعلانات")
+    ads = load_ads_from_db()
+    if not ads:
+        st.info("لا توجد إعلانات حالياً.")
+    else:
+        for ad in ads:
+            with st.expander(f"📢 {ad.get('title')} - {str(ad.get('created_at'))[:10]}"):
+                st.write(ad.get('content'))
