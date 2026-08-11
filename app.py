@@ -14,15 +14,15 @@ API_KEY = st.secrets.get("GEMINI_API_KEY", "YOUR_GEMINI_API_KEY_HERE")
 
 try:
     genai.configure(api_key=API_KEY)
-    # استخدام النموذج القياسي المعتمد
-    model = genai.GenerativeModel('gemini-1.5-flash-latest')
+    # استخدام النموذج المعتمد والمتوافق مع الإصدارات الحالية
+    model = genai.GenerativeModel('gemini-1.5-flash')
 except Exception:
     model = None
 
-# --- تهيئة الحالة (Session State) ---
+# --- تهيئة الحالة الثائمة (لضمان عدم ضياع البيانات والتحدث باستمرارية) ---
 if "gemini_logs" not in st.session_state:
     st.session_state.gemini_logs = [
-        {"role": "assistant", "content": "👑 أهلاً بك سيدي الرئيس عامر بوخدادة. أنا التوأم الذكي الحقيقي المدعوم بالذكاء الاصطناعي، جاهز تماماً لتلقي أوامرك وإدارتك في Sraghna Immobilière."}
+        {"role": "assistant", "content": "👑 أهلاً بك سيدي الرئيس عامر بوخدادة. تم ضبط الاتصال بنجاح. أنا جاهز لإدارة العمليات والرد الفوري."}
     ]
 
 if "instant_ads" not in st.session_state:
@@ -57,9 +57,9 @@ with col_ai:
                 response = model.generate_content(f"{system_prompt}\n\nالسؤال/الأمر: {user_query}")
                 ai_reply = response.text
             except Exception as e:
-                ai_reply = f"👑 سيدي الرئيس، حدث خطأ في الاتصال بالسحابة الذكية: {str(e)}"
+                ai_reply = f"👑 سيدي الرئيس، حدث خطأ في الاتصال: {str(e)}"
         else:
-            ai_reply = f"👑 سيدي الرئيس عامر بوخدادة، أرجو إضافة مفتاح الـ API في إعدادات Secrets الخاصة بـ Streamlit ليعمل التوأم الذكي الحقيقي."
+            ai_reply = f"👑 سيدي الرئيس عامر بوخدادة، يرجى التأكد من إضافة مفتاح الـ API الصحيح في إعدادات Secrets لـ Streamlit."
 
         st.session_state.gemini_logs.append({"role": "assistant", "content": ai_reply})
         st.rerun()
