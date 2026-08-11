@@ -1,6 +1,8 @@
 import streamlit as st
 import os
-import google.generativeai as genai
+from google import genai
+from google.genai import types
+from supabase import create_client, Client
 
 # --- إعدادات الصفحة السيادية ---
 st.set_page_config(
@@ -9,77 +11,115 @@ st.set_page_config(
     initial_sidebar_state="collapsed"
 )
 
-# --- إعداد مفتاح الـ API لـ Gemini ---
-API_KEY = st.secrets.get("GEMINI_API_KEY", "YOUR_GEMINI_API_KEY_HERE")
+# --- الاتصال بـ Supabase + Gemini ---
+@st.cache_resource
+def init_clients():
+    supa: Client = create_client(st.secrets["SUPABASE_URL"], st.secrets["SUPABASE_KEY"])
+    gemini_client = genai.Client(api_key=st.secrets["GEMINI_API_KEY"])
+    return supa, gemini_client
 
 try:
-    genai.configure(api_key=API_KEY)
-    # استخدام النموذج المعتمد والمتوافق تماماً مع المنصة
-    model = genai.GenerativeModel('gemini-2.5-flash')
-except Exception:
-    model = None
+    supabase, client = init_clients()
+    MODEL_NAME = 'gemini-2.0-flash' # تم تحديث النموذج للمتوافق مع الإصدارات الحالية
+    db_ok = True
+except Exception as e:
+    st.error(f"خطأ في الاتصال بالبنية التحتية: {e}")
+    db_ok = False
+    client = None
+
+# --- دوال الذاكرة السياقية ---
+def load_memory():
+    if db_ok:
+        res = supabase.table("gemini_memory").select("*").eq("user_id", "president_amr").order("created_at", desc=False).limit(20).execute()
+        return res.data
+    return []
+
+def save_memory(role, content):
+    if db_ok:
+        supabase.table("gemini_memory").insert({"user_id": "president_amr", "role": role, "content": content}).execute()
+
+def save_ad_to_db(ad):
+    if db_ok:
+        supabase.table("instant_ads").insert(ad).execute()
+        return True
+    return False
+
+def load_ads_from_db():
+    if db_ok:
+        res = supabase.table("instant_ads").select("*").order("created_at", desc=True).execute()
+        return res.data
+    return []
 
 # --- تهيئة الحالة الثابتة ---
 if "gemini_logs" not in st.session_state:
-    st.session_state.gemini_logs = [
-        {"role": "assistant", "content": "👑 أهلاً بك سيدي الرئيس عامر بوخدادة. تم ضبط الاتصال بنجاح وتحديث النظام. أنا جاهز لإدارة العمليات والرد الفوري."}
-    ]
+    st.session_state.gemini_logs = load_memory()
+    if not st.session_state.gemini_logs:
+        welcome = {"role": "assistant", "content": "👑 أهلاً بعودتك سيدي الرئيس عامر بوخدادة. النظام السيادي في حالة استقرار تام. أنا جاهز للأوامر."}
+        st.session_state.gemini_logs.append(welcome)
+        save_memory("assistant", welcome["content"])
 
 if "instant_ads" not in st.session_state:
-    st.session_state.instant_ads = []
+    st.session_state.instant_ads = load_ads_from_db()
 
-# --- تصميم واجهة مستقلة مقسومة لعمودين (التوأم الذكي الحقيقي + النشر الفوري) ---
+# --- الواجهة ---
 col_ai, col_publish = st.columns(2, gap="large")
 
-# ==========================================
-# القسم الأول: واجهة التوأم الذكي (Gemini الحقيقي)
-# ==========================================
+# القسم الأول: التوأم الذكي
 with col_ai:
-    st.subheader("🧠 التوأم الذكي السيادي (Gemini AI)")
+    st.subheader("🧠 التوأم الذكي السيادي")
     st.markdown("---")
     
     chat_container = st.container(height=450)
-    
     with chat_container:
         for msg in st.session_state.gemini_logs:
             with st.chat_message(msg["role"]):
                 st.markdown(msg["content"])
 
-    user_query = st.chat_input("اطرح أمرك أو استفسارك على التوأم الذكي...", key="real_gemini_input")
+    user_query = st.chat_input("أصدر أمرك سيدي الرئيس...", key="real_gemini_input")
 
     if user_query:
         st.session_state.gemini_logs.append({"role": "user", "content": user_query})
+        save_memory("user", user_query)
         
         ai_reply = ""
-        if model and API_KEY != "YOUR_GEMINI_API_KEY_HERE":
+        if client:
             try:
-                system_prompt = "أنت التوأم الذكي والوكيل السيادي لـ عامر بوخدادة، مدير Sraghna Immobilière بقلعة السراغنة ومراكش. أجب باحترافية وبصيغة تليق بالرئيس."
-                response = model.generate_content(f"{system_prompt}\n\nالسؤال/الأمر: {user_query}")
-                ai_reply = response.text
-            except Exception as e:
-                ai_reply = f"👑 سيدي الرئيس، حدث خطأ في الاتصال: {str(e)}"
-        else:
-            ai_reply = f"👑 سيدي الرئيس عامر بوخدادة، يرجى التأكد من إضافة مفتاح الـ API الصحيح في إعدادات Secrets لـ Streamlit."
+                history = "\n".join([f"{m['role']}: {m['content']}" for m in st.session_state.gemini_logs[-10:]])
+                system_prompt = f"""أنت التوأم الذكي والوكيل السيادي لـ عامر بوخدادة، مدير Sraghna Immobilière.
+                استعمل السياق السابق للإجابة باحترافية وبصيغة تليق بالرئيس.
+                السياق السابق:\n{history}"""
 
+                response = client.models.generate_content_stream(
+                    model=MODEL_NAME,
+                    contents=user_query,
+                    config=types.GenerateContentConfig(system_instruction=system_prompt)
+                )
+                
+                placeholder = st.empty()
+                for chunk in response:
+                    ai_reply += chunk.text
+                    placeholder.markdown(ai_reply + "▌")
+                placeholder.markdown(ai_reply)
+
+            except Exception as e:
+                ai_reply = f"👑 سيدي الرئيس، خطأ تقني: {str(e)}"
+        
         st.session_state.gemini_logs.append({"role": "assistant", "content": ai_reply})
+        save_memory("assistant", ai_reply)
         st.rerun()
 
-# ==========================================
-# القسم الثاني: واجهة النشر الفوري
-# ==========================================
+# القسم الثاني: النشر الفوري
 with col_publish:
     st.subheader("⚡ واجهة النشر الفوري")
     st.markdown("---")
     
     with st.form("real_publish_form", clear_on_submit=True):
-        ad_title = st.text_input("عنوان الإعلان أو العقار:")
+        ad_title = st.text_input("عنوان الإعلان:")
         ad_sector = st.selectbox("القطاع:", ["عقار (Sraghna Immobilière)", "نقل ولوجستيك (Sraghna Media Trans)", "خدمات رقمية"])
-        ad_profit = st.text_input("الفائدة المطلوبة / السعر:")
-        ad_details = st.text_area("تفاصيل العرض والمواصفات:")
+        ad_profit = st.text_input("الفائدة / السعر:")
+        ad_details = st.text_area("التفاصيل:")
         
-        submit_btn = st.form_submit_button("🚀 نشر العرض فوراً")
-        
-        if submit_btn:
+        if st.form_submit_button("🚀 نشر العرض فوراً"):
             if ad_title:
                 new_ad = {
                     "title": ad_title,
@@ -87,20 +127,18 @@ with col_publish:
                     "profit": ad_profit,
                     "details": ad_details + "\n\n**للتواصل:** 0691897126\n© **Sraghna Immobilière**"
                 }
-                st.session_state.instant_ads.insert(0, new_ad)
-                st.success(f"✅ تم نشر العرض بنجاح: {ad_title}")
-                st.rerun()
+                if save_ad_to_db(new_ad):
+                    st.session_state.instant_ads.insert(0, new_ad)
+                    st.success(f"✅ تم حفظ ونشر العرض: {ad_title}")
+                    st.rerun()
             else:
-                st.warning("⚠️ يرجى إدخال عنوان الإعلان على الأقل.")
+                st.warning("⚠️ العنوان إجباري.")
 
-    st.markdown("### 📋 العروض والخدمات المنشورة:")
+    st.markdown("### 📋 أرشيف العروض:")
     ads_container = st.container(height=250)
     with ads_container:
-        if st.session_state.instant_ads:
-            for idx, ad in enumerate(st.session_state.instant_ads):
-                st.info(f"**{ad['title']}** | القطاع: {ad['sector']} | الفائدة: {ad['profit']}\n\n{ad['details']}")
-        else:
-            st.info("لا توجد عروض منشورة حتى الآن.")
+        for ad in st.session_state.instant_ads:
+            st.info(f"**{ad['title']}** | {ad['sector']}\n\n{ad['details']}")
 
 st.markdown("---")
-st.markdown("<p style='text-align: center; color: gray;'>© <strong>Sraghna Immobilière - إنتاج عامر بوخدادة - جميع الحقوق محفوظة</strong></p>", unsafe_allow_html=True)
+st.markdown("<p style='text-align: center; color: gray;'>© <strong>Sraghna Immobilière - إنتاج عامر بوخدادة</strong></p>", unsafe_allow_html=True)
