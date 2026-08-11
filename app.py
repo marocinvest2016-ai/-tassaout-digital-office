@@ -1,21 +1,26 @@
+import os
 import streamlit as st
-import google.generativeai as genai
+from google import genai
 from supabase import create_client
 
 # 1. إعدادات الصفحة والاتصال
 st.set_page_config(page_title="نظام الإعلانات السيادي 👑", layout="wide")
 
-# 2. تهيئة المفاتيح من Secrets
+# 2. تهيئة المفاتيح والبيئة للتعامل مع أي صيغة مفتاح (بما فيها AQ)
 try:
     SUPABASE_URL = st.secrets["SUPABASE_URL"]
     SUPABASE_KEY = st.secrets["SUPABASE_KEY"]
     GEMINI_API_KEY = st.secrets["GEMINI_API_KEY"]
 
+    # تمرير المفتاح كمتغير بيئي صريح لضمان القبول التام
+    os.environ["GEMINI_API_KEY"] = GEMINI_API_KEY
+
     supabase = create_client(SUPABASE_URL, SUPABASE_KEY)
-    genai.configure(api_key=GEMINI_API_KEY)
-    model = genai.GenerativeModel('gemini-1.5-flash')
+    
+    # تهيئة العميل بالطريقة السيادية المحدثة
+    client = genai.Client()
 except Exception as e:
-    st.error(f"خطأ في تحميل المفاتيح: {e}")
+    st.error(f"خطأ في تحميل المفاتيح أو الاتصال: {e}")
     st.stop()
 
 st.title("👑 مولد إعلانات العقارات السيادي")
@@ -31,7 +36,10 @@ def load_ads_from_db():
 
 # 4. وظيفة التوليد والحفظ
 def create_and_save_ad(prompt):
-    response = model.generate_content(f"قم بصياغة إعلان عقاري جذاب وقصير بناءً على: {prompt}. العنوان في السطر الأول، والتفاصيل بعده.")
+    response = client.models.generate_content(
+        model='gemini-2.5-flash',
+        contents=f"قم بصياغة إعلان عقاري جذاب وقصير بناءً على: {prompt}. العنوان في السطر الأول، والتفاصيل بعده."
+    )
     ai_text = response.text
     lines = ai_text.strip().split('\n')
     title = lines[0].replace("#", "").strip() if lines else "إعلان جديد"
