@@ -2,10 +2,11 @@ import streamlit as st
 import os
 import pandas as pd
 from datetime import datetime
+import random
 
-# --- إعدادات النظام السيادي v6.13 (تفعيل تحميل وحفظ الأصول) ---
+# --- إعدادات النظام السيادي v6.14 (الذكاء التفاعلي المحلي) ---
 st.set_page_config(
-    page_title="TASSAOUT DIGITAL SERVICES - Sovereign OS v6.13", 
+    page_title="TASSAOUT DIGITAL SERVICES - Sovereign OS v6.14", 
     layout="wide",
     initial_sidebar_state="expanded"
 )
@@ -18,12 +19,32 @@ if "instant_ads" not in st.session_state:
 
 if "gemini_logs" not in st.session_state:
     st.session_state.gemini_logs = [
-        {"role": "assistant", "content": "👑 أهلاً بك سيدي الرئيس AMEUR. النظام جاهز الآن للتحميل الفعلي وإدارة الأصول بكفاءة تامة."}
+        {"role": "assistant", "content": "👑 أهلاً بك سيدي الرئيس AMEUR. أنا التوأم الذكي لنظام Tassaout Digital Services، وجاهز لتنفيذ وإدارة كافة المهام والاستفسارات بدقة واحترافية عالية."}
     ]
+
+# دالة توليد ردود ذكية ومهنية محلياً بدون الحاجة لمفاتيح أو إنترنت خارجي
+def generate_smart_ai_reply(user_query):
+    query_lower = user_query.lower()
+    
+    if "سلام" in query_lower or "أهلاً" in query_lower or "مرحباً" in query_lower:
+        return f"👑 وعليكم السلام ورحمة الله سيدي الرئيس AMEUR. كيف يمكنني مساعدتك في تطوير العمليات أو إدارة المنصة اليوم؟"
+    elif "عقار" in query_lower or "شقة" in query_lower or "أرض" in query_lower:
+        return f"🏠 بصفتي مستشارك الرقمي في القطاع العقاري بقلعة السراغنة ومراكش، تم تسجيل واستيعاب المعطيات المتعلقة بطلبك ('{user_query}'). هل ترغب في نشر هذا العقار مباشرة في 'واجهة العميل' أو صياغة إعلان تسويقي له؟"
+    elif "نقل" in query_lower or "لوجستيك" in query_lower or "شاحنة" in query_lower:
+        return f"🚛 فيما يخص قطاع النقل واللوجستيك (SRAGHNA MEDIA TRANS)، تم تحليل المعطيات بنجاح. النظام جاهز لتنسيق عمليات الشحن والمتابعة."
+    elif "من أنت" in query_lower or "من تكون" in query_lower or "وكيل" in query_lower:
+        return f"👑 أنا التوأم الذكي والوكيل السيادي الرقمي الخاص بك، مصمم خصيصاً لإدارة منصة Tassaout Digital Services وتنسيق الإعلانات، العقارات، والأصول الرقمية بكفاءة تامة."
+    else:
+        smart_responses = [
+            f"👑 سيدي الرئيس AMEUR، لقد استوعبت أمرك ('{user_query}') بدقة. النظام السيادي المحلي يعمل بكامل طاقته لتنفيذ هذا الطلب وتأمين كافة المتطلبات.",
+            f"💡 تحليل ذكي ممتاز: بخصوص ('{user_query}')، أقترح أن نقوم بتوثيق هذه البيانات في وحدة 'إدارة البيانات' أو نشرها فوريًا في المعرض المرئي.",
+            f"⚡ تم تلقي التوجيه السيادي ('{user_query}'). العمليات تسير وفق الخطط المرسومة لقطاعات العقار، التجارة، والخدمات."
+        ]
+        return random.choice(smart_responses)
 
 # --- الشريط الجانبي السيادي ---
 st.sidebar.title("👑 Tassaout Digital Services")
-st.sidebar.markdown("**Status:** Online & Active")
+st.sidebar.markdown("**Status:** Sovereign AI Online (Active)")
 st.sidebar.markdown("---")
 page = st.sidebar.radio("الوحدات السيادية:", [
     "🧠 محادثة التوأم الذكي",
@@ -42,22 +63,24 @@ st.sidebar.markdown("© **إنتاج عامر بوخدادة - كل الحقوق
 # ==========================================
 if page == "🧠 محادثة التوأم الذكي":
     st.title("🧠 محادثة التوأم الذكي - Tassaout Digital Services")
+    st.markdown("تحدث معي بحرية وسأقوم بالرد عليك بردود ذكية ومخصصة لإدارتك:")
     
     for msg in st.session_state.gemini_logs:
         with st.chat_message(msg["role"]):
             st.markdown(msg["content"])
 
-    user_query = st.chat_input("اكتب أمرك هنا...")
+    user_query = st.chat_input("اكتب أمرك أو استفسار هنا...")
 
     if user_query:
         st.session_state.gemini_logs.append({"role": "user", "content": user_query})
         with st.chat_message("user"):
             st.markdown(user_query)
         
-        sim_response = f"👑 **[النظام السيادي]** سيدي الرئيس AMEUR، تم تنفيذ الأمر: '{user_query}' بنجاح."
-        st.session_state.gemini_logs.append({"role": "assistant", "content": sim_response})
+        ai_reply = generate_smart_ai_reply(user_query)
+        
+        st.session_state.gemini_logs.append({"role": "assistant", "content": ai_reply})
         with st.chat_message("assistant"):
-            st.markdown(sim_response)
+            st.markdown(ai_reply)
 
 # ==========================================
 # 2. لوحة النشر الفوري
@@ -66,11 +89,11 @@ elif page == "⚡ النشر الفوري":
     st.title("⚡ لوحة الإنتاج والنشر الفوري")
     with st.form("form_instant_exec", clear_on_submit=True):
         ad_title = st.text_input("عنوان الإعلان أو العرض السيادي:")
-        ad_sector = st.selectbox("القطاع:", ["عقار", "تجارة", "خدمات", "نقل", "أعمال", "أخرى"])
+        ad_sector = st.selectbox("القطاع:", ["عقار", "تجارة", "خدمات", "نقل ولوجستيك", "أعمال", "أخرى"])
         ad_details = st.text_area("تفاصيل العرض النصية:")
         uploaded_files = st.file_uploader("📸 رفع صور أو فيديوهات للإعلان:", accept_multiple_files=True)
         
-        submit_button = st.form_submit_button("🚀 تنفيذ الإنتاج والنشر")
+        submit_button = st.form_submit_button("🚀 تنفيذ الإنتاج والنشر الفوري")
         
         if submit_button:
             if ad_title:
@@ -132,13 +155,12 @@ elif page == "🌐 واجهة العميل (المعرض)":
         st.info("🌐 واجهة العميل فارغة حالياً. قم بنشر إعلان من لوحة '⚡ النشر الفوري'.")
 
 # ==========================================
-# 4. إدارة الأصول والتحميل الفعلي
+# 4. إدارة الأصول والتحميل
 # ==========================================
 elif page == "📁 إدارة الأصول والتحميل":
     st.title("📁 وحدة إدارة الأصول والتحميل الفعلي")
-    st.markdown("قم برفع أي ملف أو أصل جديد ليتم تخزينه في النظام السحابي، أو تحميل الملفات المحفوظة:")
+    st.markdown("قم برفع أي ملف أو أصل جديد ليتم تخزينه في النظام، أو تحميل الملفات المخزنة:")
 
-    # رفع ملفات جديدة حقيقية
     uploaded_asset = st.file_uploader("📤 رفع أصل جديد (ملف، صورة، مستند):", accept_multiple_files=False)
     if uploaded_asset:
         file_path = os.path.join(UPLOADS_FOLDER, uploaded_asset.name)
@@ -154,7 +176,7 @@ elif page == "📁 إدارة الأصول والتحميل":
         if files_in_folder:
             for file_name in files_in_folder:
                 f_path = os.path.join(UPLOADS_FOLDER, file_name)
-                f_size = os.path.getsize(f_path) / 1024 # بالحكيلوبايت
+                f_size = os.path.getsize(f_path) / 1024
                 
                 col1, col2, col3 = st.columns([3, 1, 1])
                 with col1:
@@ -172,8 +194,7 @@ elif page == "📁 إدارة الأصول والتحميل":
                         os.remove(f_path)
                         st.rerun()
         else:
-            info_msg = "لا توجد أصول مرفوعة حالياً. استخدم زر الرفع أعلاه."
-            st.info(info_msg)
+            st.info("لا توجد أصول مرفوعة حالياً. استخدم زر الرفع أعلاه.")
 
 # ==========================================
 # 5. إدارة البيانات
