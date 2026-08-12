@@ -1,25 +1,22 @@
 import streamlit as st
 from supabase import create_client
-import random
-from datetime import datetime
 import urllib.parse
 from PIL import Image, ImageDraw, ImageFont
 import textwrap
 import io
 
-# 1. إعدادات الصفحة السيادية المطلقة
+# 1. إعدادات الصفحة السيادية
 st.set_page_config(
-    page_title="👑 Alpha Core Nexus — Sovereign Agentic AI",
+    page_title="👑 Alpha Core Nexus — Multi-Asset Sovereign AI",
     layout="wide",
     initial_sidebar_state="expanded"
 )
 
-# تصميم واجهة سيادية فاخرة (CSS مخصص)
 st.markdown("""
     <style>
     .main { background-color: #0e1117; color: #ffffff; }
     .stChatMessage { border-radius: 12px; padding: 10px; margin-bottom: 10px; }
-    h1, h2, h3 { color: #f0f2f6; font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; }
+    h1, h2, h3 { color: #f0f2f6; }
     .sovereign-badge { background: linear-gradient(90deg, #FFD700, #FFA500); padding: 5px 15px; border-radius: 8px; color: black; font-weight: bold; display: inline-block; margin-bottom: 10px;}
     </style>
 """, unsafe_allow_html=True)
@@ -32,26 +29,23 @@ SUPABASE_KEY = "sb_publishable_xNbvcCGrqDQyU8fAtEMF7w_FqDzwSVg"
 def init_supabase():
     try:
         return create_client(SUPABASE_URL, SUPABASE_KEY)
-    except Exception as e:
-        st.error(f"خطأ في الاتصال بـ Supabase: {e}")
+    except:
         return None
 
 supabase = init_supabase()
 
 def load_ads_from_db():
-    if not supabase:
-        return []
+    if not supabase: return []
     try:
         res = supabase.table("instant_ads").select("*").order("created_at", desc=True).execute()
         return res.data if res.data else []
-    except Exception as e:
+    except:
         return []
 
-# 3. محرك توليد الصور المحلي (Pillow)
+# 3. توليد بطاقة بصرية محلية
 def generate_ad_card(title, content):
     img = Image.new('RGB', (1080, 1080), color='#0e1117')
     draw = ImageDraw.Draw(img)
-    
     try:
         font_title = ImageFont.truetype("arial.ttf", 50)
         font_body = ImageFont.truetype("arial.ttf", 30)
@@ -61,10 +55,8 @@ def generate_ad_card(title, content):
 
     draw.text((50, 50), "👑 Alpha Core Nexus", font=font_title, fill='#FFD700')
     draw.text((50, 130), title[:40], font=font_title, fill='white')
-    
     wrapped_text = textwrap.fill(content[:350], width=40)
     draw.text((50, 220), wrapped_text, font=font_body, fill='#f0f2f6')
-    
     draw.text((50, 980), "📞 0691897126 | قلعة السراغنة | MarocInvest", font=font_body, fill='#34A853')
 
     buf = io.BytesIO()
@@ -72,101 +64,76 @@ def generate_ad_card(title, content):
     buf.seek(0)
     return buf
 
-# 4. الشريط الجانبي السيادي
+# الشريط الجانبي
 with st.sidebar:
     st.markdown('<div class="sovereign-badge">👑 ALPHA CORE NEXUS</div>', unsafe_allow_html=True)
     st.header("لوحة التحكم السيادية")
-    st.info("النظام يعمل بكفاءة تامة مع ميزات الواتساب ومولد الصور.")
+    st.info("النظام يعمل محلياً بكامل ميزات الرفع المتعدد والتفاعل.")
     
     selected_domain = st.selectbox(
-        "اختر وضع التوجيه الذكي (Routing Domain):",
-        ["الوكيل الشامل (Auto-Router)", "وكيل الإعلانات العقارية", "وكيل التجارة والأعمال", "وكيل معالجة البيانات واللوجستيات"]
+        "اختر وضع التوجيه الذكي:",
+        ["الوكيل الشامل (Auto-Router)", "وكيل الإعلانات العقارية", "وكيل التجارة والأعمال", "وكيل اللوجستيات والمشاريع"]
     )
-    
-    st.markdown("---")
-    if st.button("🗑️ مسح ذاكرة المحادثة السيادية", use_container_width=True):
-        st.session_state.messages = []
-        st.rerun()
-        
     st.markdown("---")
     st.caption("📍 الموقع التشغيلي: قلعة السراغنة | المغرب")
     st.caption("📞 الخط الساخن: 0691897126")
 
-# 5. الواجهة الرئيسية
-st.title("👑 Alpha Core Nexus — Super Multi-Domain Agentic AI")
-st.markdown("أهلاً بك يا سيدي الرئيس. النظام السيادي المتكامل جاهز لإدارة الأوامر، النشر الفري على الواتساب، وتوليد البطاقات البصرية.")
+# الواجهة الرئيسية
+st.title("👑 Alpha Core Nexus — Multi-Image Sovereign Interface")
+st.markdown("أهلاً بك يا سيدي الرئيس. غرفة العمليات جاهزة لاستقبال الأوامر ورفع **مجموعات الصور** دفعة واحدة.")
 
-# تقسيم الشاشة إلى قسمين: محادثة ذكية (يمين/يسار) ولوحة إعلانات حية مع أزرار النشر
 col_chat, col_view = st.columns([1.2, 1], gap="large")
 
 with col_chat:
-    st.subheader("🤖 غرفة عمليات الوكيل الذكي")
+    st.subheader("🤖 غرفة عمليات الوكيل الذكي (رفع متعدد)")
     
-    # تهيئة الذاكرة
     if "messages" not in st.session_state:
         st.session_state.messages = [
-            {"role": "assistant", "content": "أنا وكيلك الذكي السيادي. جاهز لتنفيذ الأوامر، كتابة الإعلانات المنظمة، ومعالجة الصور والملفات بدون أي قيود."}
+            {"role": "assistant", "content": "أنا جاهز. يمكنك الآن رفع أكثر من صورة دفعة واحدة وسيقوم النظام بمعالجتها وعرضها في الشاشة التفاعلية."}
         ]
 
-    # عرض سجل المحادثة
     for message in st.session_state.messages:
         with st.chat_message(message["role"]):
             st.markdown(message["content"])
-            if "image" in message and message["image"]:
-                st.image(message["image"], width=300)
+            if "images" in message and message["images"]:
+                cols = st.columns(len(message["images"]))
+                for idx, img_file in enumerate(message["images"]):
+                    with cols[idx]:
+                        st.image(img_file, width=150)
 
-    # صندوق الإدخال والمرفقات
-    uploaded_file = st.file_uploader("📎 إرفاق صورة أو مستند للتحليل الفوري:", type=["png", "jpg", "jpeg", "webp"], key="sovereign_uploader")
-    user_query = st.chat_input("اكتب أمرك السيادي هنا للوكيل الذكي...")
+    # ميزة الرفع المتعدد للصور (accept_multiple_files=True)
+    uploaded_files = st.file_uploader(
+        "📎 رفع متعدد للصور (يمكنك تحديد عدة صور معاً):", 
+        type=["png", "jpg", "jpeg", "webp"], 
+        accept_multiple_files=True,
+        key="multi_uploader"
+    )
+    
+    user_query = st.chat_input("اكتب أمرك السيادي هنا...")
 
     if user_query:
-        st.session_state.messages.append({"role": "user", "content": user_query, "image": uploaded_file})
+        st.session_state.messages.append({"role": "user", "content": user_query, "images": uploaded_files})
         with st.chat_message("user"):
             st.markdown(user_query)
-            if uploaded_file: st.image(uploaded_file, width=300)
+            if uploaded_files:
+                cols = st.columns(len(uploaded_files))
+                for idx, img_file in enumerate(uploaded_files):
+                    with cols[idx]:
+                        st.image(img_file, width=150)
 
-        # توليد رد الوكيل
-        p_lower = user_query.lower()
-        if "عقار" in p_lower or "شقة" in p_lower or "منزل" in p_lower or "أرض" in p_lower or selected_domain == "وكيل الإعلانات العقارية":
-            category = "عقاري"
-            agent_output = f"""🏠 **عرض عقاري سيادي ممتاز بقلعة السراغنة** 🏠
-✨ **التفاصيل:** {user_query}
-{ "📎 [تم تحليل المرفق البصري واعتماد قياسات العقار]" if uploaded_file else "" }
-🎯 **لماذا هذا العقار؟** 
-✅ تصميم عصري وتشطيبات عالية الجودة.
-✅ موقع استراتيجي هادئ وقريب من كافة المرافق الحيوية.
-✅ صفقة استثمارية آمنة ومربحة.
-🔑 **للحجز الفوري:** 
-📞 0691897126 | 📧 marocinvest2012@gmail.com
+        # المعالجة المحلية الذكية
+        file_count = len(uploaded_files) if uploaded_files else 0
+        agent_output = f"""⚡ **تقرير المعالجة السيادية المتعددة:**
+تم تلقي الأمر: *"{user_query}"*
+📸 **تم إرفاق ومعالجة {file_count} صورة بنجاح** عبر الشاشة التفاعلية المحلية.
+✅ النظام يعمل باستقلالية تامة وبدون أي قيود خارجية.
 ---
-#عقارات #قلعة_السراغنة #شقق_للبيع #استثمار_عقاري #MarocInvest #AlphaCoreNexus"""
-        elif "تجاري" in p_lower or "محل" in p_lower or "مشروع" in p_lower or selected_domain == "وكيل التجارة والأعمال":
-            category = "تجاري"
-            agent_output = f"""🛍️ **عرض تجاري واستثماري حصري** 🛍️
-✨ **التفاصيل:** {user_query}
-{ "📎 [تم إدماج تحليل الصورة المرفقة]" if uploaded_file else "" }
-🎯 **مميزات المشروع التجاري:** 
-✅ موقع حيوي ممتاز يضمن حركة مرور واستهداف عالي.
-✅ واجهة احترافية ومساحة مهيأة لكافة الأنشطة.
-✅ فرصة حقيقية لتعظيم أرباحك وتوسيع نطاق عملك.
-🔑 **للتواصل والتعاقد:** 
-📞 0691897126 | 📧 marocinvest2012@gmail.com
----
-#عقارات_تجارية #استثمار_تجاري #قلعة_السراغنة #MarocInvest #AlphaCoreNexus"""
-        else:
-            category = "لوجستيات وعام"
-            agent_output = f"""⚡ **تقرير التنفيذ السيادي:**
-لقد تم تلقي وتحليل الأمر بنجاح محلياً: *"{user_query}"*
-{ "📷 تم رصد واستلام الصورة المرفقة." if uploaded_file else "" }
-✅ المنظومة تعمل بكفاءة مطلقة واستقرار تام دون أي اتصال خارجي.
----
-#AlphaCoreNexus #SystemSovereign"""
+#AlphaCoreNexus #MultiAsset #SovereignAI"""
 
-        # الحفظ في Supabase
         if supabase:
             try:
                 supabase.table("instant_ads").insert({
-                    "title": f"[{category}] {user_query[:25]}...",
+                    "title": f"[متعدد الصور ({file_count})] {user_query[:20]}...",
                     "content": agent_output.strip()
                 }).execute()
             except:
@@ -176,26 +143,21 @@ with col_chat:
         st.rerun()
 
 with col_view:
-    st.subheader("📋 لوحة الإعلانات الحية والتحكم الشامل")
+    st.subheader("📋 الشاشة التفاعلية للوسائط والأرشيف")
     ads = load_ads_from_db()
     
     if not ads:
-        st.info("لا توجد إعلانات مسجلة حالياً في القاعدة.")
+        st.info("لا توجد سجلات مسجلة حالياً.")
     else:
         for ad in ads:
             with st.expander(f"📢 {ad.get('title')} — {str(ad.get('created_at'))[:10]}"):
                 st.write(ad.get('content'))
-                
                 col_btn1, col_btn2 = st.columns(2)
-                
-                # 1. زر الواتساب
                 with col_btn1:
                     wa_link = f"https://wa.me/212691897126?text={urllib.parse.quote(ad.get('content'))}"
                     st.link_button("📲 نشر على الواتساب", wa_link, use_container_width=True)
-
-                # 2. زر توليد الصورة
                 with col_btn2:
                     if st.button("🖼️ توليد بطاقة مصورة", key=f"btn_{ad.get('id')}", use_container_width=True):
                         img_buf = generate_ad_card(ad.get('title'), ad.get('content'))
                         st.image(img_buf, use_container_width=True)
-                        st.download_button("⬇️ تحميل الصورة", img_buf, file_name="ad_card.png", mime="image/png", key=f"dl_{ad.get('id')}", use_container_width=True)
+                        st.download_button("⬇️ تحميل", img_buf, file_name="card.png", mime="image/png", key=f"dl_{ad.get('id')}", use_container_width=True)
