@@ -1,163 +1,143 @@
 import streamlit as st
 from supabase import create_client
-import urllib.parse
-from PIL import Image, ImageDraw, ImageFont
-import textwrap
-import io
+import subprocess
+import json
+import requests
+import schedule
+import time
+import threading
+from datetime import datetime
+import googlemaps
+import pandas as pd
 
-# 1. إعدادات الصفحة السيادية
-st.set_page_config(
-    page_title="👑 Alpha Core Nexus — Multi-Asset Sovereign AI",
-    layout="wide",
-    initial_sidebar_state="expanded"
-)
+st.set_page_config(page_title="👑 Meta Tassaout - Super Agentic AI", layout="wide")
+st.markdown("""<style>.main{background-color:#0e1117;color:#fff}.omega{background:linear-gradient(90deg,#FFD700,#FF0000);padding:10px;border-radius:8px;color:black;font-weight:bold}</style>""", unsafe_allow_html=True)
 
-st.markdown("""
-    <style>
-    .main { background-color: #0e1117; color: #ffffff; }
-    .stChatMessage { border-radius: 12px; padding: 10px; margin-bottom: 10px; }
-    h1, h2, h3 { color: #f0f2f6; }
-    .sovereign-badge { background: linear-gradient(90deg, #FFD700, #FFA500); padding: 5px 15px; border-radius: 8px; color: black; font-weight: bold; display: inline-block; margin-bottom: 10px;}
-    </style>
-""", unsafe_allow_html=True)
-
-# 2. الاتصال بقاعدة البيانات السيادية (Supabase)
+# 1. الإعدادات السيادية
 SUPABASE_URL = "https://xjjriuohqvhdxfgsyepl.supabase.co"
 SUPABASE_KEY = "sb_publishable_xNbvcCGrqDQyU8fAtEMF7w_FqDzwSVg"
+GOOGLE_MAPS_API_KEY = "ضع_API_KEY_هنا"
+WHATSAPP_TOKEN = "ضع_التوكن_الدائم_هنا"
+WHATSAPP_PHONE_ID = "ضع_PHONE_NUMBER_ID_هنا"
 
 @st.cache_resource
-def init_supabase():
-    try:
-        return create_client(SUPABASE_URL, SUPABASE_KEY)
-    except:
-        return None
-
+def init_supabase(): return create_client(SUPABASE_URL, SUPABASE_KEY)
 supabase = init_supabase()
+gmaps = googlemaps.Client(key=GOOGLE_MAPS_API_KEY)
 
-def load_ads_from_db():
-    if not supabase: return []
+# 2. 🧠 العقل التنبؤي V12 + Meta Tassaout + Search Grounding
+def predictive_brain_meta_tassaout():
+    search_prompt = "أعطني آخر الأخبار الاستثمارية والعقارية في قلعة السراغنة ومراكش اليوم"
     try:
-        res = supabase.table("instant_ads").select("*").order("created_at", desc=True).execute()
-        return res.data if res.data else []
+        search_result = subprocess.run(
+            ["meta", "search", search_prompt],
+            capture_output=True, text=True, timeout=30
+        ).stdout
+    except:
+        search_result = "تغطية ميدانية مستمرة في جهة قلعة السراغنة ومراكش"
+
+    ai_prompt = f"""
+    أنت Meta Tassaout، الوكيل السيادي الفائق للرصد العقاري والاستثماري في المغرب.
+    بناءً على البيانات: {search_result}
+    أعطني فرصة استثمارية حصرياً في قلعة السراغنة أو مراكش بصيغة JSON مفاتيحها:
+    {{"city": "...", "sector": "...", "prediction": "...", "opportunity": "...", "growth_percent": 25}}
+    """
+    try:
+        result = subprocess.run(["meta", "generate", ai_prompt], capture_output=True, text=True, timeout=30)
+        data = json.loads(result.stdout)
+        return f"👑 *Meta Tassaout - تنبيه سيادي*\n\n📈 *التنبؤ*: {data.get('prediction', 'ارتفاع إيجابي في السوق')}\n🎯 *الفرصة*: {data.get('opportunity', 'أراضي استراتيجية')} في {data.get('city', 'قلعة السراغنة')}\n📊 *النمو*: +{data.get('growth_percent', 20)}%\n📞 0691897126\n*العقل الذكي، الأرض الحقيقية*"
+    except:
+        return "👑 *Meta Tassaout*\n\n📈 *التنبؤ*: قطاع العقار والفلاحة يعرف طلباً متزايداً.\n🎯 *الفرصة*: أراضي سكنية وفلاحية بمواقع استراتيجية بقلعة السراغنة.\n📞 0691897126\n*العقل الذكي، الأرض الحقيقية*"
+
+# 3. 🗺️ الطبقة الجغرافية Google Maps
+def get_geo_intel(city, query="عقارات وأراضي"):
+    try:
+        places = gmaps.places(query=query + " " + city)
+        results = []
+        for place in places.get('results', [])[:5]:
+            results.append({
+                "name": place.get('name'),
+                "address": place.get('formatted_address'),
+                "rating": place.get('rating', 'N/A'),
+                "location": place['geometry']['location']
+            })
+        return results
     except:
         return []
 
-# 3. توليد بطاقة بصرية محلية
-def generate_ad_card(title, content):
-    img = Image.new('RGB', (1080, 1080), color='#0e1117')
-    draw = ImageDraw.Draw(img)
+# 4. إرسال WhatsApp
+def send_whatsapp(to_number, message):
+    url = f"https://graph.facebook.com/v20.0/{WHATSAPP_PHONE_ID}/messages"
+    headers = {"Authorization": f"Bearer {WHATSAPP_TOKEN}", "Content-Type": "application/json"}
+    data = {"messaging_product": "whatsapp", "to": to_number, "type": "text", "text": {"body": message}}
     try:
-        font_title = ImageFont.truetype("arial.ttf", 50)
-        font_body = ImageFont.truetype("arial.ttf", 30)
+        requests.post(url, headers=headers, json=data, timeout=10)
     except:
-        font_title = ImageFont.load_default()
-        font_body = ImageFont.load_default()
+        pass
 
-    draw.text((50, 50), "👑 Alpha Core Nexus", font=font_title, fill='#FFD700')
-    draw.text((50, 130), title[:40], font=font_title, fill='white')
-    wrapped_text = textwrap.fill(content[:350], width=40)
-    draw.text((50, 220), wrapped_text, font=font_body, fill='#f0f2f6')
-    draw.text((50, 980), "📞 0691897126 | قلعة السراغنة | MarocInvest", font=font_body, fill='#34A853')
-
-    buf = io.BytesIO()
-    img.save(buf, format='PNG')
-    buf.seek(0)
-    return buf
-
-# الشريط الجانبي
-with st.sidebar:
-    st.markdown('<div class="sovereign-badge">👑 ALPHA CORE NEXUS</div>', unsafe_allow_html=True)
-    st.header("لوحة التحكم السيادية")
-    st.info("النظام يعمل محلياً بكامل ميزات الرفع المتعدد والتفاعل.")
+# 5. الوكيل الذاتي 24/24 (التجربة الميدانية: قلعة السراغنة حصرياً)
+def autonomous_agent():
+    st.toast("🤖 Meta Tassaout يمسح السوق...", icon="⚡")
+    prediction = predictive_brain_meta_tassaout()
     
-    selected_domain = st.selectbox(
-        "اختر وضع التوجيه الذكي:",
-        ["الوكيل الشامل (Auto-Router)", "وكيل الإعلانات العقارية", "وكيل التجارة والأعمال", "وكيل اللوجستيات والمشاريع"]
-    )
-    st.markdown("---")
-    st.caption("📍 الموقع التشغيلي: قلعة السراغنة | المغرب")
-    st.caption("📞 الخط الساخن: 0691897126")
-
-# الواجهة الرئيسية
-st.title("👑 Alpha Core Nexus — Multi-Image Sovereign Interface")
-st.markdown("أهلاً بك يا سيدي الرئيس. غرفة العمليات جاهزة لاستقبال الأوامر ورفع **مجموعات الصور** دفعة واحدة.")
-
-col_chat, col_view = st.columns([1.2, 1], gap="large")
-
-with col_chat:
-    st.subheader("🤖 غرفة عمليات الوكيل الذكي (رفع متعدد)")
+    supabase.table("instant_ads").insert({
+        "title": f"[META-TASSAOUT] {datetime.now().strftime('%Y-%m-%d %H:%M')}",
+        "content": prediction,
+        "created_at": datetime.now().isoformat()
+    }).execute()
     
-    if "messages" not in st.session_state:
-        st.session_state.messages = [
-            {"role": "assistant", "content": "أنا جاهز. يمكنك الآن رفع أكثر من صورة دفعة واحدة وسيقوم النظام بمعالجتها وعرضها في الشاشة التفاعلية."}
-        ]
+    # استهداف قلعة السراغنة حصرياً في المرحلة الأولى
+    leads = supabase.table("leads").select("phone").eq("city", "قلعة السراغنة").execute().data or []
+    for lead in leads:
+        send_whatsapp(lead['phone'], prediction)
+        time.sleep(3)
 
-    for message in st.session_state.messages:
-        with st.chat_message(message["role"]):
-            st.markdown(message["content"])
-            if "images" in message and message["images"]:
-                cols = st.columns(len(message["images"]))
-                for idx, img_file in enumerate(message["images"]):
-                    with cols[idx]:
-                        st.image(img_file, width=150)
+def run_scheduler():
+    schedule.every(30).minutes.do(autonomous_agent)
+    while True:
+        schedule.run_pending()
+        time.sleep(60)
 
-    # ميزة الرفع المتعدد للصور (accept_multiple_files=True)
-    uploaded_files = st.file_uploader(
-        "📎 رفع متعدد للصور (يمكنك تحديد عدة صور معاً):", 
-        type=["png", "jpg", "jpeg", "webp"], 
-        accept_multiple_files=True,
-        key="multi_uploader"
-    )
-    
-    user_query = st.chat_input("اكتب أمرك السيادي هنا...")
+if 'scheduler_started' not in st.session_state:
+    threading.Thread(target=run_scheduler, daemon=True).start()
+    st.session_state.scheduler_started = True
 
-    if user_query:
-        st.session_state.messages.append({"role": "user", "content": user_query, "images": uploaded_files})
-        with st.chat_message("user"):
-            st.markdown(user_query)
-            if uploaded_files:
-                cols = st.columns(len(uploaded_files))
-                for idx, img_file in enumerate(uploaded_files):
-                    with cols[idx]:
-                        st.image(img_file, width=150)
+# الواجهة الرئيسية السيادية
+st.markdown('<div class="omega">👑 META TASSAOUT — SUPER MULTIDOMAINE AGENTIC AI (ONLINE 24/24)</div>', unsafe_allow_html=True)
+st.title("Meta Tassaout - مركز القيادة والسيادة الرقمية")
 
-        # المعالجة المحلية الذكية
-        file_count = len(uploaded_files) if uploaded_files else 0
-        agent_output = f"""⚡ **تقرير المعالجة السيادية المتعددة:**
-تم تلقي الأمر: *"{user_query}"*
-📸 **تم إرفاق ومعالجة {file_count} صورة بنجاح** عبر الشاشة التفاعلية المحلية.
-✅ النظام يعمل باستقلالية تامة وبدون أي قيود خارجية.
----
-#AlphaCoreNexus #MultiAsset #SovereignAI"""
+tab1, tab2, tab3, tab4 = st.tabs(["🧠 العقل التنبؤي (MetaAI)", "🗺️ الرصد الجغرافي (Maps)", "🚀 الحملة الميدانية", "📊 السجلات"])
 
-        if supabase:
-            try:
-                supabase.table("instant_ads").insert({
-                    "title": f"[متعدد الصور ({file_count})] {user_query[:20]}...",
-                    "content": agent_output.strip()
-                }).execute()
-            except:
-                pass
+with tab1:
+    st.header("التنبؤ اللحظي مدعوم بـ Search Grounding")
+    if st.button("🚀 توليد تحليل سيادي الآن"):
+        intel = predictive_brain_meta_tassaout()
+        st.success("تم التوليد بنجاح بالعقل الذكي:")
+        st.code(intel)
 
-        st.session_state.messages.append({"role": "assistant", "content": agent_output.strip()})
-        st.rerun()
+with tab2:
+    st.header("المسح الجغرافي الميداني (قلعة السراغنة ومراكش)")
+    city_choice = st.selectbox("اختر المدينة للمسح", ["قلعة السراغنة", "مراكش", "بني ملال", "الدار البيضاء"])
+    if st.button("🔍 تنفيذ المسح المكاني"):
+        geo_data = get_geo_intel(city_choice)
+        if geo_data:
+            st.map(pd.DataFrame([r['location'] for r in geo_data]))
+            for r in geo_data:
+                st.info(f"**{r['name']}**\n{r['address']} | ⭐ {r['rating']}")
+        else:
+            st.warning("تأكد من إدخال مفتاح Google Maps API الصحيح.")
 
-with col_view:
-    st.subheader("📋 الشاشة التفاعلية للوسائط والأرشيف")
-    ads = load_ads_from_db()
-    
-    if not ads:
-        st.info("لا توجد سجلات مسجلة حالياً.")
+with tab3:
+    st.header("إدارة الحملات الميدانية (قلعة السراغنة حصرياً)")
+    st.info("المرحلة التجريبية الأولى مركزة حصرياً على قلعة السراغنة لاختبار سرعة الاستجابة.")
+    if st.button("⚡ إطلاق الحملة التجريبية يدوياً الآن"):
+        autonomous_agent()
+        st.success("تم إرسال الضربات الأولى للعملاء بنجاح!")
+
+with tab4:
+    st.header("سجل العمليات والسيادة")
+    df = pd.DataFrame(supabase.table("instant_ads").select("*").order("created_at", desc=True).limit(20).execute().data or [])
+    if not df.empty:
+        st.dataframe(df[['title', 'created_at']], use_container_width=True)
     else:
-        for ad in ads:
-            with st.expander(f"📢 {ad.get('title')} — {str(ad.get('created_at'))[:10]}"):
-                st.write(ad.get('content'))
-                col_btn1, col_btn2 = st.columns(2)
-                with col_btn1:
-                    wa_link = f"https://wa.me/212691897126?text={urllib.parse.quote(ad.get('content'))}"
-                    st.link_button("📲 نشر على الواتساب", wa_link, use_container_width=True)
-                with col_btn2:
-                    if st.button("🖼️ توليد بطاقة مصورة", key=f"btn_{ad.get('id')}", use_container_width=True):
-                        img_buf = generate_ad_card(ad.get('title'), ad.get('content'))
-                        st.image(img_buf, use_container_width=True)
-                        st.download_button("⬇️ تحميل", img_buf, file_name="card.png", mime="image/png", key=f"dl_{ad.get('id')}", use_container_width=True)
+        st.info("الوكيل الذاتي يعمل في الخلفية...")
