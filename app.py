@@ -1,19 +1,19 @@
 import streamlit as st
 from supabase import create_client
-import schedule, time, threading, random, json, os
+import schedule, time, threading, random, json
 from datetime import datetime
 from flask import Flask, request, jsonify
 
 st.set_page_config(page_title="👑 Meta Tassaout - Sovereign Free AI", layout="wide")
 
 # ================== 1. الإعدادات السيادية المحلية ==================
-SUPABASE_URL = os.getenv("SUPABASE_URL")
-SUPABASE_KEY = os.getenv("SUPABASE_KEY")
+SUPABASE_URL = st.secrets["SUPABASE_URL"]
+SUPABASE_KEY = st.secrets["SUPABASE_KEY"]
 CTA_OFFICIEL = "212691897126"
 
 supabase = create_client(SUPABASE_URL, SUPABASE_KEY)
-CITIES = ["قلعة السراغنة", "مراكش", "بني ملال", "الدار البيضاء"]
-SECTORS = ["العقار", "الفلاحة", "الاستثمار", "التجارة"]
+CITIES = ["قلعة السراغنة", "مراكش", "بني ملال", "الدار البيضاء", "أكادير", "طاطا"]
+SECTORS = ["العقار", "الفلاحة", "الاستثمار", "التجارة", "مواد البناء"]
 
 # ================== 2. 🧠 العقل المحلي المباشر ==================
 def local_ai_generate(prompt):
@@ -22,7 +22,8 @@ def local_ai_generate(prompt):
     opportunities = [
         f"فرصة استثمارية ذهبية في قطاع {sector} بمدينة {city} مع عوائد عالية.",
         f"أرض عقارية متميزة صالحة للبناء والتطوير بقلعة السراغنة وضواحيها.",
-        f"مشروع تجاري ناشط ومطلوب بشدة في سوق {city} حالياً."
+        f"مشروع تجاري ناشط ومطلوب بشدة في سوق {city} حالياً.",
+        f"كمية كبيرة من مواد البناء متوفرة الآن للتوصيل لـ {city}"
     ]
     predictions = [
         "السوق نشط جداً ومؤشرات النمو تصاعدية خلال هذه الفترة.",
@@ -39,20 +40,20 @@ def local_ai_generate(prompt):
 def super_brain():
     sector, city = random.choice(SECTORS), random.choice(CITIES)
     ai_json = local_ai_generate(f"فرصة في {sector} بـ {city}")
-    try: 
+    try:
         data = json.loads(ai_json)
-    except: 
+    except:
         data = {"sector": sector, "city": city, "opportunity": f"فرصة جديدة في {sector}", "prediction": "السوق نشط حاليا"}
 
     return f"""👑 *Meta Tassaout - تنبيه سيادي*
 🏙️ *المدينة*: {data['city']} | 📊 *القطاع*: {data['sector']}
 🎯 *الفرصة*: {data['opportunity']}
 📈 *التحليل*: {data['prediction']}
-📞 {CTA_OFFICIEL}
+📞 للطلب: {CTA_OFFICIEL}
 *العقل الذكي، الأرض الحقيقية*"""
 
 def send_whatsapp_reply(phone, message):
-    print(f"Sending to {phone}: {message}")
+    print(f"[SIMULATION] Sending to {phone}: {message}")
 
 def autonomous_agent():
     opportunity = super_brain()
@@ -64,11 +65,11 @@ def autonomous_agent():
 
 def run_scheduler():
     schedule.every(30).minutes.do(autonomous_agent)
-    while True: 
+    while True:
         schedule.run_pending()
         time.sleep(60)
 
-# ================== 3. 🕸️ WEBHOOK FLASK (بدون تعارض في المنافذ) ==================
+# ================== 3. 🕸️ WEBHOOK FLASK ==================
 app_webhook = Flask(__name__)
 
 @app_webhook.route("/webhook", methods=["GET"])
@@ -89,15 +90,15 @@ def handle_whatsapp_message():
                         msg_body = msg.get("text", {}).get("body", "")
 
                         supabase.table("inbox").insert({"phone": sender_phone, "message": msg_body, "timestamp": datetime.now().isoformat()}).execute()
-                        
+
                         reply_text = f"أهلاً بك في مكتب تساوت الرقمي. تم استلام رسالتك: '{msg_body}'. تواصل معنا مباشرة على الرقم: {CTA_OFFICIEL}"
                         send_whatsapp_reply(sender_phone, reply_text)
-            return jsonify({"status": "EVENT_RECEIVED"}}, 200
+            return jsonify({"status": "EVENT_RECEIVED"}), 200
     except Exception as e:
         return jsonify({"error": str(e)}), 500
     return jsonify({"status": "OK"}), 200
 
-# تشغيل الخلفية بسلام دون إجبار المنفذ إذا كان محجوزاً
+# تشغيل الخدمات مرة وحدة فقط
 if 'services_started' not in st.session_state:
     threading.Thread(target=run_scheduler, daemon=True).start()
     try:
@@ -113,6 +114,13 @@ col1.metric("Webhook", "🟢 ON")
 col2.metric("Scheduler", "🟢 ON")
 col3.metric("Local Brain", "🟢 ON")
 
+st.divider()
+st.subheader("🧠 العقل السيادي")
+
 if st.button("🚀 تشغيل ضربة سيادية الآن", use_container_width=True):
     with st.spinner("العقل السيادي يولد الفرصة..."):
-        st.code(super_brain())
+        result = super_brain()
+        st.code(result, language="markdown")
+
+        supabase.table("instant_ads").insert({"content": result, "created_at": datetime.now().isoformat()}).execute()
+        st.success("تم النشر في قاعدة البيانات بنجاح!")
