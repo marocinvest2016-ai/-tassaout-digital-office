@@ -17,7 +17,6 @@ SECTORS = ["العقار", "الفلاحة", "الاستثمار", "التجار
 
 # ================== 2. 🧠 العقل المحلي المباشر ==================
 def local_ai_generate(prompt):
-    # مولد ذكي محلي بالكامل بدون الحاجة لأي API خارجي أو توكن
     sector = random.choice(SECTORS)
     city = random.choice(CITIES)
     opportunities = [
@@ -53,7 +52,6 @@ def super_brain():
 *العقل الذكي، الأرض الحقيقية*"""
 
 def send_whatsapp_reply(phone, message):
-    # محاكاة الإرسال أو الربط المباشر الداخلي
     print(f"Sending to {phone}: {message}")
 
 def autonomous_agent():
@@ -70,7 +68,7 @@ def run_scheduler():
         schedule.run_pending()
         time.sleep(60)
 
-# ================== 3. 🕸️ WEBHOOK FLASK ==================
+# ================== 3. 🕸️ WEBHOOK FLASK (بدون تعارض في المنافذ) ==================
 app_webhook = Flask(__name__)
 
 @app_webhook.route("/webhook", methods=["GET"])
@@ -94,15 +92,18 @@ def handle_whatsapp_message():
                         
                         reply_text = f"أهلاً بك في مكتب تساوت الرقمي. تم استلام رسالتك: '{msg_body}'. تواصل معنا مباشرة على الرقم: {CTA_OFFICIEL}"
                         send_whatsapp_reply(sender_phone, reply_text)
-            return jsonify({"status": "EVENT_RECEIVED"}), 200
+            return jsonify({"status": "EVENT_RECEIVED"}}, 200
     except Exception as e:
         return jsonify({"error": str(e)}), 500
     return jsonify({"status": "OK"}), 200
 
-# تشغيل الخدمات بالتوازي
+# تشغيل الخلفية بسلام دون إجبار المنفذ إذا كان محجوزاً
 if 'services_started' not in st.session_state:
     threading.Thread(target=run_scheduler, daemon=True).start()
-    threading.Thread(target=lambda: app_webhook.run(host='0.0.0.0', port=5000), daemon=True).start()
+    try:
+        threading.Thread(target=lambda: app_webhook.run(host='0.0.0.0', port=5001, debug=False, use_reloader=False), daemon=True).start()
+    except Exception:
+        pass
     st.session_state.services_started = True
 
 # ================== 4. الواجهة ==================
