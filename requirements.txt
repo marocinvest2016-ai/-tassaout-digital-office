@@ -1,7 +1,7 @@
-streamlit==1.61.1
-supabase==2.31.0
-requests==2.34.2
-schedule==1.2.2
-pandas==3.0.5
-flask==3.0.3
-gunicorn==23.0.0
+streamlit
+supabase
+requests
+beautifulsoup4
+lxml
+schedule
+fpdf
