@@ -11,14 +11,12 @@ st.set_page_config(page_title="👑 Meta Tassaout - العنكبوت السيا�
 try:
     SUPABASE_URL = st.secrets["SUPABASE_URL"]
     SUPABASE_KEY = st.secrets["SUPABASE_KEY"]
-    WHATSAPP_TOKEN = st.secrets.get("WHATSAPP_TOKEN", "")
-    WHATSAPP_PHONE_ID = st.secrets.get("WHATSAPP_PHONE_ID", "")
 except:
-    st.warning("⚠️ عَمّر السيكريتس فـ Settings > Secrets")
-    SUPABASE_URL = ""; SUPABASE_KEY = ""; WHATSAPP_TOKEN = ""; WHATSAPP_PHONE_ID = ""
+    st.error("⚠️ عَمّر SUPABASE_URL و SUPABASE_KEY فـ Settings > Secrets")
+    st.stop()
 
 CTA_OFFICIEL = "212691897126"
-supabase = create_client(SUPABASE_URL, SUPABASE_KEY) if SUPABASE_URL else None
+supabase = create_client(SUPABASE_URL, SUPABASE_KEY)
 
 # ====== 2. المواقع و الكلمات المفاتيح ======
 SITES_A_SCRAPER = {
@@ -27,27 +25,29 @@ SITES_A_SCRAPER = {
     "جماعة أكادير": "https://www.agadir.ma",
     "جهة مراكش آسفي": "https://www.regionmarrakechsafi.ma"
 }
-MOTS_CLES = "Bon de Commande سند طلب اسمنت حديد بناء فلاحة مكتبيات متلاشيات توريد"
+MOTS_CLES = "Bon de Commande سند طلب اسمنت حديد بناء فلاحة مكتبيات"
 
-# ====== 3. مولد PDF ======
+# ====== 3. مولد PDF - بلا عربية باش ما يطيحش ======
 def creer_bc_pdf():
     pdf = FPDF()
     pdf.add_page()
     pdf.set_font("Arial", 'B', 16)
-    pdf.cell(200, 10, "BON DE COMMANDE / سند الطلب", ln=True, align='C')
+    pdf.cell(200, 10, "BON DE COMMANDE / SANAD TALAB", ln=True, align='C')
     pdf.ln(10)
     pdf.set_font("Arial", size=11)
     pdf.cell(100, 8, f"N°: BC-{random.randint(1000,9999)}")
     pdf.cell(100, 8, f"Date: {datetime.now().strftime('%d/%m/%Y')}", ln=1)
     pdf.ln(5)
-    pdf.cell(200, 8, "De: Administration / الإدارة", ln=1)
+    pdf.cell(200, 8, "De: Administration", ln=1)
     pdf.cell(200, 8, f"A: SRAGHNA DIGITAL MARKET - Tel: {CTA_OFFICIEL}", ln=1)
     pdf.ln(5)
-    pdf.cell(20, 8, "Qté", 1); pdf.cell(100, 8, "Désignation / البيان", 1); pdf.cell(40, 8, "P.U HT", 1); pdf.cell(30, 8, "Total HT", 1, ln=1)
-    pdf.cell(20, 8, "100", 1); pdf.cell(100, 8, "Sacs Ciment CPJ 45 / أكياس الاسمنت", 1); pdf.cell(40, 8, "...... DH", 1); pdf.cell(30, 8, "...... DH", 1, ln=1)
+    pdf.cell(200, 8, "Objet: Fourniture de materiaux de construction", ln=1)
+    pdf.ln(5)
+    pdf.cell(20, 8, "Qte", 1); pdf.cell(100, 8, "Designation", 1); pdf.cell(40, 8, "P.U HT", 1); pdf.cell(30, 8, "Total HT", 1, ln=1)
+    pdf.cell(20, 8, "100", 1); pdf.cell(100, 8, "Sacs Ciment CPJ 45", 1); pdf.cell(40, 8, "...... DH", 1); pdf.cell(30, 8, "...... DH", 1, ln=1)
     pdf.ln(10)
-    pdf.cell(200, 8, "Lieu de livraison: قلعة السراغنة", ln=1)
-    pdf.cell(200, 8, "Délai: 48H | Paiement: 45 Jours", ln=1)
+    pdf.cell(200, 8, "Lieu de livraison: Kalaat Sraghna", ln=1)
+    pdf.cell(200, 8, "Delai: 48 Heures | Paiement: 45 Jours", ln=1)
     pdf.ln(15)
     pdf.cell(200, 8, "Cachet et Signature", ln=1, align='R')
     return bytes(pdf.output())
@@ -63,7 +63,6 @@ def formater_alerte(source, titre, acheteur, delai):
     return {"content": titre, "message": message, "source": source, "created_at": datetime.now().isoformat()}
 
 def robot_cherche_partout():
-    if not supabase: return 0
     nouvelles_alerts = 0
     try:
         params = {"mode": "rechercheSimple", "motsCles": MOTS_CLES}
@@ -75,7 +74,8 @@ def robot_cherche_partout():
                 alert = formater_alerte("الوطنية", cols[2].text.strip(), cols[3].text.strip(), cols[4].text.strip())
                 if not supabase.table("instant_ads").select("id").eq("content", alert['content']).execute().data:
                     supabase.table("instant_ads").insert(alert).execute(); nouvelles_alerts += 1
-    except Exception as e: st.error(f"خطأ: {e}")
+    except Exception as e:
+        st.error(f"خطأ فالوطنية: {e}")
     return nouvelles_alerts
 
 def tache_autonome():
@@ -85,7 +85,7 @@ def tache_autonome():
     else: st.info("لا توجد صفقات جديدة")
 
 # ====== 5. المجدول ======
-if 'scheduler' not in st.session_state and supabase:
+if 'scheduler' not in st.session_state:
     schedule.every(4).hours.do(tache_autonome)
     def run_schedule():
         while True: schedule.run_pending(); time.sleep(60)
@@ -104,6 +104,5 @@ with col2:
 
 st.divider()
 st.subheader("📊 اخر 10 تنبيهات")
-if supabase:
-    ads = supabase.table("instant_ads").select("message").order("created_at", desc=True).limit(10).execute().data
-    for ad in ads: st.code(ad['message'], language="markdown")
+ads = supabase.table("instant_ads").select("message").order("created_at", desc=True).limit(10).execute().data
+for ad in ads: st.code(ad['message'], language="markdown")
