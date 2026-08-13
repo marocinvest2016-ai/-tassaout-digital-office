@@ -1,6 +1,6 @@
 import streamlit as st
 from supabase import create_client
-import time, requests
+import requests
 from datetime import datetime
 from bs4 import BeautifulSoup
 from fpdf import FPDF
@@ -58,7 +58,11 @@ with col1:
     if st.button("🔍 مسح شامل الآن", use_container_width=True, type="primary"):
         with st.spinner("العنكبوت كيقلب..."):
             count = robot_cherche_partout()
-            st.success(f"✅ تم العثور وتخزين {count} فرص جديدة") if count > 0 else st.info("لا توجد فرص جديدة")
+            if count > 0:
+                st.success(f"✅ تم العثور وتخزين {count} فرص جديدة")
+                st.rerun()
+            else:
+                st.info("لا توجد فرص جديدة")
 with col2:
     pdf = FPDF(); pdf.add_page(); pdf.set_font("Arial", 'B', 16); pdf.cell(200, 10, "BC - SRAGHNA DIGITAL", ln=1, align='C')
     st.download_button("🧾 تحميل BC PDF", bytes(pdf.output()), "BC.pdf", "application/pdf", use_container_width=True)
@@ -82,7 +86,7 @@ if st.button("تنفيد الأمر", use_container_width=True):
                     for res in results:
                         with st.container(border=True):
                             st.markdown(res['message'])
-                            if st.button("📲 صيفطها ليا فواتساب", key=res['id']):
+                            if st.button("📲 صيفطها ليا فواتساب", key=f"btn_{res['id']}"):
                                 envoyer_au_admin(res['message'])
                                 st.toast("تم الارسال")
                 else:
@@ -94,5 +98,10 @@ st.divider()
 st.subheader("📊 اخر 10 فرص مخزنة")
 try:
     ads = supabase.table("instant_ads").select("message").order("created_at", desc=True).limit(10).execute().data
-    if ads: [st.code(ad['message']) for ad in ads]
-except: st.info("مازال ما كاين والو")
+    if ads:
+        for ad in ads:
+            st.code(ad['message'])
+    else:
+        st.info("مازال ما كاين والو")
+except:
+    st.info("مازال ما كاين والو")
