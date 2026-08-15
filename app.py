@@ -22,7 +22,7 @@ def init_db():
 
 def save_opp(opp):
     conn = sqlite3.connect(DB_NAME); c = conn.cursor()
-    c.execute("INSERT INTO opportunites VALUES (NULL,?,?,?,?,?,?,?)",
+    c.execute("INSERT INTO opportunites VALUES (NULL,?,?,?,?,?,?,?,?,?,?,?)",
               (opp['date_ajout'], opp['region'], opp['ville'], opp['type'], opp['objet'],
                opp['montant'], opp['ht'], opp['tva'], opp['benefice'], opp['concurrence'], "جديد"))
     conn.commit(); conn.close()
@@ -66,49 +66,3 @@ class AmarAgent:
     def generer_pdf(self, opp):
         pdf = FPDF(); pdf.add_page(); pdf.set_font("Arial", 'B', 16)
         pdf.cell(0, 10, "DOSSIER DE SOUMISSION", 0, 1, 'C')
-        pdf.set_font("Arial", '', 12)
-        pdf.cell(0, 10, f"Entreprise: {self.nom}", 0, 1)
-        pdf.cell(0, 10, f"ICE: {self.ice} | RC: {self.rc}", 0, 1)
-        pdf.cell(0, 10, f"Objet: {opp['objet']} - {opp['ville']}", 0, 1)
-        pdf.cell(0, 10, f"Montant TTC: {opp['montant']} MAD", 0, 1)
-        pdf.cell(0, 10, f"Benefice Estime: {opp['benefice']} MAD", 0, 1)
-        
-        # هذا هو السطر المصحح
-        nom_fichier = f"data/Dossier_{opp['ville']}_{datetime.now().strftime('%Y%m%d_%H%M')}.pdf"
-        
-        pdf.output(nom_fichier); self.log_msg(f"✅ PDF جاهز: {nom_fichier}"); return nom_fichier
-
-    def run(self):
-        opps = self.scanner()
-        for opp in opps:
-            pdf_path = self.generer_pdf(opp)
-            with open(pdf_path, "rb") as f:
-                st.download_button(
-                    label=f"📄 تنزيل PDF: {opp['ville']}",
-                    data=f,
-                    file_name=pdf_path.split('/')[-1],
-                    mime="application/pdf"
-                )
-        self.log_msg("✅ انتهى")
-
-init_db()
-st.title("🇲🇦 AmarAgent v4.2 - الوكيل الذكي للصفقات")
-st.markdown("#### 🟢 SQLite + Supabase + PDF")
-
-if 'log' not in st.session_state: st.session_state.log = ["جاهز للعمل"]
-agent = AmarAgent()
-
-col1, col2 = st.columns(2)
-if col1.button("🚀 تشغيل السكان الآن"): 
-    agent.run()
-    st.rerun()
-    
-if col2.button("📂 عرض الذاكرة"):
-    data = get_all_opps()
-    if data: 
-        df = pd.DataFrame(data, columns=["ID","التاريخ","الجهة","المدينة","النوع","الموضوع","المبلغ","HT","TVA","الربح","المنافسة","الحالة"])
-        st.dataframe(df, use_container_width=True)
-    else: 
-        st.info("لا توجد بيانات بعد")
-
-st.text_area("📜 سجل النشاط", "\n".join(st.session_state.log), height=250)
