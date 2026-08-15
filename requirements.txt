@@ -1,9 +1,9 @@
 streamlit
-supabase
-fpdf2
-pandas
 requests
-schedule
-python-dotenv
 beautifulsoup4
 lxml
+fpdf2
+python-dotenv
+sqlite3
+schedule
+tenacity
