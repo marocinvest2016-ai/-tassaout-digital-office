@@ -1,145 +1,85 @@
 import os
 import streamlit as st
 import pandas as pd
-from datetime import datetime
 from supabase import create_client, Client
-import urllib.parse
+from datetime import datetime
 
-st.set_page_config(
-    page_title="Meta Tassaout - المكتب السيادي", page_icon="👑", layout="wide"
-)
+# إعداد الصفحة
+st.set_page_config(page_title="Meta Tassaout - المكتب السيادي", page_icon="👑", layout="wide")
 
-# 1. الاتصال بـ Supabase
+# الاتصال بـ Supabase من أسرار Streamlit Secrets
 SUPABASE_URL = st.secrets.get("SUPABASE_URL", "")
 SUPABASE_KEY = st.secrets.get("SUPABASE_KEY", "")
-MY_PHONE = "212691897126"
-
 supabase: Client = create_client(SUPABASE_URL, SUPABASE_KEY)
 
+st.title("👑 المكتب السيادي - إدارة المحتوى والعقارات")
+st.markdown("### 🟢 متصل بـ GitHub و Streamlit وقاعدة بيانات Supabase")
 
-class AmarAgent:
+# --- واجهة إدخال البيانات ورفع الصور ---
+with st.form("tassaout_form", clear_on_submit=True):
+    st.subheader("📝 إضافة إعلان أو عقار جديد مع الصورة")
+    
+    col1, col2 = st.columns(2)
+    with col1:
+        titre = st.text_input("عنوان الإعلان / العقار")
+        ville = st.text_input("المدينة / المنطقة", "قلعة السراغنة")
+        montant = st.number_input("المبلغ التقديري (DH)", min_value=0, value=50000)
+    
+    with col2:
+        secteur = st.selectbox("القطاع", ["أراضي فلاحية", "عقارات سكنية", "تجاري", "خدمات"])
+        image_file = st.file_uploader("رفع صورة الإعلان (JPG / PNG)", type=['jpg', 'png', 'jpeg'])
 
-    def __init__(self, nom_entreprise):
-        self.nom = nom_entreprise
+    contenu = st.text_area("نص الإعلان الترويجي التفصيلي", height=120)
+    
+    submit_button = st.form_submit_button("🚀 حفظ ونشر في المكتب السيادي")
 
-    def scanner_domain(self, keyword):
+if submit_button:
+    if titre and contenu:
         try:
-            res = (
-                supabase.table("instant_ads")
-                .select("*")
-                .ilike("message", f"%{keyword}%")
-                .limit(5)
-                .execute()
-            )
-            opps = res.data
-        except:
-            opps = []
-        if not opps:
-            opps = [{
-                "message": f"صفقة توريد {keyword}",
-                "region": "Marrakech-Safi",
-                "montant": 120000,
-            }]
-        return [
-            {
-                "region": ad.get("region", "Marrakech-Safi"),
-                "ville": keyword,
-                "objet": ad.get("message", "صفقة")[:100],
-                "montant_est": ad.get("montant", 45000),
+            image_url = ""
+            # رفع الصورة إلى Supabase Storage إذا تمت إضافتها
+            if image_file is not None:
+                file_name = f"{datetime.now().strftime('%Y%m%d_%H%M%S')}_{image_file.name}"
+                file_bytes = image_file.getvalue()
+                
+                # رفع الملف إلى Bucket باسم 'ads-images' (تأكد من إنشائه في Supabase)
+                res_storage = supabase.storage.from_("ads-images").upload(file_name, file_bytes)
+                
+                # الحصول على الرابط العام للصورة
+                image_url = supabase.storage.from_("ads-images").get_public_url(file_name)
+
+            # حفظ البيانات في جدول instant_ads
+            data = {
+                "message": f"{titre}: {contenu}",
+                "content": contenu,
+                "ville": ville,
+                "montant": montant,
+                "region": secteur,
+                "lien": image_url, # تخزين رابط الصورة في حقل الـ lien أو مخصص
+                "created_at": datetime.now().isoformat()
             }
-            for ad in opps
-        ]
+            
+            supabase.table("instant_ads").insert(data).execute()
+            st.success("✅ تم حفظ الإعلان والصورة بنجاح في Supabase!")
+        except Exception as e:
+            st.error(f"⚠️ خطأ أثناء الحفظ أو رفع الصورة (تأكد من إنشاء Storage Bucket باسم 'ads-images'): {e}")
+    else:
+        st.error("المرجو ملء العنوان ومحتوى الإعلان على الأقل.")
 
-    def analyse_domain(self, opps):
-        for opp in opps:
-            opp["concurrence"] = (
-                "🟢 ضعيفة" if opp["montant_est"] < 100000 else "🟡 متوسطة"
-            )
-            ht = opp["montant_est"] / 1.20
-            opp["ht"] = round(ht, 2)
-            opp["tva"] = round(opp["montant_est"] - ht, 2)
-            opp["benefice"] = round(ht * 0.14, 2)
-            opp["score"] = 95
-        return sorted(opps, key=lambda x: x["score"], reverse=True)
+st.markdown("---")
 
-    def rapport_comm(self, opps):
-        msg = f"*👑 تقرير عامر - {datetime.now().strftime('%d/%m/%Y %H:%M')}*\n\n"
-        for i, opp in enumerate(opps, 1):
-            msg += (
-                f"*{i}. [{opp['score']}/100] {opp['objet']}*\n💰"
-                f" {opp['montant_est']} DH | 📍 {opp['region']} | 📈 ربح صافي:"
-                f" {opp['benefice']} DH\n\n"
-            )
-        return msg
-
-
-# 2. الواجهة وتعدد التبويبات
-st.title("👑 Meta Tassaout - المكتب السيادي")
-st.markdown("### الحالة: 🟢 نظام إدارة العقارات والخدمات المتعددة")
-
-tab1, tab2, tab3, tab4 = st.tabs([
-    "📸 التصوير أو تحميل الصور",
-    "🧠 عروض الوكيل والتفاعل",
-    "📚 مواضيع أخرى",
-    "➕ إضافة عرض جديد",
-])
-
-with tab1:
-    st.subheader("رفع ومعالجة الصور التسويقية")
-    uploaded_files = st.file_uploader(
-        "اختر الصور",
-        type=["png", "jpg", "jpeg"],
-        accept_multiple_files=True,
-    )
-    if uploaded_files:
-        st.success(f"تم تحميل {len(uploaded_files)} صورة بنجاح!")
-        cols = st.columns(3)
-        for idx, uploaded_file in enumerate(uploaded_files):
-            with cols[idx % 3]:
-                st.image(uploaded_file, caption=f"صورة {idx+1}", use_container_width=True)
-
-with tab2:
-    st.subheader("تحليلات الوكيل وعروض السوق")
-    city = st.sidebar.text_input("المدينة للبحث", "قلعة السراغنة")
-    amar = AmarAgent("Sraghna Digital Market")
-
-    if st.button("🚀 تشغيل الوكيل وتوليد التقرير"):
-        opps_brutes = amar.scanner_domain(city)
-        if opps_brutes:
-            opps_analyse = amar.analyse_domain(opps_brutes)
-            rapport = amar.rapport_comm(opps_analyse)
-            st.success("تم توليد التقرير بنجاح!")
-            st.text_area("📲 نسخ التقرير:", rapport, height=200)
-            encoded_msg = urllib.parse.quote(rapport)
-            whatsapp_url = f"https://wa.me/{MY_PHONE}?text={encoded_msg}"
-            st.markdown(f"### [🔗 اضغط هنا للإرسال عبر واتساب]({whatsapp_url})", unsafe_allow_html=True)
-        else:
-            st.warning("⚠️ لا توجد صفقات مطابقة.")
-
-with tab3:
-    st.subheader("📚 مواضيع وأقسام إضافية")
-    st.markdown("""
-    * **أراضي فلاحية وفيرمات** (قلعة السراغنة ومراكش).
-    * **بقع أرضية سكنية وتجارية** (الهدى، البدر، المنارة).
-    * **مواد البناء** (RITA FER / Tassaout Services).
-    * **خدمات رقمية وتسويق** (لوحات إشهارية وأنظمة ذكية).
-    """)
-
-with tab4:
-    st.subheader("➕ إضافة عرض عقاري أو صفقة جديدة")
-    with st.form("add_ad_form"):
-        msg = st.text_input("نص العرض/الإعلان")
-        reg = st.text_input("المنطقة/المدينة")
-        mnt = st.number_input("المبلغ (بالدرهم)", min_value=0)
-        submit = st.form_submit_button("حفظ العرض في السيرفر")
-        
-        if submit:
-            if msg and reg:
-                try:
-                    data = {"message": msg, "region": reg, "montant": mnt}
-                    supabase.table("instant_ads").insert(data).execute()
-                    st.success("تم حفظ العرض بنجاح! 🚀")
-                except Exception as e:
-                    st.error(f"خطأ: {e}")
-            else:
-                st.warning("يرجى ملء البيانات.")
+# --- عرض الأرشيف والبيانات المخزنة ---
+st.subheader("📂 آخر الإعلانات المسجلة في النظام السيادي")
+try:
+    res = supabase.table("instant_ads").select("*").order("created_at", desc=True).limit(5).execute()
+    if res.data:
+        for ad in res.data:
+            with st.expander(f"📍 {ad.get('ville', 'قلعة السراغنة')} - {ad.get('montant', 0)} DH"):
+                st.write(f"**التفاصيل:** {ad.get('message')}")
+                if ad.get('lien') and ad.get('lien').startswith('http'):
+                    st.image(ad.get('lien'), width=300, caption="صورة الإعلان المرفوعة")
+                st.caption(تاريخ: {ad.get('created_at')})
+    else:
+        st.info("لا توجد إعلانات مسجلة حالياً.")
+except Exception as e:
+    st.error(f"خطأ في جلب البيانات: {e}")
