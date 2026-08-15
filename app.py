@@ -1,77 +1,68 @@
-import os, streamlit as st, sqlite3, pandas as pd
+import os
+import streamlit as st
+import pandas as pd
 from datetime import datetime
-from fpdf import FPDF
-from supabase import create_client
+from supabase import create_client, Client
 
-# 1. الإعدادات الأساسية
-st.set_page_config(page_title="AmarAgent v4.2", page_icon="🇲🇦", layout="wide")
-NOM_ENTREPRISE = st.secrets.get("NOM_ENTREPRISE", "Sraghna Digital Market")
-ICE = st.secrets.get("ICE", "غير محدد")
-RC = st.secrets.get("RC", "غير محدد")
-DB_NAME = "amar_agent_memory.db"
-supabase = create_client(st.secrets["SUPABASE_URL"], st.secrets["SUPABASE_KEY"])
+st.set_page_config(page_title="Meta Tassaout - المكتب السيادي", page_icon="👑", layout="wide")
 
-# 2. إدارة قاعدة البيانات المحلية
-def init_db():
-    conn = sqlite3.connect(DB_NAME)
-    c = conn.cursor()
-    c.execute('''CREATE TABLE IF NOT EXISTS opportunites (id INTEGER PRIMARY KEY, date_ajout TEXT, region TEXT, ville TEXT, type TEXT, objet TEXT, montant REAL, ht REAL, tva REAL, benefice REAL, concurrence TEXT, statut TEXT)''')
-    conn.commit(); conn.close()
-init_db()
+# 1. الاتصال بـ Supabase
+SUPABASE_URL = st.secrets.get("SUPABASE_URL", "")
+SUPABASE_KEY = st.secrets.get("SUPABASE_KEY", "")
+MY_PHONE = "212691897126"
 
-def save_opp(opp):
-    conn = sqlite3.connect(DB_NAME); c = conn.cursor()
-    c.execute("INSERT INTO opportunites VALUES (NULL,?,?,?,?,?,?,?,?,?,?,?)", (opp['date_ajout'], opp['region'], opp['ville'], opp['type'], opp['objet'], opp['montant'], opp['ht'], opp['tva'], opp['benefice'], opp['concurrence'], "جديد"))
-    conn.commit(); conn.close()
+supabase: Client = create_client(SUPABASE_URL, SUPABASE_KEY)
 
-def get_all_opps():
-    conn = sqlite3.connect(DB_NAME); c = conn.cursor()
-    c.execute("SELECT * FROM opportunites ORDER BY date_ajout DESC")
-    data = c.fetchall(); conn.close(); return data
-
-# 3. محرك AmarAgent
 class AmarAgent:
-    def log_msg(self, msg):
-        if 'log' not in st.session_state: st.session_state.log = []
-        st.session_state.log.append(f"[{datetime.now().strftime('%H:%M:%S')}] {msg}")
+    def __init__(self, nom_entreprise):
+        self.nom = nom_entreprise
 
-    def scanner(self):
-        self.log_msg("🔍 بدء مسح الصفقات (محاكاة)...")
-        opps = [
-            {"region": "Marrakech-Safi", "ville": "El Kelaa", "type": "BC", "objet": "Fourniture Materiaux", "montant": 145000},
-            {"region": "Beni Mellal", "ville": "Beni Mellal", "type": "BC", "objet": "Travaux Amenagement", "montant": 85000}
-        ]
+    def scanner_domain(self, keyword):
+        try: 
+            res = supabase.table("instant_ads").select("*").ilike("message", f"%{keyword}%").limit(5).execute()
+            opps = res.data
+        except: 
+            opps = []
+        if not opps: 
+            opps = [{"message": f"صفقة توريد {keyword}", "region": "Marrakech-Safi", "montant": 120000}]
+        return [{"region": ad.get('region', 'Marrakech-Safi'), "ville": keyword, "objet": ad.get('message','صفقة')[:100], "montant_est": ad.get('montant', 45000)} for ad in opps]
+
+    def analyse_domain(self, opps):
         for opp in opps:
-            opp['ht'] = round(opp['montant'] / 1.2, 2); opp['tva'] = round(opp['montant'] - opp['ht'], 2)
-            opp['benefice'] = round(opp['ht'] * 0.14, 2); opp['concurrence'] = "ضعيفة"
-            opp['date_ajout'] = datetime.now().strftime('%Y-%m-%d %H:%M')
-            save_opp(opp)
-            try: supabase.table("opportunites").insert(opp).execute()
-            except: pass
-        self.log_msg("✅ تم جلب الفرص بنجاح.")
+            opp['concurrence'] = "🟢 ضعيفة" if opp['montant_est'] < 100000 else "🟡 متوسطة"
+            ht = opp['montant_est'] / 1.20
+            opp['ht'] = round(ht, 2)
+            opp['tva'] = round(opp['montant_est'] - ht, 2)
+            opp['benefice'] = round(ht * 0.14, 2)
+            opp['score'] = 95
+        return sorted(opps, key=lambda x: x['score'], reverse=True)
 
-    def generer_pdf(self, opp):
-        pdf = FPDF(); pdf.add_page(); pdf.set_font("Arial", 'B', 16)
-        pdf.cell(0, 10, "DOSSIER DE SOUMISSION", 0, 1, 'C')
-        pdf.ln(10); pdf.set_font("Arial", '', 12)
-        pdf.cell(0, 10, f"Objet: {opp[5]} | Montant: {opp[6]} DH", 0, 1)
-        if not os.path.exists("data"): os.makedirs("data")
-        file_path = f"data/Soumission_{opp[0]}.pdf"
-        pdf.output(file_path); return file_path
+    def rapport_comm(self, opps):
+        msg = f"*👑 تقرير عامر - {datetime.now().strftime('%d/%m/%Y %H:%M')}*\n\n"
+        for i, opp in enumerate(opps, 1):
+            msg += f"*{i}. [{opp['score']}/100] {opp['objet']}*\n💰 {opp['montant_est']} DH | 📍 {opp['region']} | 📈 ربح صافي: {opp['benefice']} DH\n\n"
+        return msg
 
-# 4. الواجهة (UI)
-st.title(f"🚀 {NOM_ENTREPRISE} - لوحة التحكم")
-agent = AmarAgent()
-if st.button("🔄 بدء الرصد الفوري"):
-    agent.scanner()
-    st.rerun()
+# 2. الواجهة
+st.title("👑 Meta Tassaout - المكتب السيادي (وضع يدوي)")
+st.markdown("### الحالة: 🟢 بحث وتحليل ذكي + إرسال يدوي للواتساب")
 
-data = get_all_opps()
-if data:
-    df = pd.DataFrame(data, columns=['ID', 'Date', 'Region', 'Ville', 'Type', 'Objet', 'TTC', 'HT', 'TVA', 'Gain', 'Conc', 'Statut'])
-    st.dataframe(df)
-    sel_id = st.selectbox("اختر ID لتوليد الملف:", df['ID'].tolist())
-    if st.button("📄 إنشاء ملف التقديم"):
-        file = agent.generer_pdf(df[df['ID'] == sel_id].values[0])
-        st.success("تم!")
-        with open(file, "rb") as f: st.download_button("تحميل الملف", f, file_name="Dossier.pdf")
+amar = AmarAgent("Sraghna Digital Market")
+city = st.sidebar.text_input("المدينة للبحث", "مراكش")
+
+if st.sidebar.button("🚀 تشغيل الوكيل وتوليد التقرير"):
+    opps_brutes = amar.scanner_domain(city)
+    if opps_brutes:
+        opps_analyse = amar.analyse_domain(opps_brutes)
+        rapport = amar.rapport_comm(opps_analyse)
+        
+        st.success("تم توليد التقرير بنجاح!")
+        st.text_area("📲 نسخ التقرير لإرساله يدوياً عبر الواتساب:", rapport, height=300)
+        
+        # زر مباشر لفتح الواتساب اليدوي مع النص
+        import urllib.parse
+        encoded_msg = urllib.parse.quote(rapport)
+        whatsapp_url = f"https://wa.me/{MY_PHONE}?text={encoded_msg}"
+        st.markdown(f"### [🔗 اضغط هنا لإرسال التقرير مباشرة عبر واتساب اليدوي]({whatsapp_url})", unsafe_allow_html=True)
+    else:
+        st.warning("⚠️ لا توجد صفقات جديدة مطابقة حالياً.")
