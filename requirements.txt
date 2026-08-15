@@ -1,9 +1,10 @@
 streamlit
 requests
-beautifulsoup4
-lxml
-fpdf2
 python-dotenv
-sqlite3
-schedule
+supabase
+fpdf2
 tenacity
+schedule
+pandas
+beautifulsoup4
+sqlite3
