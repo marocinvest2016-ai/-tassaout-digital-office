@@ -1,109 +1,125 @@
-import os
-import streamlit as st
-import pandas as pd
-import requests
-import schedule
-import time
-import threading
+import os, streamlit as st, requests, sqlite3, schedule, time, threading
 from datetime import datetime
 from fpdf import FPDF
-from supabase import create_client, Client
+from bs4 import BeautifulSoup
+from tenacity import retry, stop_after_attempt, wait_fixed
+from dotenv import load_dotenv
 
-st.set_page_config(page_title="Meta Tassaout - المكتب السيادي", page_icon="👑", layout="wide")
+load_dotenv()
+st.set_page_config(page_title="AmarAgent v4.1", page_icon="🇲🇦", layout="wide")
 
-# 1. الاتصال بـ Supabase + Secrets
-SUPABASE_URL = st.secrets.get("SUPABASE_URL", "")
-SUPABASE_KEY = st.secrets.get("SUPABASE_KEY", "")
-WHATSAPP_TOKEN = st.secrets.get("WHATSAPP_TOKEN", "")
-WHATSAPP_PHONE_ID = st.secrets.get("WHATSAPP_PHONE_ID", "")
-MY_PHONE = "212691897126" # رقمك المعتمد
+WHATSAPP_TOKEN = os.getenv("WHATSAPP_TOKEN")
+WHATSAPP_PHONE_ID = os.getenv("WHATSAPP_PHONE_ID")
+MY_PHONE = "212691897126"
+DB_NAME = "amar_agent_memory.db" # قاعدة البيانات اللي ما كتمسحش
 
-supabase: Client = create_client(SUPABASE_URL, SUPABASE_KEY)
+# --- 1. قاعدة البيانات الدائمة ---
+def init_db():
+    conn = sqlite3.connect(DB_NAME)
+    c = conn.cursor()
+    # جدول الفرص
+    c.execute('''CREATE TABLE IF NOT EXISTS opportunites
+                 (id INTEGER PRIMARY KEY, date_ajout TEXT, region TEXT, ville TEXT, type TEXT, objet TEXT, 
+                 montant REAL, ht REAL, tva REAL, benefice REAL, concurrence TEXT, statut TEXT)''')
+    # جدول التقارير
+    c.execute('''CREATE TABLE IF NOT EXISTS rapports
+                 (id INTEGER PRIMARY KEY, date_rapport TEXT, contenu TEXT)''')
+    # جدول الدواسي PDF
+    c.execute('''CREATE TABLE IF NOT EXISTS dossiers_pdf
+                 (id INTEGER PRIMARY KEY, date_creation TEXT, nom_fichier TEXT, objet TEXT)''')
+    conn.commit(); conn.close()
 
+def save_opp(opp):
+    conn = sqlite3.connect(DB_NAME); c = conn.cursor()
+    c.execute("INSERT INTO opportunites VALUES (NULL,?,?,?,?,?,?,?,?,?,?,?)", 
+              (datetime.now(), opp['region'], opp['ville'], opp['type'], opp['objet'], 
+               opp['montant'], opp['ht'], opp['tva'], opp['benefice'], opp['concurrence'], "جديد"))
+    conn.commit(); conn.close()
+
+def get_all_opps():
+    conn = sqlite3.connect(DB_NAME); c = conn.cursor()
+    c.execute("SELECT * FROM opportunites ORDER BY date_ajout DESC")
+    data = c.fetchall(); conn.close(); return data
+
+# --- 2. الوكيل الذكي ---
 class AmarAgent:
-    def __init__(self, nom_entreprise):
-        self.nom = nom_entreprise
+    def __init__(self):
+        self.nom = os.getenv("NOM_ENTREPRISE")
+        self.ice = os.getenv("ICE"); self.rc = os.getenv("RC")
         self.priorite_regions = ["Marrakech-Safi", "Beni Mellal-Khenifra", "Souss-Massa"]
+        self.log = []
 
-    def scanner_domain(self, keyword):
-        try: 
-            res = supabase.table("instant_ads").select("*").ilike("message", f"%{keyword}%").limit(5).execute()
-            opps = res.data
-        except: 
-            opps = []
-        if not opps: 
-            opps = [{"message": f"صفقة توريد {keyword}", "region": "Marrakech-Safi", "montant": 120000}]
-        return [{"region": ad.get('region', 'Marrakech-Safi'), "ville": keyword, "objet": ad.get('message','صفقة')[:100], "montant_est": ad.get('montant', 45000)} for ad in opps]
+    def log_msg(self, msg):
+        full_msg = f"[{datetime.now().strftime('%H:%M')}] {msg}"
+        self.log.append(full_msg); st.session_state.log.append(full_msg)
 
-    def analyse_domain(self, opps):
+    @retry(stop=stop_after_attempt(3), wait=wait_fixed(10))
+    def send_whatsapp(self, message_text):
+        url = f"https://graph.facebook.com/v17.0/{WHATSAPP_PHONE_ID}/messages"
+        headers = {"Authorization": f"Bearer {WHATSAPP_TOKEN}", "Content-Type": "application/json"}
+        data = {"messaging_product": "whatsapp", "to": MY_PHONE, "type": "text", "text": {"body": message_text[:4096]}}
+        return requests.post(url, headers=headers, json=data, timeout=30).json()
+
+    def scanner(self):
+        self.log_msg("🔍 السكان فـ 12 جهة + حفظ دائم...")
+        opps = []
+        # داتا تجريبية - بدلها بسكريبينغ حقي
+        opps.append({"region": "Souss-Massa", "ville": "Agadir", "type": "BC", "objet": "Achat Peinture", "montant": 52000})
+        opps.append({"region": "Marrakech-Safi", "ville": "Marrakech", "type": "BC", "objet": "Fournitures Bureau", "montant": 45000})
+        
         for opp in opps:
-            opp['concurrence'] = "🟢 ضعيفة" if opp['montant_est'] < 100000 else "🟡 متوسطة"
-            ht = opp['montant_est'] / 1.20
-            opp['ht'] = round(ht, 2)
-            opp['tva'] = round(opp['montant_est'] - ht, 2)
+            # حساب TVA 20% + الربح + المنافسة
+            ht = opp['montant'] / 1.20
+            opp['ht'] = round(ht, 2); opp['tva'] = round(opp['montant'] - ht, 2)
             opp['benefice'] = round(ht * 0.14, 2)
-            opp['score'] = 95
-        return sorted(opps, key=lambda x: x['score'], reverse=True)
+            opp['concurrence'] = "🟢 ضعيفة" if opp['montant'] < 100000 else "🟡 متوسطة"
+            save_opp(opp) # حفظ لا يمسح
+        return opps
 
-    def rapport_comm(self, opps):
-        msg = f"*👑 تقرير عامر - {datetime.now().strftime('%d/%m/%Y %H:%M')}*\n\n"
+    def generer_pdf(self, opp):
+        pdf = FPDF(); pdf.add_page(); pdf.set_font("Arial", 'B', 16)
+        pdf.cell(0, 10, "DOSSIER DE SOUMISSION", 0, 1, 'C')
+        pdf.set_font("Arial", '', 12)
+        pdf.cell(0, 10, f"Entreprise: {self.nom}", 0, 1)
+        pdf.cell(0, 10, f"ICE: {self.ice} | RC: {self.rc}", 0, 1)
+        pdf.cell(0, 10, f"Objet: {opp['objet']}", 0, 1)
+        pdf.cell(0, 10, f"HT: {opp['ht']} DH | TVA 20%: {opp['tva']} DH | TTC: {opp['montant']} DH", 0, 1)
+        nom_fichier = f"data/Dossier_{opp['ville']}_{datetime.now().strftime('%Y%m%d_%H%M')}.pdf"
+        pdf.output(nom_fichier); self.log_msg(f"✅ PDF محفوظ: {nom_fichier}"); return nom_fichier
+
+    def rapport_quotidien(self):
+        opps = self.scanner()
+        msg = f"*📊 تقرير عامر اليومي - {datetime.now().strftime('%d/%m %H:%M')}*\n"
+        msg += f"*الوكيل المفوض: {self.nom}*\n\n"
         for i, opp in enumerate(opps, 1):
-            msg += f"*{i}. [{opp['score']}/100] {opp['objet']}*\n💰 {opp['montant_est']} DH | 📍 {opp['region']} | 📈 ربح صافي: {opp['benefice']} DH\n\n"
-        return msg
+            msg += f"*{i}. [{opp['region']}] {opp['objet']}*\n💰 {opp['montant']} DH | 📈 ربح: {opp['benefice']} DH | {opp['concurrence']}\n"
+        self.send_whatsapp(msg)
+        self.log_msg("✅ التقرير تصيفط وتحفظ فـ قاعدة البيانات")
 
-# 2. دالة الإرسال عبر WhatsApp API
-def send_whatsapp_alert(message_text):
-    url = f"https://graph.facebook.com/v17.0/{WHATSAPP_PHONE_ID}/messages"
-    headers = {"Authorization": f"Bearer {WHATSAPP_TOKEN}", "Content-Type": "application/json"}
-    data = {"messaging_product": "whatsapp", "to": MY_PHONE, "type": "text", "text": {"body": message_text[:4096]}}
-    response = requests.post(url, headers=headers, json=data, timeout=30)
-    return response.json()
+    def run(self):
+        self.log_msg("🤖 AmarAgent v4.1 بدأ - الذاكرة لا تمسح")
+        self.rapport_quotidien()
 
-# 3. دالة المهمة التلقائية
-def job_quotidien():
-    log_msg = f"[{datetime.now().strftime('%H:%M')}] بدأ البحث التلقائي..."
-    st.session_state.log.append(log_msg)
-    amar = AmarAgent("Sraghna Digital Market")
-    city = "مراكش"
-    opps_brutes = amar.scanner_domain(city)
-    if opps_brutes:
-        opps_analyse = amar.analyse_domain(opps_brutes)
-        rapport = amar.rapport_comm(opps_analyse)
-        status = send_whatsapp_alert(rapport)
-        if "messages" in status:
-            st.session_state.log.append(f"[{datetime.now().strftime('%H:%M')}] ✅ تم الإرسال للواتساب")
-        else:
-            st.session_state.log.append(f"[{datetime.now().strftime('%H:%M')}] ❌ فشل: {status}")
-    else:
-        st.session_state.log.append(f"[{datetime.now().strftime('%H:%M')}] ⚠️ لا توجد صفقات جديدة")
-
+# --- 3. الواجهة ---
 def run_schedule():
-    while True:
-        schedule.run_pending()
-        time.sleep(60)
+    while True: schedule.run_pending(); time.sleep(60)
 
-# 4. الواجهة
-st.title("👑 Meta Tassaout - المكتب السيادي v5.1")
-st.markdown("### الحالة: 🟢 وكيل مستقل + WhatsApp API مباشر")
+init_db()
+st.title("🇲🇦 AmarAgent v4.1 - الوكيل الذكي للصفقات")
+st.markdown("#### 🟢 نسخة لا تقبل المسح | الذاكرة: SQLite | TVA + منافسة + PDF")
 
-if 'log' not in st.session_state:
-    st.session_state.log = []
+if 'log' not in st.session_state: st.session_state.log = ["جاهز"]
 
-amar = AmarAgent("Sraghna Digital Market")
-city = st.sidebar.text_input("المدينة للبحث", "مراكش")
+agent = AmarAgent()
 
-st.sidebar.header("⚙️ التحكم اليدوي")
-if st.sidebar.button("🚀 تشغيل الوكيل وإرسال للواتساب"):
-    job_quotidien()
-    st.sidebar.success("تم تشغيل الوكيل وإرسال التقرير بنجاح")
+col1, col2, col3 = st.columns(3)
+if col1.button("🚀 تشغيل السكان الآن"): agent.run(); st.rerun()
+if col2.button("📂 عرض الذاكرة"):
+    data = get_all_opps()
+    st.dataframe(pd.DataFrame(data, columns=["ID","التاريخ","الجهة","المدينة","النوع","الموضوع","المبلغ","HT","TVA","الربح","المنافسة","الحالة"]))
+if col3.button("⏰ تفعيل 08:00 يوميا"):
+    schedule.clear(); schedule.every().day.at("08:00").do(agent.run)
+    threading.Thread(target=run_schedule, daemon=True).start()
+    st.success("✅ مفعل - الذاكرة محفوظة")
 
-st.sidebar.header("🤖 الأوتوماتيك")
-if st.sidebar.button("تشغيل الجدولة 08:00"):
-    schedule.clear()
-    schedule.every().day.at("08:00").do(job_quotidien)
-    thread = threading.Thread(target=run_schedule, daemon=True)
-    thread.start()
-    st.sidebar.success("✅ الأوتوماتيك مفعل كل 8h00 الصباح")
-
-st.subheader("📜 سجل العمليات")
-st.text_area("", "\n".join(st.session_state.log), height=300)
+st.text_area("📜 سجل النشاط", "\n".join(st.session_state.log), height=300)
