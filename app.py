@@ -5,7 +5,6 @@ from supabase import create_client
 
 st.set_page_config(page_title="AmarAgent v4.2", page_icon="🇲🇦", layout="wide")
 
-# قرا من st.secrets
 NOM_ENTREPRISE = st.secrets["NOM_ENTREPRISE"]
 ICE = st.secrets["ICE"]
 RC = st.secrets["RC"]
@@ -23,8 +22,7 @@ def init_db():
 
 def save_opp(opp):
     conn = sqlite3.connect(DB_NAME); c = conn.cursor()
-    # صلحنا هنا: 12 عمود = 12 قيمة
-    c.execute("INSERT INTO opportunites VALUES (NULL,?,?,?,?,?,?,?,?,?,?,?)",
+    c.execute("INSERT INTO opportunites VALUES (NULL,?,?,?,?,?,?,?)",
               (opp['date_ajout'], opp['region'], opp['ville'], opp['type'], opp['objet'],
                opp['montant'], opp['ht'], opp['tva'], opp['benefice'], opp['concurrence'], "جديد"))
     conn.commit(); conn.close()
@@ -46,11 +44,11 @@ class AmarAgent:
         self.log.append(full_msg); st.session_state.log.append(full_msg)
 
     def scanner(self):
-        self.log_msg("🔍 السكان فـ 12 جهة + حفظ دائم...")
-        opps = []
-        opps.append({"region": "Souss-Massa", "ville": "Agadir", "type": "BC", "objet": "Achat Peinture", "montant": 52000})
-        opps.append({"region": "Marrakech-Safi", "ville": "Marrakech", "type": "BC", "objet": "Fournitures Bureau", "montant": 45000})
-
+        self.log_msg("🔍 بدأ السكان...")
+        opps = [
+            {"region": "Souss-Massa", "ville": "Agadir", "type": "BC", "objet": "Achat Peinture", "montant": 52000},
+            {"region": "Marrakech-Safi", "ville": "Marrakech", "type": "BC", "objet": "Fournitures Bureau", "montant": 45000}
+        ]
         for opp in opps:
             ht = opp['montant'] / 1.20
             opp['ht'] = round(ht, 2); opp['tva'] = round(opp['montant'] - ht, 2)
@@ -60,7 +58,7 @@ class AmarAgent:
             save_opp(opp)
             try:
                 supabase.table("opportunites").insert(opp).execute()
-                self.log_msg(f"✅ تم الحفظ في Supabase: {opp['objet']}")
+                self.log_msg(f"✅ تم الحفظ: {opp['objet']}")
             except Exception as e:
                 self.log_msg(f"⚠️ خطأ Supabase: {e}")
         return opps
@@ -74,4 +72,43 @@ class AmarAgent:
         pdf.cell(0, 10, f"Objet: {opp['objet']} - {opp['ville']}", 0, 1)
         pdf.cell(0, 10, f"Montant TTC: {opp['montant']} MAD", 0, 1)
         pdf.cell(0, 10, f"Benefice Estime: {opp['benefice']} MAD", 0, 1)
-        nom_fichier = f"data/Dossier_{opp['ville
+        
+        # هذا هو السطر المصحح
+        nom_fichier = f"data/Dossier_{opp['ville']}_{datetime.now().strftime('%Y%m%d_%H%M')}.pdf"
+        
+        pdf.output(nom_fichier); self.log_msg(f"✅ PDF جاهز: {nom_fichier}"); return nom_fichier
+
+    def run(self):
+        opps = self.scanner()
+        for opp in opps:
+            pdf_path = self.generer_pdf(opp)
+            with open(pdf_path, "rb") as f:
+                st.download_button(
+                    label=f"📄 تنزيل PDF: {opp['ville']}",
+                    data=f,
+                    file_name=pdf_path.split('/')[-1],
+                    mime="application/pdf"
+                )
+        self.log_msg("✅ انتهى")
+
+init_db()
+st.title("🇲🇦 AmarAgent v4.2 - الوكيل الذكي للصفقات")
+st.markdown("#### 🟢 SQLite + Supabase + PDF")
+
+if 'log' not in st.session_state: st.session_state.log = ["جاهز للعمل"]
+agent = AmarAgent()
+
+col1, col2 = st.columns(2)
+if col1.button("🚀 تشغيل السكان الآن"): 
+    agent.run()
+    st.rerun()
+    
+if col2.button("📂 عرض الذاكرة"):
+    data = get_all_opps()
+    if data: 
+        df = pd.DataFrame(data, columns=["ID","التاريخ","الجهة","المدينة","النوع","الموضوع","المبلغ","HT","TVA","الربح","المنافسة","الحالة"])
+        st.dataframe(df, use_container_width=True)
+    else: 
+        st.info("لا توجد بيانات بعد")
+
+st.text_area("📜 سجل النشاط", "\n".join(st.session_state.log), height=250)
