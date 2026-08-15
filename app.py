@@ -1,11 +1,11 @@
-import os, streamlit as st, sqlite3, schedule, time, threading, pandas as pd
+import os, streamlit as st, sqlite3, pandas as pd
 from datetime import datetime
 from fpdf import FPDF
 from supabase import create_client
 
 st.set_page_config(page_title="AmarAgent v4.2", page_icon="🇲🇦", layout="wide")
 
-# قرا من st.secrets - بدون WhatsApp
+# قرا من st.secrets
 NOM_ENTREPRISE = st.secrets["NOM_ENTREPRISE"]
 ICE = st.secrets["ICE"]
 RC = st.secrets["RC"]
@@ -23,6 +23,7 @@ def init_db():
 
 def save_opp(opp):
     conn = sqlite3.connect(DB_NAME); c = conn.cursor()
+    # صلحنا هنا: 12 عمود = 12 قيمة
     c.execute("INSERT INTO opportunites VALUES (NULL,?,?,?,?,?,?,?,?,?,?,?)",
               (opp['date_ajout'], opp['region'], opp['ville'], opp['type'], opp['objet'],
                opp['montant'], opp['ht'], opp['tva'], opp['benefice'], opp['concurrence'], "جديد"))
@@ -73,7 +74,4 @@ class AmarAgent:
         pdf.cell(0, 10, f"Objet: {opp['objet']} - {opp['ville']}", 0, 1)
         pdf.cell(0, 10, f"Montant TTC: {opp['montant']} MAD", 0, 1)
         pdf.cell(0, 10, f"Benefice Estime: {opp['benefice']} MAD", 0, 1)
-        nom_fichier = f"data/Dossier_{opp['ville']}_{datetime.now().strftime('%Y%m%d_%H%M')}.pdf"
-        pdf.output(nom_fichier); self.log_msg(f"✅ PDF محفوظ: {nom_fichier}"); return nom_fichier
-
-   
+        nom_fichier = f"data/Dossier_{opp['ville
