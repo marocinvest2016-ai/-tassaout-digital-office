@@ -1,1 +1,7 @@
-pip install streamlit pandas supabase fpdf
+streamlit
+supabase
+fpdf2
+pandas
+requests
+schedule
+python-dotenv
