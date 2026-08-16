@@ -5,14 +5,16 @@ import base64
 
 st.set_page_config(page_title="Tassaout Immo & Media", page_icon="🏢", layout="wide")
 
-# التصميم الموحد والأنماط البصرية
+# تصميم الهوية البصرية المتقدمة (Photographer & Multidomain Agentic Theme)
 st.markdown("""
     <style>
     .main { background-color: #062314; color: #f8fafc; font-family: Tahoma, sans-serif; }
     .prop-card { padding: 20px; border-radius: 12px; border: 1px solid #22c55e; margin-bottom: 20px; background-color: #0f3d24; box-shadow: 0 4px 15px rgba(0,0,0,0.5); }
     .badge-cat { background-color: #22c55e; color: #000; padding: 4px 10px; border-radius: 6px; font-size: 12px; font-weight: bold; display: inline-block; margin-bottom: 8px; }
-    .stButton>button { background-color: #22c55e; color: #000; font-weight: bold; border-radius: 8px; border: none; }
+    .stButton>button { background-color: #22c55e; color: #000; font-weight: bold; border-radius: 8px; border: none; transition: 0.3s; }
     .stButton>button:hover { background-color: #16a34a; color: #fff; }
+    .agent-header { background: linear-gradient(135deg, #0f3d24, #14532d); padding: 15px; border-radius: 10px; border: 1px solid #22c55e; margin-bottom: 15px; }
+    .prompt-box { background-color: #03160b; border: 1px dashed #22c55e; padding: 12px; border-radius: 8px; color: #a3e635; font-size: 13px; margin-top: 10px; }
     </style>
 """, unsafe_allow_html=True)
 
@@ -50,64 +52,55 @@ def load_services():
 # تهيئة الـ Chat في session_state للوكيل الذكي
 if 'chat_history' not in st.session_state:
     st.session_state.chat_history = [
-        {"role": "assistant", "content": "مرحباً بك! أنا مساعدك الذكي في Tassaout Immo & Media. اسألني عن أي عقار، خدمة، مواد بناء، أو اطلب المساعدة في اختيار العرض المناسب لك بقلعة السراغنة ومراكش."}
+        {"role": "assistant", "content": "مرحباً بك! أنا نظام الوكيل الذكي (Photographer & Super Agentic AI). أقوم بصياغة البرومبتات، إنتاج المحتوى الكتابي، وضبط الهوية البصرية قبل الاعتماد والنشر."}
     ]
 
-# التنقل بين الصفحات الرئيسية
+# التنقل بين الأقسام الرئيسية
 if 'nav_mode' not in st.session_state: st.session_state.nav_mode = "المنصة الرئيسية"
 
-col_n1, col_n2, col_n3, col_n4 = st.columns(4)
-if col_n1.button("🏠 المنصة الرئيسية والعروض", use_container_width=True): st.session_state.nav_mode = "المنصة الرئيسية"
-if col_n2.button("➕ إضافة إعلان جديد", use_container_width=True): st.session_state.nav_mode = "إضافة إعلان"
-if col_n3.button("🛠️ الخدمات الرقمية والهندسية", use_container_width=True): st.session_state.nav_mode = "خدمات"
-if col_n4.button("📞 تواصل مع عامر بوخدادة", use_container_width=True): st.session_state.nav_mode = "اتصال"
+col_n1, col_n2, col_n3, col_n4, col_n5 = st.columns(5)
+if col_n1.button("🏠 المنصة الرئيسية", use_container_width=True): st.session_state.nav_mode = "المنصة الرئيسية"
+if col_n2.button("➕ إضافة إعلان", use_container_width=True): st.session_state.nav_mode = "إضافة إعلان"
+if col_n3.button("🎨 مصنع البرومبتات والهوية", use_container_width=True): st.session_state.nav_mode = "البرومبتات والهوية"
+if col_n4.button("🛠️ الخدمات", use_container_width=True): st.session_state.nav_mode = "خدمات"
+if col_n5.button("📞 تواصل", use_container_width=True): st.session_state.nav_mode = "اتصال"
 
 st.markdown("---")
 
-# 1. صفحة المنصة الرئيسية وعرض الإعلانات مع الفلترة والوكيل الذكي
+# 1. صفحة المنصة الرئيسية
 if st.session_state.nav_mode == "المنصة الرئيسية":
     st.title("🏢 Tassaout Immo & Media")
-    st.markdown("<p style='color: #a3e635;'>منصة الإعلانات الذكية والخدمات الشاملة - قلعة السراغنة ومراكش</p>", unsafe_allow_html=True)
+    st.markdown("<p style='color: #a3e635; font-size: 16px;'>منصة الإعلانات الذكية والخدمات الشاملة - قلعة السراغنة ومراكش</p>", unsafe_allow_html=True)
     
-    # قسم الوكيل الذكي المتفاعل
-    with st.expander("🤖 الوكيل الذكي المتفاعل (اضغط للتحدث والاستفسار)", expanded=True):
+    # قسم الوكيل الذكي (Photographer & Super Agentic AI)
+    with st.expander("🤖 الوكيل الذكي (Photographer & Content Agentic AI)", expanded=False):
+        st.markdown("<div class='agent-header'><b>إدارة وتوجيه ذكي:</b> استشر الوكيل لتوليد الأفكار، البرومبتات البصرية، أو تدقيق النصوص الإعلانية قبل اعتمادها.</div>", unsafe_allow_html=True)
+        
         for msg in st.session_state.chat_history:
             if msg["role"] == "assistant":
                 st.markdown(f"<div style='background-color: #14532d; color: #4ade80; padding: 10px; border-radius: 8px; margin-bottom: 5px; border-right: 3px solid #22c55e;'>🤖 {msg['content']}</div>", unsafe_allow_html=True)
             else:
                 st.markdown(f"<div style='background-color: #0f3d24; color: #f8fafc; padding: 10px; border-radius: 8px; margin-bottom: 5px; border-left: 3px solid #16a34a; text-align: left;'>👤 {msg['content']}</div>", unsafe_allow_html=True)
         
-        user_query = st.text_input("اكتب طلبك أو استفسارك هنا...", key="user_agent_input")
-        if st.button("إرسال للوكيل الذكي"):
+        user_query = st.text_input("اطلب برومبت تصوير، محتوى تسويقي، أو استفسار...", key="user_agent_input")
+        if st.button("توليد بواسطة الوكيل الذكي"):
             if user_query.strip():
                 st.session_state.chat_history.append({"role": "user", "content": user_query})
                 q = user_query.lower()
                 
-                # منطق الرد الآلي
-                if 'أرض' in q or 'فلاحية' in q or 'عقار' in q:
-                    results = [ad for ad in st.session_state.ads_data if 'العقاري' in ad['category'] or 'أرض' in ad['title']]
-                    if results:
-                        ans = f"وجدت {len(results)} عرض عقاري مطابق. أحدثها: '{results[0]['title']}' بسعر {results[0]['price']} في {results[0]['location']}."
-                    else:
-                        ans = "عذراً، لا توجد عروض عقارية مطابقة حالياً، يمكنك إضافة عرض جديد من قائمة 'إضافة إعلان'."
-                elif 'بناء' in q or 'إسمنت' in q or 'حديد' in q or 'مواد' in q:
-                    results = [ad for ad in st.session_state.ads_data if 'مواد البناء' in ad['category']]
-                    if results:
-                        ans = f"متوفر لدينا في قسم مواد البناء: '{results[0]['title']}' - {results[0]['description']}."
-                    else:
-                        ans = "يمكننا توفير كافة مواد البناء بالجملة والتقسيط بجهة مراكش آسفي حسب طلبك."
-                elif 'مراكش' in q or 'السراغنة' in q:
-                    ans = "نحن نغطي مناطق قلعة السراغنة ومراكش بشكل أساسي في مجالات العقارات، مواد البناء، والهندسة الرقمية والتسويق."
+                if 'برومبت' in q or 'تصوير' in q or 'صورة' in q:
+                    ans = f"📷 **مقترح برومبت التصوير الذكي (Photographer Agent):**\n`Professional architectural photography of {user_query}, luxury real estate style, natural sunlight, El Kelaa des Sraghna aesthetic, 8k resolution, photorealistic --ar 16:9`"
+                elif 'محتوى' in q or 'إعلان' in q or 'تسويق' in q:
+                    ans = f"✍️ **محتوى تسويقي معتمد:**\n'فرصة استثمارية مميزة بقلعة السراغنة ومراكش. جودة عالية وموقع استراتيجي يضمن لك نجاح مشروعك. تواصل معنا الآن للمزيد من التفاصيل.'"
                 else:
-                    ans = "يسعدنا تواصلك! يمكنك تصفح العروض أدناه أو التواصل معنا مباشرة عبر الواتساب."
+                    ans = "✅ تم استلام توجيهاتك وصياغة المحتوى والهوية البصرية بدقة. يمكنك الانتقال لقسم 'مصنع البرومبتات والهوية' لاستعراض التعليمات المعتمدة."
                 
                 st.session_state.chat_history.append({"role": "assistant", "content": ans})
                 st.rerun()
 
     st.markdown("### 📋 العروض والأنشطة المتاحة")
     
-    # شريط الفلترة حسب القطاع
-    filter_option = st.selectbox("فلترة حسب القطاع:", [
+    filter_option = st.selectbox("فلترة العروض حسب القطاع:", [
         "جميع العروض",
         "العقاري الفلاحي",
         "العقاري الصناعي والتجاري",
@@ -118,7 +111,6 @@ if st.session_state.nav_mode == "المنصة الرئيسية":
         "التسويق العقاري والتجاري"
     ])
     
-    # فلترة البيانات
     displayed_ads = st.session_state.ads_data
     if filter_option != "جميع العروض":
         displayed_ads = [ad for ad in st.session_state.ads_data if ad['category'] == filter_option]
@@ -135,7 +127,16 @@ if st.session_state.nav_mode == "المنصة الرئيسية":
                     <h3 style="color: #4ade80; margin: 10px 0 5px 0;">{ad.get('title', '')}</h3>
                     <p style="font-size: 13px; color: #cbd5e1; margin: 3px 0;">📍 {ad.get('location', '')}</p>
                     <p style="font-size: 12px; color: #94a3b8; margin: 6px 0;">{ad.get('description', '')}</p>
-                    <hr style="border-color: #14532d;">
+                """, unsafe_allow_html=True)
+                
+                if ad.get('images'):
+                    img_cols = st.columns(len(ad['images']) if len(ad['images']) <= 3 else 3)
+                    for img_i, img_data in enumerate(ad['images']):
+                        with img_cols[img_i % 3]:
+                            st.image(img_data, use_container_width=True)
+
+                st.markdown(f"""
+                    <hr style="border-color: #14532d; margin: 10px 0;">
                     <div style="display: flex; justify-content: space-between; align-items: center;">
                         <span style="font-size: 15px; font-weight: bold; color: #4ade80;">{ad.get('price', '')}</span>
                         <a href="https://wa.me/212691897126" target="_blank" style="background-color: #16a34a; color: #fff; padding: 5px 10px; border-radius: 6px; text-decoration: none; font-size: 12px; font-weight: bold;">تواصل معنا</a>
@@ -143,14 +144,6 @@ if st.session_state.nav_mode == "المنصة الرئيسية":
                 </div>
                 """, unsafe_allow_html=True)
                 
-                # عرض الصور المرفقة إن وجدت
-                if ad.get('images'):
-                    img_cols = st.columns(len(ad['images']) if len(ad['images']) <= 3 else 3)
-                    for img_i, img_data in enumerate(ad['images']):
-                        with img_cols[img_i % 3]:
-                            st.image(img_data, use_container_width=True)
-                
-                # زر حذف العرض
                 if st.button(f"حذف العرض #{idx}", key=f"del_{idx}"):
                     st.session_state.ads_data.remove(ad)
                     save_ads(st.session_state.ads_data)
@@ -198,11 +191,39 @@ elif st.session_state.nav_mode == "إضافة إعلان":
                 
                 st.session_state.ads_data.insert(0, new_ad)
                 save_ads(st.session_state.ads_data)
-                st.success("تم نشر العرض بنجاح!")
+                st.success("تم نشر العرض بنجاح مع الصور!")
+                st.rerun()
             else:
                 st.error("الرجاء ملء الحقول الإجبارية.")
 
-# 3. صفحة الخدمات الرقمية والهندسية
+# 3. صفحة مصنع البرومبتات والهوية البصرية (Photographer & Brand Agentic Hub)
+elif st.session_state.nav_mode == "البرومبتات والهوية":
+    st.title("🎨 مصنع البرومبتات والهوية البصرية")
+    st.write("هنا يتم مراجعة واختبار تعليمات إنتاج المحتوى الكتابي والبرومبتات الخاصة بالذكاء الاصطناعي قبل اعتمادها ونشرها.")
+    
+    st.markdown("### 📌 1. برومبتات التصوير والهندسة البصرية (Photographer Agent)")
+    st.markdown("""
+    <div class='prompt-box'>
+    <b>Prompt 1 (العقارات الفلاحية والأراضـي):</b><br>
+    <i>"Cinematic aerial drone shot of fertile agricultural land in El Kelaa des Sraghna, lush green fields, irrigation systems, bright sunny day, professional real estate photography, 8k, photorealistic --ar 16:9"</i>
+    </div>
+    """, unsafe_allow_html=True)
+    
+    st.markdown("""
+    <div class='prompt-box'>
+    <b>Prompt 2 (المشاريع التجارية ومواد البناء):</b><br>
+    <i>"Modern industrial and commercial building showroom, clean layout, building materials displayed professionally, professional lighting, corporate atmosphere, Marrakech aesthetic, 4k --ar 16:9"</i>
+    </div>
+    """, unsafe_allow_html=True)
+    
+    st.markdown("### ✍️ 2. تعليمات المحتوى الكتابي والتسويقي (Content Agentic Rules)")
+    st.markdown("""
+    * **النبرة والأسلوب:** احترافية، موثوقة، ومباشرة تخدم مستثمري قلعة السراغنة ومراكش.
+    * **القاعدة الثابتة:** ربط كل إعلان برقم واتساب المعتمد (`+212691897126`) مع توضيح الأسعار بدقة والعملات بـ (DH).
+    * **إدارة الهوية البصرية:** اعتماد تدرجات الأخضر الداكن (`#062314` و `#0f3d24`) مع تباين واضح للنصوص لضمان راحة العين وسهولة التصفح.
+    """)
+
+# 4. صفحة الخدمات الرقمية والهندسية
 elif st.session_state.nav_mode == "خدمات":
     st.title("🛠️ خدماتنا الرقمية والهندسية")
     services_data = load_services()
@@ -210,7 +231,7 @@ elif st.session_state.nav_mode == "خدمات":
         with st.expander(f"✨ {s.get('الخدمة', 'خدمة')}"):
             st.write(s.get('الوصف', ''))
 
-# 4. صفحة الاتصال
+# 5. صفحة الاتصال
 elif st.session_state.nav_mode == "اتصال":
     st.title("📞 تواصل مع عامر بوخدادة")
     st.success("الهاتف/واتساب: 0691897126")
