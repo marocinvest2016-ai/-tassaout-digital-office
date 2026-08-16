@@ -14,6 +14,18 @@ st.markdown("""
     </style>
 """, unsafe_allow_html=True)
 
+# التأكد من وجود مجلد listings وإنشاء ملف تجريبي تلقائياً لمنع ظهور الخطأ
+if not os.path.exists("listings"):
+    os.makedirs("listings")
+    sample_data = {
+        "title": "أرض فلاحية أو محل تجاري تجريبي",
+        "category": "العقاري الفلاحي",
+        "description": "هذا عقار تجريبي تم إنشاؤه تلقائياً لعمل التطبيق بنجاح.",
+        "price": "1,200,000 درهم"
+    }
+    with open("listings/sample_prop.json", "w", encoding="utf-8") as f:
+        json.dump(sample_data, f, ensure_ascii=False, indent=4)
+
 # دالة تحميل الخدمات
 def load_services():
     try:
@@ -37,30 +49,26 @@ if col3.button("اتصل بنا", use_container_width=True):
 # محتوى الصفحات
 if st.session_state.nav_mode == "عقارات":
     st.title("المحفظة العقارية")
-    st.write("استعراض العقارات المتاحة (يمكنك إضافة ملفات في مجلد listings)")
+    st.write("استعراض العقارات المتاحة:")
     
-    # عرض العقارات من مجلد listings إن وجد
-    if os.path.exists("listings"):
-        listing_files = glob.glob("listings/*.json")
-        if listing_files:
-            for file_path in listing_files:
-                try:
-                    with open(file_path, "r", encoding="utf-8") as f:
-                        prop = json.load(f)
-                        st.markdown(f"""
-                        <div class="prop-card">
-                            <h3>{prop.get('title', 'عقار')}</h3>
-                            <span class="badge-cat">{prop.get('category', 'عام')}</span>
-                            <p>{prop.get('description', '')}</p>
-                            <p><b>السعر:</b> {prop.get('price', 'غير محدد')}</p>
-                        </div>
-                        """, unsafe_allow_html=True)
-                except Exception as e:
-                    pass
-        else:
-            st.info("لا توجد ملفات عقارات حالياً في مجلد listings.")
+    listing_files = glob.glob("listings/*.json")
+    if listing_files:
+        for file_path in listing_files:
+            try:
+                with open(file_path, "r", encoding="utf-8") as f:
+                    prop = json.load(f)
+                    st.markdown(f"""
+                    <div class="prop-card">
+                        <h3>{prop.get('title', 'عقار')}</h3>
+                        <span class="badge-cat">{prop.get('category', 'عام')}</span>
+                        <p>{prop.get('description', '')}</p>
+                        <p><b>السعر:</b> {prop.get('price', 'غير محدد')}</p>
+                    </div>
+                    """, unsafe_allow_html=True)
+            except Exception as e:
+                pass
     else:
-        st.info("مجلد listings غير موجود. يمكنك إنشاؤه لإضافة العقارات.")
+        st.info("لا توجد ملفات عقارات حالياً.")
 
 elif st.session_state.nav_mode == "خدمات":
     st.title("خدماتنا الرقمية والهندسية")
