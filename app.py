@@ -1,18 +1,18 @@
 import streamlit as st
 from supabase import create_client, Client
-import os
 from google import genai
 from fpdf import FPDF
 import tempfile
+import time
 
 # إعدادات الصفحة السيادية
 st.set_page_config(
-    page_title="OMEGA OS - Elite Core [PDF Master Edition]",
+    page_title="OMEGA OS - Elite Core [Supabase Cache Edition]",
     page_icon="👑",
     layout="wide"
 )
 
-# الربط الآمن مع Supabase (حماية الأسرار السيادية)
+# الربط الآمن مع Supabase
 SUPABASE_URL = st.secrets["SUPABASE_URL"]
 SUPABASE_KEY = st.secrets["SUPABASE_KEY"]
 
@@ -22,7 +22,7 @@ def init_supabase():
 
 supabase: Client = init_supabase()
 
-st.title("👑 OMEGA OS - Elite Core [PDF Master Edition]")
+st.title("👑 OMEGA OS - Elite Core [Supabase Cache Edition]")
 st.sidebar.success("مرحباً بك يا رئيس (الوصول السيادي المطلق)")
 
 # القائمة السيادية الشاملة لكافة الوحدات
@@ -66,7 +66,6 @@ if menu == "رصد الميدان والتقارير":
     st.subheader("📁 الأرشيف السيادي وتوليد ملفات PDF")
     
     try:
-        # جلب التقارير مرتبة تنازلياً حسب تاريخ الإنشاء
         reports_data = supabase.table("reports").select("*").order("created_at", desc=True).execute()
         
         if reports_data.data:
@@ -79,15 +78,12 @@ if menu == "رصد الميدان والتقارير":
                 with st.expander(f"📌 [{r_type}] {p_name} — ({r_date})"):
                     st.write(r_text)
                     
-                    # زر توليد وتنزيل الـ PDF لكل تقرير
                     if st.button(f"📄 تصدير كـ PDF رسمي", key=f"pdf_btn_{r.get('id', idx)}"):
                         try:
-                            # إنشاء ملف PDF مؤقت
                             pdf = FPDF()
                             pdf.add_page()
                             pdf.set_font("Arial", size=12)
                             
-                            # كتابة محتوى التقرير
                             pdf.cell(200, 10, txt="OMEGA OS - Official Report", ln=True, align="C")
                             pdf.ln(10)
                             pdf.cell(200, 10, txt=f"Project: {p_name}", ln=True)
@@ -95,10 +91,8 @@ if menu == "رصد الميدان والتقارير":
                             pdf.cell(200, 10, txt=f"Date: {r_date}", ln=True)
                             pdf.ln(10)
                             
-                            # تقسيم النص الطويل
                             pdf.multi_cell(0, 10, txt=r_text)
                             
-                            # حفظ الملف في مسار مؤقت
                             with tempfile.NamedTemporaryFile(delete=False, suffix=".pdf") as tmp_file:
                                 pdf.output(tmp_file.name)
                                 tmp_path = tmp_file.name
@@ -181,11 +175,11 @@ elif menu == "الذاكرة الرقمية (Gemini Memo)":
             st.write(f"💡 {m.get('content')}")
 
 # ==========================================
-# 4. الوكيل الذكي الخارق (نظام Perplexity الشامل للمغرب)
+# 4. الوكيل الذكي الخارق (مزود بنظام التخزين المؤقت الذكي)
 # ==========================================
 elif menu == "الوكيل الذكي الخارق (Max AI Agent)":
-    st.header("🌐 المحرك الذكي السيادي الشامل [Perplexity Style]")
-    st.write("مرحباً بك يا رئيس. هذا المحرك مفعل للبحث المفتوح في شبكة الإنترنت عبر كافة جهات المغرب (عقارات، صفقات، طلبات، استثمار، وتحليلات شاملة).")
+    st.header("🌐 المحرك الذكي السيادي الشامل [Cached Perplexity Style]")
+    st.write("مرحباً بك يا رئيس. هذا المحرك مفحص ومزود بالذاكرة الذكية لتجاوز حدود الحصة عبر تخزين النتائج واسترجاعها فورياً.")
 
     gemini_api_key = st.secrets["GEMINI_API_KEY"]
     
@@ -210,55 +204,87 @@ elif menu == "الوكيل الذكي الخارق (Max AI Agent)":
     
     col1, col2 = st.columns(2)
     with col1:
-        launch_search = st.button("🔍 ابحث واقترح عبر الويب")
+        launch_search = st.button("🔍 ابحث واقترح عبر الويب (الذاكرة أولاً)")
     with col2:
-        auto_archive = st.checkbox("أرشفة النتائج تلقائياً في قاعدة البيانات", value=True)
+        force_fresh = st.checkbox("تجاوز الذاكرة والبحث المباشر الجديد", value=False)
     
     if launch_search:
         if user_query:
-            with st.spinner("جاري التمشيط الشامل للإنترنت وتحليل البيانات الحية..."):
+            search_title_key = f"بحث شبكي: {target_region} - {user_query[:30]}"
+            cached_result = None
+            
+            # 1. فحص الذاكرة المؤقتة في Supabase أولاً لتوفير الكوتا
+            if not force_fresh:
                 try:
-                    client = genai.Client(api_key=gemini_api_key)
-                    
-                    system_prompt = (
-                        f"أنت محرك بحث ووكيل استخباري ذكي ومحترف (يشبه Perplexity) مخصص للسوق المغربي. "
-                        f"نطاق البحث المستهدف حالياً هو: {target_region}. "
-                        "قم بالبحث الحقيقي في الإنترنت عبر أدوات البحث، واستخرج تفاصيل دقيقة، روابط، إحصائيات، "
-                        "أو طلبات عروض، وقدم إجابة مهيكلة، عميقة، ومفصلة باللغة العربية مع ذكر المصادر إن وجدت."
-                    )
-                    
-                    response = client.models.generate_content(
-                        model='gemini-3.6-flash',
-                        contents=f"{system_prompt}\n\nالسؤال أو البحث المطلوب: {user_query}",
-                        config={
-                            'tools': [{'google_search': {}}],
-                        }
-                    )
-                    
-                    search_result = response.text
-                    st.success("تم إنجاز عملية البحث والاستخراج بنجاح:")
-                    st.markdown(search_result)
-                    
-                    if response.candidates and response.candidates[0].grounding_metadata:
-                        metadata = response.candidates[0].grounding_metadata
-                        if hasattr(metadata, 'grounding_chunks') and metadata.grounding_chunks:
-                            st.subheader("🔗 المصادر الحية المستند إليها:")
-                            for chunk in metadata.grounding_chunks:
-                                if chunk.web:
-                                    st.markdown(f"- [{chunk.web.title}]({chunk.web.uri})")
-                    
-                    if auto_archive:
-                        try:
-                            supabase.table("reports").insert({
-                                "project_name": f"بحث شبكي: {target_region}",
-                                "report_content": f"السؤال: {user_query}\n\nالنتائج:\n{search_result}",
-                                "report_type": "صفقات"
-                            }).execute()
-                            st.info("💾 تم حفظ واستصدار التقرير الشبكي في قاعدة بيانات Supabase بنجاح.")
-                        except Exception as db_err:
-                            st.warning(f"تم عرض النتائج لكن تعذر الحفظ التلقائي: {db_err}")
+                    existing = supabase.table("reports").select("*").eq("project_name", f"بحث شبكي: {target_region}").execute()
+                    if existing.data:
+                        # نبحث عن تطابق قريب في النص
+                        for row in existing.data:
+                            if user_query in row.get('report_content', ''):
+                                cached_result = row.get('report_content')
+                                break
+                except Exception:
+                    pass
+            
+            if cached_result and not force_fresh:
+                st.success("⚡ تم استرجاع النتيجة فورياً من الذاكرة السيادية (بدون استهلاك الـ API):")
+                st.markdown(cached_result)
+            else:
+                with st.spinner("جاري التمشيط الشامل للإنترنت عبر محرك Gemini المتقدم..."):
+                    try:
+                        client = genai.Client(api_key=gemini_api_key)
+                        
+                        system_prompt = (
+                            f"أنت محرك بحث ووكيل استخباري ذكي ومحترف مخصص للسوق المغربي. "
+                            f"نطاق البحث المستهدف حالياً هو: {target_region}. "
+                            "قم بالبحث الحقيقي في الإنترنت عبر أدوات البحث، واستخرج تفاصيل دقيقة، روابط، إحصائيات، "
+                            "أو طلبات عروض، وقدم إجابة مهيكلة، عميقة، ومفصلة باللغة العربية مع ذكر المصادر إن وجدت."
+                        )
+                        
+                        response = None
+                        # آلية إعادة المحاولة عند حدوث الضغط (429)
+                        for attempt in range(2):
+                            try:
+                                response = client.models.generate_content(
+                                    model='gemini-3.6-flash',
+                                    contents=f"{system_prompt}\n\nالسؤال أو البحث المطلوب: {user_query}",
+                                    config={
+                                        'tools': [{'google_search': {}}],
+                                    }
+                                )
+                                break
+                            except Exception as api_err:
+                                if "429" in str(api_err) and attempt == 0:
+                                    time.sleep(4)
+                                    continue
+                                else:
+                                    raise api_err
+                        
+                        if response:
+                            search_result = response.text
+                            st.success("تم إنجاز عملية البحث والاستخراج بنجاح:")
+                            st.markdown(search_result)
                             
-                except Exception as e:
-                    st.error(f"حدث خطأ أثناء الاتصال بالمحرك الذكي: {e}")
+                            if response.candidates and response.candidates[0].grounding_metadata:
+                                metadata = response.candidates[0].grounding_metadata
+                                if hasattr(metadata, 'grounding_chunks') and metadata.grounding_chunks:
+                                    st.subheader("🔗 المصادر الحية المستند إليها:")
+                                    for chunk in metadata.grounding_chunks:
+                                        if chunk.web:
+                                            st.markdown(f"- [{chunk.web.title}]({chunk.web.uri})")
+                            
+                            # حفظ النتيجة تلقائياً في Supabase لاستخدامها مستقبلاً بدون استهلاك الكوتا
+                            try:
+                                supabase.table("reports").insert({
+                                    "project_name": f"بحث شبكي: {target_region}",
+                                    "report_content": f"السؤال: {user_query}\n\nالنتائج:\n{search_result}",
+                                    "report_type": "صفقات"
+                                }).execute()
+                                st.info("💾 تم حفظ وأرشفة النتيجة في قاعدة بيانات Supabase للذاكرة السيادية.")
+                            except Exception as db_err:
+                                st.warning(f"تم عرض النتائج لكن تعذر الحفظ: {db_err}")
+                                
+                    except Exception as e:
+                        st.error(f"حدث خطأ بسبب استنفاد الحصة المؤقتة (429): يرجى الانتظار قليلاً أو تفعيل زر تجاوز الذاكرة لاحقاً. التفاصيل: {e}")
         else:
             st.warning("المرجو كتابة ما تريد البحث عنه أولاً.")
