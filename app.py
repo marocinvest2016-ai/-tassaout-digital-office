@@ -73,9 +73,10 @@ elif menu == "إدارة الإعلانات":
     if st.button("نشر الإعلان"):
         if title and description:
             try:
+                # التوافق مع الأعمدة الفعلية للجدول
                 supabase.table("instant_ads").insert({
-                    "title": title,
-                    "description": description
+                    "content": title,
+                    "message": description
                 }).execute()
                 st.success("تم نشر الإعلان العقاري بنجاح في قاعدة البيانات!")
             except Exception as e:
@@ -88,7 +89,7 @@ elif menu == "إدارة الإعلانات":
         ads_data = supabase.table("instant_ads").select("*").execute()
         if ads_data.data:
             for ad in ads_data.data:
-                st.info(f"📌 **{ad.get('title')}**\n\n{ad.get('description')}")
+                st.info(f"📌 **{ad.get('content')}**\n\n{ad.get('message')}")
         else:
             st.info("لا توجد إعلانات مسجلة حالياً.")
     except Exception as e:
