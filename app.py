@@ -1,4 +1,3 @@
-```python
 import streamlit as st
 from supabase import create_client
 from google import genai
@@ -153,5 +152,3 @@ elif choice == "إدارة الصفقات 📋":
 elif choice == "المنصة الرئيسية 🏡":
     st.title(f"مرحباً بك يا عامر في {NOM_ENTREPRISE}")
     st.success("OMEGA OS - Elite Core: النظام يعمل بسيادة تامة.")
-
-```
