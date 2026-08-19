@@ -57,8 +57,18 @@ if menu == "رصد الميدان والتقارير":
 
 elif menu == "إدارة الإعلانات":
     st.header("📢 وحدة إدارة الإعلانات الفورية (instant_ads)")
-    title = st.text_input("عنوان الإعلان")
-    description = st.text_area("تفاصيل الإعلان")
+    
+    # النصوص الجاهزة للإعلان العقاري في قلعة السراغنة
+    default_title = "عرض عقاري مميز: بقع، شقق ومكاتب في قلعة السراغنة"
+    default_desc = """🌟 فرص ذهبية للاستثمار والسكن في قلب قلعة السراغنة! 🌟
+خدمات تساوت الرقمية للعقار توفر لكم:
+* بقع سكنية والتجارية بمواقع استراتيجية.
+* شقق عصرية بتشطيبات راقية.
+* مكاتب مهنية مجهزة.
+📞 للاتصال والحجز: 0691897126"""
+
+    title = st.text_input("عنوان الإعلان", value=default_title)
+    description = st.text_area("تفاصيل الإعلان", value=default_desc, height=150)
     
     if st.button("نشر الإعلان"):
         if title and description:
@@ -67,26 +77,35 @@ elif menu == "إدارة الإعلانات":
                     "title": title,
                     "description": description
                 }).execute()
-                st.success("تم نشر الإعلان بنجاح!")
+                st.success("تم نشر الإعلان العقاري بنجاح في قاعدة البيانات!")
             except Exception as e:
-                st.error(f"خطأ: {e}")
+                st.error(f"خطأ أثناء النشر: {e}")
         else:
             st.warning("املأ العنوان والوصف.")
             
-    ads_data = supabase.table("instant_ads").select("*").execute()
-    if ads_data.data:
-        for ad in ads_data.data:
-            st.write(f"📌 **{ad.get('title')}**: {ad.get('description')}")
+    st.subheader("الإعلانات المنشورة حالياً")
+    try:
+        ads_data = supabase.table("instant_ads").select("*").execute()
+        if ads_data.data:
+            for ad in ads_data.data:
+                st.info(f"📌 **{ad.get('title')}**\n\n{ad.get('description')}")
+        else:
+            st.info("لا توجد إعلانات مسجلة حالياً.")
+    except Exception as e:
+        st.error(f"خطأ في جلب الإعلانات: {e}")
 
 elif menu == "الذاكرة الرقمية (Gemini Memo)":
     st.header("🧠 الذاكرة الرقمية")
     memo_content = st.text_area("محتوى المذكرة أو الفكرة")
     if st.button("حفظ في الذاكرة"):
         if memo_content:
-            supabase.table("gemini_memo").insert({
-                "content": memo_content
-            }).execute()
-            st.success("تم الحفظ في الذاكرة!")
+            try:
+                supabase.table("gemini_memo").insert({
+                    "content": memo_content
+                }).execute()
+                st.success("تم الحفظ في الذاكرة!")
+            except Exception as e:
+                st.error(f"خطأ: {e}")
     
     memos = supabase.table("gemini_memo").select("*").execute()
     if memos.data:
