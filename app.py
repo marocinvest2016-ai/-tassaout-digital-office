@@ -1,6 +1,6 @@
 import streamlit as st
 from supabase import create_client
-import google.generativeai as genai
+from google import genai
 import PIL.Image
 import pandas as pd
 from datetime import datetime
@@ -20,18 +20,15 @@ except Exception as e:
 
 # 2. تهيئة الاتصال
 supabase = create_client(SUPABASE_URL, SUPABASE_KEY)
-genai.configure(api_key=GEMINI_API_KEY)
+client = genai.Client(api_key=GEMINI_API_KEY)
 
-model = genai.GenerativeModel(
-    model_name="gemini-1.5-pro",
-    system_instruction=f"""أنت المهندس السيادي لـ {NOM_ENTREPRISE}.
-    تخصصاتك:
-    1. البرمجة والأنظمة: تكتب أكواد (Python, JS, SQL) لإعداد الكاميرات الرقمية والأتمتة.
-    2. الهندسة: مهندس معماري وديكور، تقدم حلولاً تقنية ومقاسات.
-    3. الصفقات: خبير صفقات عمومية، تبحث في الإنترنت، تحلل المناقصات، وتصيغ العقود.
-    معلومات الشركة: توريد مواد البناء، عقار فلاحي وصناعي، هندسة رقمية وصناعية، خدمات الحج والعمرة بقلعة السراغنة.
-    أجب دائماً بعمق تقني ومهنية عالية وباللغة العربية المغربية."""
-)
+SYSTEM_INSTRUCTION = f"""أنت المهندس السيادي لـ {NOM_ENTREPRISE}.
+تخصصاتك:
+1. البرمجة والأنظمة: تكتب أكواد (Python, JS, SQL) لإعداد الكاميرات الرقمية والأتمتة.
+2. الهندسة: مهندس معماري وديكور، تقدم حلولاً تقنية ومقاسات.
+3. الصفقات: خبير صفقات عمومية، تبحث في الإنترنت، تحلل المناقصات، وتصيغ العقود.
+معلومات الشركة: توريد مواد البناء، عقار فلاحي وصناعي، هندسة رقمية وصناعية، خدمات الحج والعمرة بقلعة السراغنة.
+أجب دائماً بعمق تقني ومهنية عالية وباللغة العربية المغربية."""
 
 st.set_page_config(page_title=BOT_NAME, layout="wide")
 
@@ -57,7 +54,7 @@ if choice == "المنصة الرئيسية 🏡":
     with col2:
         st.metric("قاعدة البيانات", "متصل بـ Supabase")
     with col3:
-        st.metric("محرك الذكاء", "Gemini 1.5 Pro")
+        st.metric("محرك الذكاء", "Gemini 2.0 Flash")
 
 # --- 2. الوكيل الهندسي والتقني ---
 elif choice == "الوكيل الهندسي والتقني 🤖":
@@ -76,11 +73,17 @@ elif choice == "الوكيل الهندسي والتقني 🤖":
         with st.chat_message("assistant"):
             with st.spinner("المهندس السيادي يفكر..."):
                 try:
-                    response = model.generate_content(prompt)
+                    response = client.models.generate_content(
+                        model='gemini-2.0-flash', 
+                        contents=prompt,
+                        config={
+                            'system_instruction': SYSTEM_INSTRUCTION
+                        }
+                    )
                     st.markdown(response.text)
                     st.session_state.chat.append({"role": "assistant", "content": response.text})
                 except Exception as e:
-                    st.error(f"خطأ في الاتصال بالنموذج: {e}")
+                    st.error(f"⚠️ خطأ في المحرك: {e}")
 
 # --- 3. رصد الميدان (كاميرا) ---
 elif choice == "رصد الميدان (كاميرا) 📷":
@@ -94,28 +97,26 @@ elif choice == "رصد الميدان (كاميرا) 📷":
         if st.button("تحليل الورش ميدانياً 🔍"):
             with st.spinner("المهندس السيادي يحلل الصورة..."):
                 try:
-                    # أ. التحليل البصري بواسطة Gemini Vision
                     img = PIL.Image.open(img_file)
-                    vision_model = genai.GenerativeModel("gemini-1.5-pro")
                     prompt = f"""أنت مهندس خبير في أوراش البناء بقلعة السراغنة. 
                     قم بتحليل هذه الصورة لمشروع {project_name} وقدم تقريراً يشمل: 
                     1. نسبة تقدم الأشغال % 2. المواد الظاهرة 3. ملاحظات السلامة 4. توصيات هندسية."""
                     
-                    response = vision_model.generate_content([prompt, img])
+                    response = client.models.generate_content(
+                        model='gemini-2.0-flash',
+                        contents=[prompt, img]
+                    )
                     report = response.text
                     
                     st.markdown("### 📊 تقرير التحليل:")
                     st.write(report)
                     
-                    # ب. رفع الصورة إلى Supabase Storage وحفظ التقرير
                     if project_name:
                         file_name = f"{project_name}/{datetime.now().strftime('%Y%m%d_%H%M%S')}.jpg"
                         
-                        # رفع الصورة (تأكد من وجود Bucket باسم reports في Supabase)
                         supabase.storage.from_("reports").upload(file_name, img_file.getvalue())
                         image_url = supabase.storage.from_("reports").get_public_url(file_name)
 
-                        # حفظ البيانات في جدول reports
                         supabase.table("reports").insert({
                             "project_name": project_name,
                             "report_content": report,
@@ -147,7 +148,6 @@ elif choice == "إدارة الصفقات 📋":
     
     tab1, tab2 = st.tabs(["➕ إضافة صفقة جديدة", "📊 عرض كل الصفقات"])
 
-    # أ. فورم الإضافة
     with tab1:
         with st.form("deal_form", clear_on_submit=True):
             col1, col2 = st.columns(2)
@@ -179,7 +179,6 @@ elif choice == "إدارة الصفقات 📋":
                 else:
                     st.warning("الرجاء إدخال اسم الصفقة أو المشروع على الأقل.")
 
-    # ب. عرض الصفقات
     with tab2:
         st.subheader("سجل الصفقات السحابية")
         if st.button("تحديث وعرض البيانات 🔄"):
