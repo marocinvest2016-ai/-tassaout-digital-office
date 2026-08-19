@@ -2,17 +2,19 @@ import streamlit as st
 from supabase import create_client, Client
 import os
 from google import genai
+from fpdf import FPDF
+import tempfile
 
 # إعدادات الصفحة السيادية
 st.set_page_config(
-    page_title="OMEGA OS - Elite Core [Full Master System]",
+    page_title="OMEGA OS - Elite Core [PDF Master Edition]",
     page_icon="👑",
     layout="wide"
 )
 
-# الربط مع Supabase
-SUPABASE_URL = st.secrets.get("SUPABASE_URL", "https://rbyjjnkhdjfksyodiujs.supabase.co")
-SUPABASE_KEY = st.secrets.get("SUPABASE_KEY", "YOUR_SUPABASE_KEY")
+# الربط الآمن مع Supabase (حماية الأسرار السيادية)
+SUPABASE_URL = st.secrets["SUPABASE_URL"]
+SUPABASE_KEY = st.secrets["SUPABASE_KEY"]
 
 @st.cache_resource
 def init_supabase():
@@ -20,7 +22,7 @@ def init_supabase():
 
 supabase: Client = init_supabase()
 
-st.title("👑 OMEGA OS - Elite Core [Full Master System]")
+st.title("👑 OMEGA OS - Elite Core [PDF Master Edition]")
 st.sidebar.success("مرحباً بك يا رئيس (الوصول السيادي المطلق)")
 
 # القائمة السيادية الشاملة لكافة الوحدات
@@ -35,38 +37,86 @@ menu = st.sidebar.selectbox(
 )
 
 # ==========================================
-# 1. وحدة رصد الميدان والتقارير
+# 1. وحدة رصد الميدان والتقارير + مصنع الـ PDF
 # ==========================================
 if menu == "رصد الميدان والتقارير":
-    st.header("📊 وحدة رصد الميدان والتقارير")
+    st.header("📊 وحدة رصد الميدان والتقارير الرسمية")
+    
     project_name = st.text_input("اسم المشروع / الورش")
     report_content = st.text_area("محتوى التقرير أو التحليل")
     report_type = st.selectbox("نوع التقرير", ["ورش", "عقار", "صفقات"])
     
-    if st.button("حفظ التقرير بأمان"):
-        if project_name and report_content:
-            try:
-                supabase.table("reports").insert({
-                    "project_name": project_name,
-                    "report_content": report_content,
-                    "report_type": report_type
-                }).execute()
-                st.success("تم حفظ التقرير بنجاح في قاعدة البيانات السيادية!")
-            except Exception as e:
-                st.error(f"حدث خطأ أثناء الحفظ: {e}")
-        else:
-            st.warning("المرجو ملء جميع الحقول الأساسية.")
-            
-    st.subheader("سجل التقارير المحفوظة")
+    col_btn1, col_btn2 = st.columns(2)
+    with col_btn1:
+        if st.button("حفظ التقرير بأمان في القاعدة"):
+            if project_name and report_content:
+                try:
+                    supabase.table("reports").insert({
+                        "project_name": project_name,
+                        "report_content": report_content,
+                        "report_type": report_type
+                    }).execute()
+                    st.success("تم حفظ التقرير بنجاح في قاعدة البيانات السيادية!")
+                except Exception as e:
+                    st.error(f"حدث خطأ أثناء الحفظ: {e}")
+            else:
+                st.warning("المرجو ملء جميع الحقول الأساسية.")
+
+    st.markdown("---")
+    st.subheader("📁 الأرشيف السيادي وتوليد ملفات PDF")
+    
     try:
-        reports_data = supabase.table("reports").select("*").execute()
+        # جلب التقارير مرتبة تنازلياً حسب تاريخ الإنشاء
+        reports_data = supabase.table("reports").select("*").order("created_at", desc=True).execute()
+        
         if reports_data.data:
-            for r in reports_data.data:
-                st.info(f"**{r.get('project_name')}** ({r.get('report_type')}) - {r.get('created_at')}\n\n{r.get('report_content')}")
+            for idx, r in enumerate(reports_data.data):
+                p_name = r.get('project_name', 'مفهرس بدون عنوان')
+                r_type = r.get('report_type', 'عام')
+                r_date = r.get('created_at', '')
+                r_text = r.get('report_content', '')
+                
+                with st.expander(f"📌 [{r_type}] {p_name} — ({r_date})"):
+                    st.write(r_text)
+                    
+                    # زر توليد وتنزيل الـ PDF لكل تقرير
+                    if st.button(f"📄 تصدير كـ PDF رسمي", key=f"pdf_btn_{r.get('id', idx)}"):
+                        try:
+                            # إنشاء ملف PDF مؤقت
+                            pdf = FPDF()
+                            pdf.add_page()
+                            pdf.set_font("Arial", size=12)
+                            
+                            # كتابة محتوى التقرير
+                            pdf.cell(200, 10, txt="OMEGA OS - Official Report", ln=True, align="C")
+                            pdf.ln(10)
+                            pdf.cell(200, 10, txt=f"Project: {p_name}", ln=True)
+                            pdf.cell(200, 10, txt=f"Type: {r_type}", ln=True)
+                            pdf.cell(200, 10, txt=f"Date: {r_date}", ln=True)
+                            pdf.ln(10)
+                            
+                            # تقسيم النص الطويل
+                            pdf.multi_cell(0, 10, txt=r_text)
+                            
+                            # حفظ الملف في مسار مؤقت
+                            with tempfile.NamedTemporaryFile(delete=False, suffix=".pdf") as tmp_file:
+                                pdf.output(tmp_file.name)
+                                tmp_path = tmp_file.name
+                                
+                            with open(tmp_path, "rb") as pdf_file:
+                                st.download_button(
+                                    label="⬇️ انقر هنا لتحميل وثيقة PDF الرسمية",
+                                    data=pdf_file,
+                                    file_name=f"OMEGA_Report_{p_name}.pdf",
+                                    mime="application/pdf",
+                                    key=f"dl_pdf_{r.get('id', idx)}"
+                                )
+                        except Exception as pdf_err:
+                            st.error(f"تعذر توليد الـ PDF: {pdf_err}")
         else:
             st.info("لا توجد تقارير مسجلة حتى الآن.")
     except Exception as e:
-        st.error(f"تعذر جلب التقارير: {e}")
+        st.error(f"تعذر جلب سجل التقارير: {e}")
 
 # ==========================================
 # 2. وحدة إدارة الإعلانات الفورية
@@ -100,7 +150,7 @@ elif menu == "إدارة الإعلانات":
             
     st.subheader("الإعلانات المنشورة حالياً")
     try:
-        ads_data = supabase.table("instant_ads").select("*").execute()
+        ads_data = supabase.table("instant_ads").select("*").order("created_at", desc=True).execute()
         if ads_data.data:
             for ad in ads_data.data:
                 st.info(f"📌 **{ad.get('content')}**\n\n{ad.get('message')}")
@@ -125,7 +175,7 @@ elif menu == "الذاكرة الرقمية (Gemini Memo)":
             except Exception as e:
                 st.error(f"خطأ: {e}")
     
-    memos = supabase.table("gemini_memo").select("*").execute()
+    memos = supabase.table("gemini_memo").select("*").order("created_at", desc=True).execute()
     if memos.data:
         for m in memos.data:
             st.write(f"💡 {m.get('content')}")
@@ -137,7 +187,7 @@ elif menu == "الوكيل الذكي الخارق (Max AI Agent)":
     st.header("🌐 المحرك الذكي السيادي الشامل [Perplexity Style]")
     st.write("مرحباً بك يا رئيس. هذا المحرك مفعل للبحث المفتوح في شبكة الإنترنت عبر كافة جهات المغرب (عقارات، صفقات، طلبات، استثمار، وتحليلات شاملة).")
 
-    gemini_api_key = st.secrets.get("GEMINI_API_KEY", "YOUR_GEMINI_API_KEY")
+    gemini_api_key = st.secrets["GEMINI_API_KEY"]
     
     target_region = st.selectbox(
         "نطاق البحث الجغرافي:", 
@@ -178,7 +228,7 @@ elif menu == "الوكيل الذكي الخارق (Max AI Agent)":
                     )
                     
                     response = client.models.generate_content(
-                        model='gemini-2.5-flash',
+                        model='gemini-3.6-flash',
                         contents=f"{system_prompt}\n\nالسؤال أو البحث المطلوب: {user_query}",
                         config={
                             'tools': [{'google_search': {}}],
