@@ -1,6 +1,5 @@
 import streamlit as st
 from supabase import create_client, Client
-import datetime
 
 # إعدادات الصفحة
 st.set_page_config(
@@ -9,8 +8,8 @@ st.set_page_config(
     layout="wide"
 )
 
-# الربط مع Supabase (استبدل بالمفاتيح الخاصة بك أو استخدم st.secrets)
-SUPABASE_URL = st.secrets.get("SUPABASE_URL", "YOUR_SUPABASE_URL")
+# الربط مع Supabase
+SUPABASE_URL = st.secrets.get("SUPABASE_URL", "https://rbyjjnkhdjfksyodiujs.supabase.co")
 SUPABASE_KEY = st.secrets.get("SUPABASE_KEY", "YOUR_SUPABASE_KEY")
 
 @st.cache_resource
@@ -54,7 +53,7 @@ if st.session_state.user is None:
 else:
     # واجهة النظام بعد تسجيل الدخول الناجح
     user = st.session_state.user
-    st.sidebar.success(fمرحباً بك: {user.email})
+    st.sidebar.success(f"مرحباً بك: {user.email}")
     
     if st.sidebar.button("تسجيل الخروج"):
         supabase.auth.sign_out()
@@ -72,8 +71,7 @@ else:
         if st.button("حفظ التقرير بأمان"):
             if project_name and report_content:
                 try:
-                    # بما أننا أضفنا DEFAULT auth.uid() في القاعدة، سيتم إرساله تلقائياً أو صراحةً
-                    res = supabase.table("reports").insert({
+                    supabase.table("reports").insert({
                         "project_name": project_name,
                         "report_content": report_content,
                         "report_type": report_type,
@@ -85,7 +83,6 @@ else:
             else:
                 st.warning("المرجو ملء جميع الحقول الأساسية.")
                 
-        # عرض تقارير المستخدم الحالي فقط
         st.subheader("سجل تقاريرك المحفوظة")
         try:
             reports_data = supabase.table("reports").select("*").execute()
@@ -116,7 +113,6 @@ else:
             else:
                 st.warning("املأ العنوان والوصف.")
                 
-        # عرض الإعلانات
         ads_data = supabase.table("instant_ads").select("*").execute()
         if ads_data.data:
             for ad in ads_data.data:
