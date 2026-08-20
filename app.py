@@ -6,7 +6,7 @@ import plotly.express as px
 import pandas as pd
 
 # إعدادات النظام السيادي المتقدم
-st.set_page_config(page_title="OMEGA OS - V2.7 Integrated", layout="wide")
+st.set_page_config(page_title="OMEGA OS - V2.7 Sovereign", layout="wide")
 
 # إعداد Supabase
 supabase: Client = create_client(st.secrets["SUPABASE_URL"], st.secrets["SUPABASE_KEY"])
@@ -33,7 +33,7 @@ menu = st.sidebar.selectbox("الوحدة السيادية", [
 ])
 
 # ==========================================
-# الوحدة: لوحة تحكم التحليلات
+# الوحدة: لوحة تحكم التحليلات (المصححة نهائياً)
 # ==========================================
 if menu == "📊 لوحة تحكم التحليلات":
     st.header("📊 لوحة الأداء والتحليلات السيادية")
@@ -46,14 +46,27 @@ if menu == "📊 لوحة تحكم التحليلات":
             col1, col2, col3 = st.columns(3)
             col1.metric("إجمالي العمليات", len(df))
             col2.metric("أنواع الأنشطة", df['report_type'].nunique())
+            col3.metric("العملاء المسجلين", len(supabase.table("clients").select("*").execute().data))
             
             st.subheader("توزيع الأنشطة والصفقات")
             fig_pie = px.pie(df, names='report_type', title="توزيع العمليات حسب النوع")
             st.plotly_chart(fig_pie, use_container_width=True)
             
-            st.subheader("وتيرة النشاط الميداني")
-            df_trend = df.groupby(df['created_at'].dt.date).size().reset_index(name='count')
-            fig_line = px.line(df_trend, x='created_at', y='count', title="عدد العمليات اليومية")
+            st.subheader("وتيرة النشاط الميداني اليومي")
+            # التصحيح الهندسي: تجميع حسب اليوم حصراً لإعطاء أعداد صحيحة
+            df['date_only'] = df['created_at'].dt.date
+            df_trend = df.groupby('date_only').size().reset_index(name='count')
+            
+            fig_line = px.line(
+                df_trend, 
+                x='date_only', 
+                y='count', 
+                title="عدد العمليات اليومية",
+                markers=True,
+                labels={'date_only': 'التاريخ', 'count': 'عدد العمليات'}
+            )
+            # اجبار المحور العمودي على عرض أعداد صحيحة فقط
+            fig_line.update_layout(yaxis=dict(tickformat='d'))
             st.plotly_chart(fig_line, use_container_width=True)
         else:
             st.info("لا توجد بيانات كافية للتحليل حالياً.")
@@ -128,21 +141,6 @@ Studio Tassaout & Sraghna Media"""
         }).execute()
         st.success("تم التوليد والأرشفة والنشر بنجاح!")
 
-    with st.expander("📞 تسجيل عميل مهتم بهذا العقار"):
-        c_name = st.text_input("اسم المهتم")
-        c_phone = st.text_input("هاتف المهتم")
-        if st.button("حفظ العميل في CRM"):
-            if c_name and c_phone:
-                supabase.table("clients").insert({
-                    "name": c_name, 
-                    "phone": c_phone, 
-                    "interest": f"{p_type} - {loc}",
-                    "created_at": datetime.now().isoformat()
-                }).execute()
-                st.success(f"تم حفظ العميل {c_name} بنجاح!")
-            else:
-                st.warning("المرجو إدخال الاسم والهاتف.")
-
 # ==========================================
 # الوحدة 3: مصنع الخدمات الرقمية
 # ==========================================
@@ -150,14 +148,14 @@ elif menu == "مصنع الخدمات الرقمية 💻":
     st.header("💻 مصنع إعلانات الخدمات الرقمية")
     dig_services = ["تصميم هوية بصرية", "إدارة حملات إعلانية", "إدارة منصات التواصل", "برمجة وأتمتة"]
     selected_service = st.selectbox("نوع الخدمة:", dig_services)
-    target = st.text_input("الجمهور المستهدف (مثلاً: أصحاب الشركات، المحلات):")
+    target = st.text_input("الجمهور المستهدف:")
     details = st.text_area("تفاصيل الباقة أو العرض:")
     
     if st.button("توليد + أرشفة + نشر 🚀"):
         digital_ad = f"""🚀 عرض احترافي: {selected_service} 🚀
 
 هل ترغب في تطوير نشاطك والوصول إلى {target} باحترافية؟
-نقدم لك حلولاً رقمية مبتكرة ومتكاملة لرفع مبيعاتك.
+نقدم لك حلولاً رقمية مبتكرة ومتكاملة.
 
 تفاصيل الباقة:
 {details}
@@ -178,33 +176,16 @@ DANA Digital Market & Sraghna Media"""
         }).execute()
         st.success("تم التوليد والأرشفة والنشر بنجاح!")
 
-    with st.expander("📞 تسجيل عميل مهتم بهذه الخدمة"):
-        c_name_dig = st.text_input("اسم الزبون المهتم")
-        c_phone_dig = st.text_input("هاتف الزبون المهتم")
-        if st.button("حفظ الزبون الرقمي"):
-            if c_name_dig and c_phone_dig:
-                supabase.table("clients").insert({
-                    "name": c_name_dig, 
-                    "phone": c_phone_dig, 
-                    "interest": selected_service,
-                    "created_at": datetime.now().isoformat()
-                }).execute()
-                st.success(f"تم حفظ الزبون {c_name_dig} بنجاح!")
-            else:
-                st.warning("المرجو إدخال الاسم والهاتف.")
-
 # ==========================================
 # الوحدة 4: تدبير الصفقات العمومية
 # ==========================================
 elif menu == "📑 تدبير الصفقات العمومية":
     st.header("📑 وحدة تدبير الصفقات العمومية والمناقصات")
-    st.markdown("تتبع ملفات الصفقات العمومية، عروض الأثمان، والتقديرات المالية مع الإدارات والمؤسسات.")
-    
     tender_title = st.text_input("موضوع الصفقة أو رقم طلب الأثمان:")
-    admin_entity = st.text_input("الإدارة صاحبة المشروع (المجلس البلدي، العمالة، المديرية...):")
-    estimated_budget = st.text_input("الميزانية التقديرية أو الثمن المرصود (درهم):")
-    tender_status = st.selectbox("حالة الصفقة:", ["في طور دراسة الملف", "تم تحضير العرض", "تم إيداع الملف", "في انتظار فتح الأظرفة", "تم الفوز بالصفقة 🏆", "لم يتم التوفيق"])
-    tender_notes = st.text_area("ملاحظات وتفاصيل إضافية (الضمان المؤقت، الشروط التقنية):")
+    admin_entity = st.text_input("الإدارة صاحبة المشروع:")
+    estimated_budget = st.text_input("الميزانية التقديرية (درهم):")
+    tender_status = st.selectbox("حالة الصفقة:", ["في طور دراسة الملف", "تم إيداع الملف", "تم الفوز بالصفقة 🏆", "لم يتم التوفيق"])
+    tender_notes = st.text_area("ملاحظات وتفاصيل إضافية:")
     
     if st.button("حفظ وتتبع الصفقة في السحابة 📂"):
         if tender_title and admin_entity:
@@ -214,25 +195,17 @@ elif menu == "📑 تدبير الصفقات العمومية":
                 "report_type": "صفقة عمومية",
                 "created_at": datetime.now().isoformat()
             }).execute()
-            st.success("تم تسجيل وتتبع الصفقة العمومية بنجاح في الأرشيف السيادي!")
-        else:
-            st.warning("المرجو إدخال موضوع الصفقة والإدارة المعنية على الأقل.")
+            st.success("تم تسجيل وتتبع الصفقة العمومية بنجاح!")
 
 # ==========================================
 # الوحدة 5: الوكيل التقني والخبير
 # ==========================================
 elif menu == "🧠 الوكيل التقني الخبير":
     st.header("🧠 المستشار التقني وخبير الأنظمة الرقمية")
-    tech_challenge = st.text_area("اطرح المشكل التقني أو المشروع (أتمتة، تحليل بيانات، تطوير ويب):")
-    
-    if st.button("توليد الحل الهندسي والتقني 🛠️"):
+    tech_challenge = st.text_area("اطرح المشكل التقني أو المشروع:")
+    if st.button("توليد الحل الهندسي 🛠️"):
         if tech_challenge:
-            expert_report = f"""⚙️ **التوجيه الهندسي والمعماري:**
-🔹 **التحدي المطروح:** {tech_challenge}
-💡 **الحل المقترح:** اعتمد على هيكلة دقيقة، فصل الوحدات البرمجية، وتأمين المتغيرات الحساسة عبر السحابة لضمان استقرار الأنظمة التشغيلية."""
-            st.info(expert_report)
-        else:
-            st.warning("المرجو كتابة التحدي التقني أولاً.")
+            st.info(f"⚙️ **التوجيه الهندسي:** اعتمد على هيكلة دقيقة وفصل الوحدات البرمجية لضمان استقرار الأنظمة التشغيلية لـ Ameur Signature.")
 
 # ==========================================
 # الوحدة 6: الوكيل الذكي (AI Deal Closer)
@@ -240,16 +213,9 @@ elif menu == "🧠 الوكيل التقني الخبير":
 elif menu == "🤖 الوكيل الذكي (AI Deal Closer)":
     st.header("🤖 مستشار إغلاق الصفقات الذكي")
     client_objection = st.text_area("اعتراض أو رسالة الزبون:")
-    property_context = st.text_input("نوع العقار أو الخدمة المعنية:")
-    
-    if st.button("توليد استراتيجية الرد والإقناع 💡"):
+    if st.button("توليد استراتيجية الرد 💡"):
         if client_objection:
-            ai_response = f"""🎯 **تحليل الوكيل الذكي:**
-🔹 **الاعتراض:** {client_objection}
-💡 **الرد المقترح:** "أهلاً بك، نحن نضمن لك أعلى معايير الجودة والقيمة المضافة لضمان نجاح استثمارك." """
-            st.info(ai_response)
-        else:
-            st.warning("المرجو إدخال اعتراض أو استفسار الزبون أولاً.")
+            st.info("💡 **الرد المقترح:** نضمن لك أعلى معايير الجودة والقيمة المضافة لضمان نجاح استثمارك وقوة مشروعك.")
 
 # ==========================================
 # الوحدة 7: CRM العملاء
@@ -263,7 +229,7 @@ elif menu == "CRM العملاء المهتمين":
         else:
             st.info("لا توجد بيانات مسجلة في جدول العملاء حالياً.")
     except Exception as e:
-        st.error(f"خطأ في جلب بيانات العملاء: {e}")
+        st.error(f"خطأ: {e}")
 
 # ==========================================
 # الوحدة 8: الأرشيف
@@ -274,11 +240,11 @@ elif menu == "الأرشيف والتقارير":
         data = supabase.table("reports").select("*").order("created_at", desc=True).execute().data
         if data:
             for r in data:
-                with st.expander(f"📌 [{r.get('report_type')}] - {r.get('project_name')} - {str(r.get('created_at'))[:10]}"):
+                with st.expander(f"📌 [{r.get('report_type')}] - {r.get('project_name')}"):
                     st.code(r.get('report_content'), language="text")
                     wa_link = get_whatsapp_link("0691897126", r.get('report_content'))
                     st.link_button("📲 إعادة النشر عبر واتساب", wa_link)
         else:
-            st.info("لا توجد تقارير مسجلة في الأرشيف حالياً.")
+            st.info("الأرشيف فارغ حالياً.")
     except Exception as e:
-        st.error(f"خطأ في جلب الأرشيف: {e}")
+        st.error(f"خطأ: {e}")
