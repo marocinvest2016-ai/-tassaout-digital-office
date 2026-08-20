@@ -102,7 +102,7 @@ elif menu == "🤖 غرفة قيادة وكلاء الذكاء الاصطناع�
         if submit_agent:
             if user_task:
                 try:
-                    model = genai.GenerativeModel('gemini-2.5-flash')
+                    model = genai.GenerativeModel('gemini-3.6-flash')
                     system_personas = {
                         "🏢 وكيل العقارات وتحليل السوق المغربي": "أنت خبير استراتيجي عقاري في السوق المغربي (قلعة السراغنة ومراكش). مهمتك تحليل الفرص، تقديم نصائح الاستثمار، وتقييم الأصول.",
                         "🤝 وكيل المبيعات وإغلاق الصفقات (CRM Expert)": "أنت خبير مبيعات وتفاوض عالمي. مهمتك تقديم سيناريوهات إقناع العملاء، الرد على الاعتراضات، ورفع نسبة إغلاق الصفقات.",
@@ -138,7 +138,7 @@ elif menu == "🌐 وكيل البحث العميق واستخراج الدات�
         if run_research:
             if research_query:
                 try:
-                    model = genai.GenerativeModel('gemini-2.5-flash')
+                    model = genai.GenerativeModel('gemini-3.6-flash')
                     research_prompt = f"""
                     أنت وكيل بحث عميق ومحلل أسواق خبير في السوق المغربي (خاصة جهة مراكش آسفي، قلعة السراغنة، والمحيط).
                     بناءً على طلب المستخدم في مجال '{target_focus}':
@@ -176,7 +176,7 @@ elif menu == "🏠 إدارة العقارات والمشاريع الذكية":
                 final_desc = desc
                 if use_ai and name:
                     try:
-                        model = genai.GenerativeModel('gemini-2.5-flash')
+                        model = genai.GenerativeModel('gemini-3.6-flash')
                         prompt = f"اكتب إعلاناً تسويقياً جذاباً ومحترفاً باللغة العربية لعقار باسم '{name}' سعره {price} درهم مغربي، موجه للسوق المغربي بقلعة السراغنة ومراكش."
                         response = model.generate_content(prompt)
                         final_desc = response.text
