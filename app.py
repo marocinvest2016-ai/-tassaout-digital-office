@@ -1,506 +1,135 @@
-import datetime
-import urllib.parse
-from bs4 import BeautifulSoup
-import pandas as pd
-import plotly.express as px
-import requests
-import streamlit as st
-from supabase import Client, create_client
+import streamlit as __st
+from supabase import create_client, Client
 
-# ==========================================
-# 1. الوحدات البرمجية المدمجة (Modules)
-# ==========================================
-
-
-class MarketScraper:
-
-  def __init__(self):
-    self.headers = {
-        "User-Agent": (
-            "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36"
-        )
-    }
-
-  def fetch_public_tenders(self):
-    tenders_data = []
-    try:
-      tenders_data.append({
-          "project_name": "صفقة تهيئة مسالك واحات قلعة السراغنة",
-          "report_content": (
-              "إعلان عن طلب أثمانه متعلق بتهيئة الطرق والمسالك القروية بالإقليم."
-          ),
-          "report_type": "صفقة عمومية",
-          "created_at": datetime.datetime.now().isoformat(),
-      })
-    except Exception as e:
-      print(f"خطأ في جلب الصفقات: {e}")
-    return tenders_data
-
-  def fetch_real_estate_listings(self):
-    listings = []
-    try:
-      listings.append({
-          "project_name": "أرض فلاحية محفظة - تساوت",
-          "report_content": (
-              "مساحة هكتارين مع بئر وموقع استراتيجي قرب الطريق الرئيسية."
-          ),
-          "report_type": "عقار فلاحي",
-          "created_at": datetime.datetime.now().isoformat(),
-      })
-    except Exception as e:
-      print(f"خطأ في جلب العقارات: {e}")
-    return listings
-
-  def run_full_scan(self, supabase_client):
-    all_opportunities = (
-        self.fetch_public_tenders() + self.fetch_real_estate_listings()
-    )
-    inserted_count = 0
-    for item in all_opportunities:
-      try:
-        supabase_client.table("reports").insert(item).execute()
-        inserted_count += 1
-      except Exception as e:
-        print(f"فشل حفظ العنصر: {e}")
-    return inserted_count
-
-
-class ContentGenerator:
-
-  def __init__(self, phone_number="0691897126"):
-    self.phone_number = phone_number
-
-  def generate_real_estate_ad(self, title, location, price, features):
-    ad_text = f"""👑 إعلان حصري - {title} 👑
-
-فرصة استثنائية وعرض متميز في {location}.
-🔹 التصنيف العقاري: {title}
-🔹 الموقع الاستراتيجي: {location}
-🔹 الثمن المقترح: {price}
-
-المميزات والخصائص الكبرى:
-{features}
-
-للمعاينة الميدانية والاستفسار المباشر، تواصل معنا:
-📞 {self.phone_number}
-Ameur Signature & Sraghna Media"""
-    return ad_text
-
-  def generate_digital_service_ad(self, service_name, target_audience, details):
-    ad_text = f"""🚀 عرض احترافي: {service_name} 🚀
-
-هل ترغب في تطوير نشاطك والوصول إلى {target_audience} باحترافية تامة؟
-نقدم لك حلولاً رقمية مبتكرة ومصممة لتعزيز حضورك في السوق.
-
-تفاصيل الباقة والعرض:
-{details}
-
-💡 اجعل مشروعك يبرز في السوق الرقمي اليوم!
-📞 تواصل معنا الآن: {self.phone_number}
-DANA Digital Market & Sraghna Media"""
-    return ad_text
-
-  def get_whatsapp_url(self, message):
-    encoded_msg = urllib.parse.quote(message)
-    clean_number = "212" + self.phone_number.lstrip("0")
-    return f"https://wa.me/{clean_number}?text={encoded_msg}"
-
-
-class DealCloserAI:
-
-  def __init__(self):
-    pass
-
-  def analyze_objection(self, client_message):
-    msg_lower = client_message.lower()
-
-    if any(
-        word in msg_lower
-        for word in ["ثمن", "غالي", "سعر", "تخفيض", "نقص", "بزاف"]
-    ):
-      strategy_title = "استراتيجية إقناع الزبون (الاعتراض على السعر)"
-      response_text = (
-          "أهلاً بك أخي الكريم. السعر المقترح يتماشى بدقة مع جودة العقار وموقعه"
-          " الاستراتيجي وقيمته في السوق حالياً. الاستثمار الناجح يبحث دائماً عن"
-          " الجودة والربح على المدى الطويل. هل نحدد موعداً للمعاينة الميدانية"
-          " غداً لنحسم الأمر؟"
-      )
-      analysis = "الزبون يختبر السعر أو يحاول التفاوض لخفض التكلفة."
-
-    elif any(word in msg_lower for word in ["نفكر", "نرد", "وقت", "بعدين", "متردد"]):
-      strategy_title = "استراتيجية إقناع الزبون (التردد والتأجيل)"
-      response_text = (
-          "خذ وقتك في التفكير بكل تأكيد، لكن أحب أن أحيطك علماً أن هناك اهتماماً"
-          " كبيراً بهذا العرض حالياً من طرف مستثمرين آخرين، ونخشى أن يتم حسم"
-          " الصفقة قبلك. ما رايك أن نلتقي في عين المكان لمعاينة التفاصيل عن"
-          " قرب؟"
-      )
-      analysis = "الزبون مهتم لكنه يماطل أو يفتقر لشعور الاستعجال."
-
-    elif any(word in msg_lower for word in ["محفظ", "وراق", "وثائق", "مساحة", "رخصة"]):
-      strategy_title = "استراتيجية الرد (تأكيد الضمانات القانونية)"
-      response_text = (
-          "جميع الوثائق القانونية والملفات متوفرة ومطابقة للمعايير الجاري بها"
-          " العمل. يمكننا ترتيب لقاء مباشر للاطلاع على كافة التفاصيل التقنية"
-          " والملف القانوني بكل شفافية."
-      )
-      analysis = "الزبون جاد ويهتم بالجانب القانوني والتوثيق."
-
-    else:
-      strategy_title = "استراتيجية الإغلاق العامة (دفع نحو المعاينة)"
-      response_text = (
-          "أتفهم ملاحظتك تماماً. أفضل خطوة عملية الآن هي تنظيم معاينة ميدانية"
-          " سريعة لترى كل التفاصيل بنفسك. متى يناسبك اللقاء في عين المكان؟"
-      )
-      analysis = "استجابة عامة موجهة لدفع الزبون لاتخاذ القرار الميداني."
-
-    return {
-        "analysis": analysis,
-        "strategy": strategy_title,
-        "response": response_text,
-    }
-
-
-# ==========================================
-# 2. إعداد واجهة التطبيق الرئيسية (Streamlit)
-# ==========================================
-
-st.set_page_config(
-    page_title="OMEGA OS - Ameur Signature", page_icon="👑", layout="wide"
+# إعداد الصفحة وتكوينها
+__st.set_page_config(
+    page_title="OMEGA OS - نظام الإدارة والخدمات",
+    page_icon="⚡",
+    layout="wide"
 )
 
-# الاتصال بقاعدة البيانات السحابية Supabase
+# بيانات الاتصال بقاعدة بيانات Supabase (يُفضل لاحقاً نقلها لـ st.secrets)
+SUPABASE_URL = "YOUR_SUPABASE_URL"
+SUPABASE_KEY = "YOUR_SUPABASE_KEY"
+
+@__st.cache_resource
+def init_supabase() -> Client:
+    return create_client(SUPABASE_URL, SUPABASE_KEY)
+
 try:
-  supabase: Client = create_client(
-      st.secrets["SUPABASE_URL"], st.secrets["SUPABASE_KEY"]
-  )
+    supabase = init_supabase()
 except Exception as e:
-  st.error(f"خطأ في الاتصال بقاعدة البيانات السحابية: {e}")
+    __st.error(f"خطأ في الاتصال بقاعدة البيانات: {e}")
 
-# تهيئة الكائنات البرمجية
-generator = ContentGenerator(phone_number="0691897126")
-deal_closer = DealCloserAI()
-scraper = MarketScraper()
-
-st.title("👑 Ameur Signature | النظام السيادي المتكامل")
-
-menu = st.sidebar.selectbox(
-    "الوحدة السيادية للتحكم",
-    [
-        "📊 لوحة تحكم التحليلات",
-        "رصد الميدان وجلب البيانات 🌐",
-        "مصنع الإعلانات العقارية ومواد البناء 📢",
-        "مصنع الخدمات الرقمية 💻",
-        "📑 تدبير الصفقات العمومية",
-        "🤖 الوكيل الذكي (AI Deal Closer)",
-        "CRM العملاء المهتمين",
-        "الأرشيف والتقارير",
-    ],
+# تصميم الواجهة الجانبية (القائمة الرئيسية)
+__st.sidebar.title("⚡ OMEGA OS")
+__st.sidebar.markdown("---")
+menu_option = __st.sidebar.radio(
+    "اختر القسم:",
+    ["لوحة القيادة (Dashboard)", "إدارة الإعلانات والعقارات", "إدارة الزبناء (CRM)", "متابعة الصفقات"]
 )
 
-# ==========================================
-# 3. توجيه المسارات والوحدات التفاعلية
-# ==========================================
+__st.sidebar.markdown("---")
+__st.sidebar.info("نظام سيادي مخصص لإدارة الأعمال والعقارات والخدمات الرقمية.")
 
-if menu == "📊 لوحة تحكم التحليلات":
-  st.header("📊 لوحة الأداء والتحليلات السيادية")
-  try:
-    data = supabase.table("reports").select("*").execute().data
-    if data:
-      df = pd.DataFrame(data)
-      df["created_at"] = pd.to_datetime(df["created_at"])
+# 1. لوحة القيادة (Dashboard)
+if menu_option == "لوحة القيادة (Dashboard)":
+    __st.title("📊 لوحة القيادة العامة")
+    __st.markdown("مرحباً بك في نظامك السيادي لإدارة العمليات.")
+    
+    col1, col2, col3 = __st.columns(3)
+    with col1:
+        __st.metric(label="إجمالي العقارات/الإعلانات", value="--")
+    with col2:
+        __st.metric(label="إجمالي الزبناء (CRM)", value="--")
+    with col3:
+        __st.metric(label="الصفقات الجارية", value="--")
 
-      col1, col2 = st.columns(2)
-      col1.metric("إجمالي العمليات والأرشيف", len(df))
-      col2.metric("أنواع الأنشطة والقطاعات", df["report_type"].nunique())
+# 2. إدارة الإعلانات والعقارات
+elif menu_option == "إدارة الإعلانات والعقارات":
+    __st.title("🏠 إدارة الإعلانات والعقارات والخدمات (Reports)")
+    
+    with __st.form("add_report_form"):
+        __st.subheader="إضافة عقار أو إعلان جديد"
+        project_name = __st.text_input("اسم المشروع / العقار / الخدمة")
+        report_type = __st.selectbox("نوع الإعلان", ["عقار سكني", "أرض تجارية", "خدمة رقمية", "أخرى"])
+        report_content = __st.text_area("وصف تفصيلي")
+        price = __st.number_input("السعر (درهم)", min_value=0.0, step=1000.0)
+        status = __st.selectbox("الحالة", ["متاح", "محجوز", "مباع"])
+        
+        submitted = __st.form_submit_button("حفظ وإضافة")
+        if submitted:
+            if project_name:
+                try:
+                    data = {
+                        "project_name": project_name,
+                        "report_type": report_type,
+                        "report_content": report_content,
+                        "price": price,
+                        "status": status
+                    }
+                    response = supabase.table("reports").insert(data).execute()
+                    __st.success("تم إضافة الإعلان/العقار بنجاح!")
+                except Exception as e:
+                    __st.error(f"حدث خطأ أثناء الإضافة: {e}")
+            else:
+                __st.warning("يرجى إدخال اسم المشروع على الأقل.")
 
-      st.subheader("توزيع العمليات حسب النشاط")
-      fig_pie = px.pie(df, names="report_type", title="توزيع العمليات في النظام")
-      st.plotly_chart(fig_pie, use_container_width=True)
+# 3. إدارة الزبناء (CRM Contacts)
+elif menu_option == "إدارة الزبناء (CRM)":
+    __st.title("👥 إدارة جهات الاتصال والزبناء (CRM Contacts)")
+    
+    with __st.form("add_contact_form"):
+        __st.subheader("إضافة عميل جديد")
+        full_name = __st.text_input("الاسم الكامل")
+        phone = __st.text_input("رقم الهاتف")
+        email = __st.text_input("البريد الإلكتروني")
+        interest_area = __st.text_input("مجال الاهتمام")
+        deal_stage = __st.selectbox("مرحلة الاهتمام", ["مهتم", "مهتم جداً", "في طور التفاوض", "عميل سابق"])
+        notes = __st.text_area("ملاحظات إضافية")
+        
+        submitted_contact = __st.form_submit_button("حفظ بيانات العميل")
+        if submitted_contact:
+            if full_name:
+                try:
+                    data = {
+                        "full_name": full_name,
+                        "phone": phone,
+                        "email": email,
+                        "interest_area": interest_area,
+                        "deal_stage": deal_stage,
+                        "notes": notes
+                    }
+                    response = supabase.table("crm_contacts").insert(data).execute()
+                    __st.success("تم حفظ بيانات العميل بنجاح!")
+                except Exception as e:
+                    __st.error(f"حدث خطأ أثناء الحفظ: {e}")
+            else:
+                __st.warning("يرجى إدخال اسم العميل على الأقل.")
 
-      st.subheader("تطور العمليات الميدانية اليومية")
-      df["date_only"] = df["created_at"].dt.date
-      df_trend = df.groupby("date_only").size().reset_index(name="count")
-
-      fig_line = px.line(
-          df_trend,
-          x="date_only",
-          y="count",
-          title="النشاط اليومي المسجل",
-          markers=True,
-          labels={"date_only": "التاريخ", "count": "العمليات"},
-      )
-      st.plotly_chart(fig_line, use_container_width=True)
-    else:
-      st.info("لا توجد بيانات كافية لعرض التحليلات حالياً.")
-  except Exception as e:
-    st.error(f"خطأ في استخراج التحليلات: {e}")
-
-elif menu == "رصد الميدان وجلب البيانات 🌐":
-  st.header("🌐 محرك الاستخبارات الميدانية وسحب البيانات")
-  st.info(
-      "قم بتشغيل المسح الآلي لجلب أحدث عروض العقارات والصفقات العمومية بجهة"
-      " مراكش-آسفي وأرشفقتها فوراً."
-  )
-
-  if st.button("🚀 تشغيل المسح الميداني الشامل وأرشفة النتائج"):
-    with st.spinner("جاري مسح السوق وجلب الفرص عبر السكربت الهندسي..."):
-      inserted_count = scraper.run_full_scan(supabase)
-      st.success(
-          f"تم بنجاح جلب وأرشفة {inserted_count} فرصة جديدة في قاعدة البيانات"
-          " السيادية!"
-      )
-
-  st.markdown("---")
-  st.subheader("إدخال تقرير ميداني يدوي")
-  p_name = st.text_input("اسم المشروع أو الورش")
-  p_content = st.text_area("محتوى التقرير الميداني")
-
-  if st.button("حفظ التقرير في السحابة"):
-    if p_name and p_content:
-      supabase.table("reports").insert({
-          "project_name": p_name,
-          "report_content": p_content,
-          "report_type": "ورش ميداني",
-          "created_at": datetime.datetime.now().isoformat(),
-      }).execute()
-      st.success("تم حفظ تقرير الميدان بنجاح!")
-    else:
-      st.warning("المرجو ملء اسم المشروع ومحتوى التقرير.")
-
-elif menu == "مصنع الإعلانات العقارية ومواد البناء 📢":
-  st.header("📢 مصنع صياغة الإعلانات وإدارة الصور السحابية")
-
-  with st.form("ad_form_cloud", clear_on_submit=True):
-    title = st.text_input("عنوان العرض أو العقار")
-    category = st.selectbox(
-        "القطاع",
-        [
-            "العقاري الفلاحي",
-            "العقاري الصناعي والتجاري",
-            "بيع مواد البناء",
-            "الهندسة الرقمية والتصوير",
-            "عقار سكني أو استثماري",
-        ],
-    )
-    location = st.text_input("الموقع (مثال: قلعة السراغنة / مراكش)")
-    price = st.text_input("الثمن المقترح (مثلاً: 500000 درهم)")
-    description = st.text_area("المميزات والتفاصيل الكبرى:")
-
-    # رفع الصور بعدد غير محدود وتخزينها في Supabase Storage
-    uploaded_images = st.file_uploader(
-        "تحميل الصور (عدد غير محدود)",
-        type=["png", "jpg", "jpeg", "webp"],
-        accept_multiple_files=True,
-    )
-
-    submitted = st.form_submit_button("نشر العرض سحابياً مع رفع الصور 🚀")
-
-    if submitted:
-      image_urls = []
-      if uploaded_images:
-        for img in uploaded_images:
-          file_bytes = img.getvalue()
-          file_name = (
-              f"{datetime.datetime.now().timestamp()}_{img.name.replace(' ', '_')}"
-          )
-
-          try:
-            # رفع الصورة لـ Bucket باسم property-images
-            supabase.storage.from_("property-images").upload(
-                file_name, file_bytes, file_options={"upsert": "true"}
-            )
-            public_url = (
-                supabase.storage.from_("property-images")
-                .get_public_url(file_name)
-            )
-            image_urls.append(public_url)
-          except Exception as img_err:
-            st.error(f"فشل رفع إحدى الصور: {img_err}")
-
-      # تجهيز نص الإعلان
-      full_ad_text = generator.generate_real_estate_ad(
-          category, location, price, description
-      )
-
-      # حفظ الإعلان في جدول reports مع روابط الصور
-      new_ad_record = {
-          "project_name": title,
-          "report_content": full_ad_text,
-          "report_type": "إعلان عقاري مصور",
-          "created_at": datetime.datetime.now().isoformat(),
-      }
-
-      try:
-        supabase.table("reports").insert(new_ad_record).execute()
-        st.success(
-            "تم حفظ الإعلان ورفع جميع الصور سحابياً بنجاح ودون قيود! 🎉"
-        )
-      except Exception as db_err:
-        st.error(f"خطأ في الحفظ بقاعدة البيانات: {db_err}")
-
-  st.markdown("---")
-  st.subheader("📋 العروض المنشورة مؤخراً في النظام")
-  try:
-    cloud_data = (
-        supabase.table("reports")
-        .select("*")
-        .eq("report_type", "إعلان عقاري مصور")
-        .order("created_at", desc=True)
-        .execute()
-        .data
-    )
-    if cloud_data:
-      for r in cloud_data:
-        with st.expander(f"📌 {r.get('project_name')} ({r.get('created_at')[:10]})"):
-          st.code(r.get("report_content"), language="text")
-          wa_link = generator.get_whatsapp_url(r.get("report_content"))
-          st.link_button("📲 إرسال الإعلان عبر واتساب", wa_link)
-    else:
-      st.info("لا توجد إعلانات مصورة مسجلة حالياً.")
-  except Exception as e:
-    st.warning(f"جاري مزامنة العروض... {e}")
-
-elif menu == "مصنع الخدمات الرقمية 💻":
-  st.header("💻 مصنع إعلانات الخدمات الرقمية والأتمتة")
-  dig_services = [
-      "تصميم هوية بصرية",
-      "إدارة حملات إعلانية",
-      "إدارة منصات التواصل",
-      "برمجة وأتمتة رقمية",
-  ]
-  selected_service = st.selectbox("نوع الخدمة الرقمية:", dig_services)
-  target = st.text_input("الجمهور المستهدف:")
-  details = st.text_area("تفاصيل الباقة والعرض الرقمي:")
-
-  if st.button("توليد عرض الخدمات + تجهيز واتساب 🚀"):
-    if target and details:
-      digital_ad = generator.generate_digital_service_ad(
-          selected_service, target, details
-      )
-      st.code(digital_ad, language="text")
-
-      wa_link = generator.get_whatsapp_url(digital_ad)
-      st.link_button(
-          "📲 إرسال مباشر للواتساب",
-          wa_link,
-          use_container_width=True,
-          type="primary",
-      )
-
-      supabase.table("reports").insert({
-          "project_name": selected_service,
-          "report_content": digital_ad,
-          "report_type": "إعلان رقمي",
-          "created_at": datetime.datetime.now().isoformat(),
-      }).execute()
-      st.success("تم توليد الباقة وأرشفتها بنجاح!")
-    else:
-      st.warning("المرجو إدخال الجمهور المستهدف وتفاصيل الباقة.")
-
-elif menu == "📑 تدبير الصفقات العمومية":
-  st.header("📑 وحدة تدبير الصفقات العمومية والمناقصات")
-  tender_title = st.text_input("موضوع الصفقة أو رقم طلب الأثمان:")
-  admin_entity = st.text_input("الإدارة صاحبة المشروع:")
-  estimated_budget = st.text_input("الميزانية التقديرية (درهم):")
-  tender_status = st.selectbox(
-      "حالة الصفقة:",
-      [
-          "في طور دراسة الملف",
-          "تم إيداع الملف",
-          "تم الفوز بالصفقة 🏆",
-          "لم يتم التوفيق",
-      ],
-  )
-  tender_notes = st.text_area("ملاحظات وتفاصيل إضافية:")
-
-  if st.button("حفظ وتتبع الصفقة في السحابة 📂"):
-    if tender_title and admin_entity:
-      supabase.table("reports").insert({
-          "project_name": tender_title,
-          "report_content": (
-              f"إدارة: {admin_entity}\nالميزانية:"
-              f" {estimated_budget}\nالحالة: {tender_status}\nملاحظات:"
-              f" {tender_notes}"
-          ),
-          "report_type": "صفقة عمومية",
-          "created_at": datetime.datetime.now().isoformat(),
-      }).execute()
-      st.success("تم تسجيل وتتبع الصفقة العمومية بنجاح في السحابة!")
-    else:
-      st.warning("المرجو ملء موضوع الصفقة والإدارة المعنية.")
-
-elif menu == "🤖 الوكيل الذكي (AI Deal Closer)":
-  st.header("🤖 مستشار إغلاق الصفقات الذكي")
-  st.info(
-      "قم بإدخال اعتراض أو رد الزبون، وسيقوم الوكيل بتحليل نفسيته واقتراح استراتيجية"
-      " الرد الفوري لإغلاق الصفقة."
-  )
-
-  client_objection = st.text_area(
-      "رسالة أو اعتراض الزبون (مثلاً: الثمن غالي، يريد التفكير، يطلب تخفيض...):"
-  )
-
-  if st.button("تحليل الموقف وتوليد استراتيجية الرد 💡"):
-    if client_objection:
-      result = deal_closer.analyze_objection(client_objection)
-
-      st.success(f"**التحليل النفسي:** {result['analysis']}")
-      st.markdown(f"### 🎯 {result['strategy']}")
-      st.info(result["response"])
-
-      wa_link = generator.get_whatsapp_url(result["response"])
-      st.link_button(
-          "📲 إرسال رد الإغلاق مباشرة للزبون عبر واتساب",
-          wa_link,
-          use_container_width=True,
-          type="primary",
-      )
-    else:
-      st.warning("المرجو كتابة ملاحظة أو اعتراض الزبون أولاً.")
-
-elif menu == "CRM العملاء المهتمين":
-  st.header("👤 سجل إدارة علاقات العملاء (CRM)")
-  try:
-    data = (
-        supabase.table("reports")
-        .select("*")
-        .in_("report_type", ["إعلان عقاري", "إعلان رقمي", "إعلان عقاري مصور"])
-        .execute()
-        .data
-    )
-    if data:
-      df = pd.DataFrame(data)
-      st.dataframe(
-          df[["project_name", "report_type", "created_at"]],
-          use_container_width=True,
-      )
-    else:
-      st.info("لا توجد بيانات مسجلة في الـ CRM حالياً.")
-  except Exception as e:
-    st.error(f"خطأ في جلب بيانات CRM: {e}")
-
-elif menu == "الأرشيف والتقارير":
-  st.header("📁 الأرشيف السيادي الشامل")
-  try:
-    data = (
-        supabase.table("reports")
-        .select("*")
-        .order("created_at", desc=True)
-        .execute()
-        .data
-    )
-    if data:
-      for r in data:
-        with st.expander(
-            f"📌 [{r.get('report_type', 'عام')}] -"
-            f" {r.get('project_name', 'بدون عنوان')}"
-            f" ({r.get('created_at', '')[:10]})"
-        ):
-          st.code(r.get("report_content", ""), language="text")
-          wa_link = generator.get_whatsapp_url(r.get("report_content", ""))
-          st.link_button("📲 إعادة النشر عبر واتساب", wa_link)
-    else:
-      st.info("الأرشيف فارغ حالياً.")
-  except Exception as e:
-    st.error(f"خطأ في استخراج الأرشيف: {e}")
+# 4. متابعة الصفقات
+elif menu_option == "متابعة الصفقات":
+    __st.title("💼 متابعة الصفقات (CRM Deals)")
+    __st.info("من هنا يمكنك ربط الزبناء بالعقارات وإدارة الصفقات مع تفعيل قيود الحماية الأمنية تلقائياً.")
+    
+    with __st.form("add_deal_form"):
+        contact_id = __st.number_input("معرف العميل (Contact ID)", min_value=1, step=1)
+        report_id = __st.text_input("معرف العقار/الإعلان (Report UUID - اختياري)")
+        deal_stage = __st.selectbox("مرحلة الصفقة", ["في طور المتابعة", "تم إرسال العرض", "تم إغلاق الصفقة بنجاح", "ملغاة"])
+        amount = __st.number_input("مبلغ الصفقة (درهم)", min_value=0.0, step=1000.0)
+        
+        submitted_deal = __st.form_submit_button("تسجيل الصفقة")
+        if submitted_deal:
+            try:
+                deal_data = {
+                    "contact_id": int(contact_id),
+                    "deal_stage": deal_stage,
+                    "amount": amount
+                }
+                if report_id.strip():
+                    deal_data["report_id"] = report_id.strip()
+                
+                response = supabase.table("crm_deals").insert(deal_data).execute()
+                __st.success("تم تسجيل الصفقة بنجاح مع مطابقة الشروط الأمنية!")
+            except Exception as e:
+                __st.error(f"فشل تسجيل الصفقة (تأكد من صحة المعرفات وأنها تتبع لحسابك): {e}")
