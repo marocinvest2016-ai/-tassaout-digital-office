@@ -5,11 +5,11 @@ import pandas as pd
 # إعداد الصفحة
 st.set_page_config(page_title="OMEGA OS | نظام إدارة الأعمال", layout="wide")
 
-# إعداد الاتصال باستخدام Secrets
+# الاتصال بـ Supabase
 @st.cache_resource
 def init_supabase():
-    url = st.secrets["SUPABASE_URL"]
-    key = st.secrets["SUPABASE_KEY"]
+    url = st.secrets["SUPABASE_URL"].strip()
+    key = st.secrets["SUPABASE_KEY"].strip()
     return create_client(url, key)
 
 supabase = init_supabase()
@@ -24,7 +24,6 @@ if menu == "لوحة القيادة":
     st.write("مرحباً بك في نظامك السيادي لإدارة العمليات والعقارات.")
     
     try:
-        # جلب إحصائيات سريعة
         reports_res = supabase.table("reports").select("id", count="exact").execute()
         contacts_res = supabase.table("crm_contacts").select("id", count="exact").execute()
         deals_res = supabase.table("crm_deals").select("id", count="exact").execute()
@@ -33,7 +32,7 @@ if menu == "لوحة القيادة":
         col1.metric("إجمالي العقارات والإعلانات", reports_res.count if hasattr(reports_res, 'count') else "غير متوفر")
         col2.metric("إجمالي الزبناء", contacts_res.count if hasattr(contacts_res, 'count') else "غير متوفر")
         col3.metric("إجمالي الصفقات", deals_res.count if hasattr(deals_res, 'count') else "غير متوفر")
-    except Exception as e:
+    except Exception:
         st.info("جاري تهيئة الإحصائيات أو التحقق من اتصال قاعدة البيانات.")
 
 # 2. إدارة العقارات
@@ -41,7 +40,7 @@ elif menu == "إدارة العقارات":
     st.title("🏠 إدارة العقارات والإعلانات")
     
     with st.form("new_property"):
-        st.subheader="إضافة عقار أو مشروع جديد"
+        st.subheader("إضافة عقار أو مشروع جديد")
         name = st.text_input("اسم العقار/المشروع")
         price = st.number_input("السعر (درهم)", step=1000.0)
         desc = st.text_area("وصف الإعلان")
@@ -60,10 +59,8 @@ elif menu == "إدارة العقارات":
     st.subheader("📋 قائمة العقارات المسجلة")
     try:
         response = supabase.table("reports").select("*").execute()
-        data = response.data
-        if data:
-            df = pd.DataFrame(data)
-            st.dataframe(df, use_container_width=True)
+        if response.data:
+            st.dataframe(pd.DataFrame(response.data), use_container_width=True)
         else:
             st.info("لا توجد عقارات مسجلة حالياً.")
     except Exception as e:
@@ -74,7 +71,7 @@ elif menu == "إدارة CRM":
     st.title("👥 إدارة الزبناء وجهات الاتصال")
     
     with st.form("new_contact"):
-        st.subheader="إضافة عميل جديد"
+        st.subheader("إضافة عميل جديد")
         full_name = st.text_input("اسم العميل الكامل")
         phone = st.text_input("رقم الهاتف")
         email = st.text_input("البريد الإلكتروني")
@@ -95,10 +92,8 @@ elif menu == "إدارة CRM":
     st.subheader("📋 قائمة الزبناء المسجلين")
     try:
         response = supabase.table("crm_contacts").select("*").execute()
-        data = response.data
-        if data:
-            df = pd.DataFrame(data)
-            st.dataframe(df, use_container_width=True)
+        if response.data:
+            st.dataframe(pd.DataFrame(response.data), use_container_width=True)
         else:
             st.info("لا توجد جهات اتصال مسجلة حالياً.")
     except Exception as e:
@@ -109,9 +104,9 @@ elif menu == "متابعة الصفقات":
     st.title("💼 متابعة الصفقات")
     
     with st.form("new_deal"):
-        st.subheader="تسجيل صفقة جديدة"
+        st.subheader("تسجيل صفقة جديدة")
         contact_id = st.number_input("معرف العميل (Contact ID)", min_value=1, step=1)
-        report_id = st.text_input("معرف العقار/الإعلان (Report UUID - اختياري)")
+        report_id = st.text_input("معرف العقار/الإعلان (اختياري)")
         amount = st.number_input("مبلغ الصفقة (درهم)", step=1000.0)
         deal_stage = st.selectbox("مرحلة الصفقة", ["في طور المتابعة", "تم إرسال العرض", "تم إغلاق الصفقة بنجاح", "ملغاة"])
         
@@ -128,16 +123,14 @@ elif menu == "متابعة الصفقات":
                 supabase.table("crm_deals").insert(deal_data).execute()
                 st.success("تم إنشاء الصفقة بنجاح!")
             except Exception as e:
-                st.error(f"فشل تسجيل الصفقة (تأكد من صحة معرف العميل/العقار وأنها تتبع لحسابك): {e}")
+                st.error(f"فشل تسجيل الصفقة: {e}")
                 
     st.markdown("---")
     st.subheader("📋 قائمة الصفقات الجارية")
     try:
         response = supabase.table("crm_deals").select("*").execute()
-        data = response.data
-        if data:
-            df = pd.DataFrame(data)
-            st.dataframe(df, use_container_width=True)
+        if response.data:
+            st.dataframe(pd.DataFrame(response.data), use_container_width=True)
         else:
             st.info("لا توجد صفقات مسجلة حالياً.")
     except Exception as e:
