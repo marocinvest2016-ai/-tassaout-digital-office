@@ -2,14 +2,16 @@ import streamlit as st
 from supabase import create_client, Client
 import urllib.parse
 from datetime import datetime
+import plotly.express as px
+import pandas as pd
 
 # إعدادات النظام السيادي المتقدم
-st.set_page_config(page_title="OMEGA OS - V2.2 Integrated", layout="wide")
+st.set_page_config(page_title="OMEGA OS - V2.7 Integrated", layout="wide")
 
 # إعداد Supabase
 supabase: Client = create_client(st.secrets["SUPABASE_URL"], st.secrets["SUPABASE_KEY"])
 
-st.title("👑 OMEGA OS - Sovereign Edition V2.2")
+st.title("👑 OMEGA OS - Sovereign Edition V2.7")
 
 # دالة رابط الواتساب المباشر
 def get_whatsapp_link(phone_number, message):
@@ -19,17 +21,49 @@ def get_whatsapp_link(phone_number, message):
 
 # القائمة الجانبية السيادية
 menu = st.sidebar.selectbox("الوحدة السيادية", [
+    "📊 لوحة تحكم التحليلات",
     "رصد الميدان", 
     "مصنع الإعلانات العقارية 📢", 
     "مصنع الخدمات الرقمية 💻",
+    "📑 تدبير الصفقات العمومية",
+    "🧠 الوكيل التقني الخبير",
+    "🤖 الوكيل الذكي (AI Deal Closer)",
     "CRM العملاء المهتمين",
     "الأرشيف والتقارير"
 ])
 
 # ==========================================
+# الوحدة: لوحة تحكم التحليلات
+# ==========================================
+if menu == "📊 لوحة تحكم التحليلات":
+    st.header("📊 لوحة الأداء والتحليلات السيادية")
+    try:
+        data = supabase.table("reports").select("*").execute().data
+        if data:
+            df = pd.DataFrame(data)
+            df['created_at'] = pd.to_datetime(df['created_at'])
+            
+            col1, col2, col3 = st.columns(3)
+            col1.metric("إجمالي العمليات", len(df))
+            col2.metric("أنواع الأنشطة", df['report_type'].nunique())
+            
+            st.subheader("توزيع الأنشطة والصفقات")
+            fig_pie = px.pie(df, names='report_type', title="توزيع العمليات حسب النوع")
+            st.plotly_chart(fig_pie, use_container_width=True)
+            
+            st.subheader("وتيرة النشاط الميداني")
+            df_trend = df.groupby(df['created_at'].dt.date).size().reset_index(name='count')
+            fig_line = px.line(df_trend, x='created_at', y='count', title="عدد العمليات اليومية")
+            st.plotly_chart(fig_line, use_container_width=True)
+        else:
+            st.info("لا توجد بيانات كافية للتحليل حالياً.")
+    except Exception as e:
+        st.error(f"خطأ في جلب بيانات التحليلات: {e}")
+
+# ==========================================
 # الوحدة 1: رصد الميدان
 # ==========================================
-if menu == "رصد الميدان":
+elif menu == "رصد الميدان":
     st.header("📊 سجل بيانات الميدان")
     p_name = st.text_input("اسم المشروع/الورش")
     p_content = st.text_area("محتوى التقرير أو التحديث")
@@ -47,7 +81,7 @@ if menu == "رصد الميدان":
             st.warning("المرجو ملء اسم المشروع ومحتوى التقرير.")
 
 # ==========================================
-# الوحدة 2: مصنع الإعلانات العقارية (مع الحاسبة والـ CRM)
+# الوحدة 2: مصنع الإعلانات العقارية
 # ==========================================
 elif menu == "مصنع الإعلانات العقارية 📢":
     st.header("📢 مصنع صياغة الإعلانات (عقار/معدات)")
@@ -56,7 +90,6 @@ elif menu == "مصنع الإعلانات العقارية 📢":
     loc = st.text_input("الموقع:")
     price = st.text_input("السعر (مثلاً: 500000 أو 500000 درهم):")
     
-    # حاسبة العمولة الفورية المطورة
     if price:
         try:
             price_num = float(''.join(filter(str.isdigit, price)))
@@ -84,7 +117,6 @@ elif menu == "مصنع الإعلانات العقارية 📢":
 Studio Tassaout & Sraghna Media"""
 
         st.code(ad_text, language="text")
-        
         wa_link = get_whatsapp_link("0691897126", ad_text)
         st.link_button("📲 إرسال مباشر للواتساب", wa_link, use_container_width=True, type="primary")
         
@@ -96,7 +128,6 @@ Studio Tassaout & Sraghna Media"""
         }).execute()
         st.success("تم التوليد والأرشفة والنشر بنجاح!")
 
-    # قسم تسجيل مهتم بهذا الإعلان مباشرة
     with st.expander("📞 تسجيل عميل مهتم بهذا العقار"):
         c_name = st.text_input("اسم المهتم")
         c_phone = st.text_input("هاتف المهتم")
@@ -136,7 +167,6 @@ elif menu == "مصنع الخدمات الرقمية 💻":
 DANA Digital Market & Sraghna Media"""
 
         st.code(digital_ad, language="text")
-        
         wa_link = get_whatsapp_link("0691897126", digital_ad)
         st.link_button("📲 إرسال مباشر للواتساب", wa_link, use_container_width=True, type="primary")
         
@@ -148,7 +178,6 @@ DANA Digital Market & Sraghna Media"""
         }).execute()
         st.success("تم التوليد والأرشفة والنشر بنجاح!")
 
-    # قسم تسجيل مهتم بخدمات رقمية
     with st.expander("📞 تسجيل عميل مهتم بهذه الخدمة"):
         c_name_dig = st.text_input("اسم الزبون المهتم")
         c_phone_dig = st.text_input("هاتف الزبون المهتم")
@@ -165,7 +194,65 @@ DANA Digital Market & Sraghna Media"""
                 st.warning("المرجو إدخال الاسم والهاتف.")
 
 # ==========================================
-# الوحدة 4: CRM العملاء
+# الوحدة 4: تدبير الصفقات العمومية
+# ==========================================
+elif menu == "📑 تدبير الصفقات العمومية":
+    st.header("📑 وحدة تدبير الصفقات العمومية والمناقصات")
+    st.markdown("تتبع ملفات الصفقات العمومية، عروض الأثمان، والتقديرات المالية مع الإدارات والمؤسسات.")
+    
+    tender_title = st.text_input("موضوع الصفقة أو رقم طلب الأثمان:")
+    admin_entity = st.text_input("الإدارة صاحبة المشروع (المجلس البلدي، العمالة، المديرية...):")
+    estimated_budget = st.text_input("الميزانية التقديرية أو الثمن المرصود (درهم):")
+    tender_status = st.selectbox("حالة الصفقة:", ["في طور دراسة الملف", "تم تحضير العرض", "تم إيداع الملف", "في انتظار فتح الأظرفة", "تم الفوز بالصفقة 🏆", "لم يتم التوفيق"])
+    tender_notes = st.text_area("ملاحظات وتفاصيل إضافية (الضمان المؤقت، الشروط التقنية):")
+    
+    if st.button("حفظ وتتبع الصفقة في السحابة 📂"):
+        if tender_title and admin_entity:
+            supabase.table("reports").insert({
+                "project_name": tender_title,
+                "report_content": f"إدارة: {admin_entity}\nالميزانية: {estimated_budget}\nالحالة: {tender_status}\nملاحظات: {tender_notes}",
+                "report_type": "صفقة عمومية",
+                "created_at": datetime.now().isoformat()
+            }).execute()
+            st.success("تم تسجيل وتتبع الصفقة العمومية بنجاح في الأرشيف السيادي!")
+        else:
+            st.warning("المرجو إدخال موضوع الصفقة والإدارة المعنية على الأقل.")
+
+# ==========================================
+# الوحدة 5: الوكيل التقني والخبير
+# ==========================================
+elif menu == "🧠 الوكيل التقني الخبير":
+    st.header("🧠 المستشار التقني وخبير الأنظمة الرقمية")
+    tech_challenge = st.text_area("اطرح المشكل التقني أو المشروع (أتمتة، تحليل بيانات، تطوير ويب):")
+    
+    if st.button("توليد الحل الهندسي والتقني 🛠️"):
+        if tech_challenge:
+            expert_report = f"""⚙️ **التوجيه الهندسي والمعماري:**
+🔹 **التحدي المطروح:** {tech_challenge}
+💡 **الحل المقترح:** اعتمد على هيكلة دقيقة، فصل الوحدات البرمجية، وتأمين المتغيرات الحساسة عبر السحابة لضمان استقرار الأنظمة التشغيلية."""
+            st.info(expert_report)
+        else:
+            st.warning("المرجو كتابة التحدي التقني أولاً.")
+
+# ==========================================
+# الوحدة 6: الوكيل الذكي (AI Deal Closer)
+# ==========================================
+elif menu == "🤖 الوكيل الذكي (AI Deal Closer)":
+    st.header("🤖 مستشار إغلاق الصفقات الذكي")
+    client_objection = st.text_area("اعتراض أو رسالة الزبون:")
+    property_context = st.text_input("نوع العقار أو الخدمة المعنية:")
+    
+    if st.button("توليد استراتيجية الرد والإقناع 💡"):
+        if client_objection:
+            ai_response = f"""🎯 **تحليل الوكيل الذكي:**
+🔹 **الاعتراض:** {client_objection}
+💡 **الرد المقترح:** "أهلاً بك، نحن نضمن لك أعلى معايير الجودة والقيمة المضافة لضمان نجاح استثمارك." """
+            st.info(ai_response)
+        else:
+            st.warning("المرجو إدخال اعتراض أو استفسار الزبون أولاً.")
+
+# ==========================================
+# الوحدة 7: CRM العملاء
 # ==========================================
 elif menu == "CRM العملاء المهتمين":
     st.header("👤 سجل إدارة علاقات العملاء (CRM)")
@@ -176,19 +263,22 @@ elif menu == "CRM العملاء المهتمين":
         else:
             st.info("لا توجد بيانات مسجلة في جدول العملاء حالياً.")
     except Exception as e:
-        st.error(f"تأكد من إنشاء جدول 'clients' في Supabase بالأعمدة المناسبة (id, name, phone, interest, created_at). الخطأ: {e}")
+        st.error(f"خطأ في جلب بيانات العملاء: {e}")
 
 # ==========================================
-# الوحدة 5: الأرشيف
+# الوحدة 8: الأرشيف
 # ==========================================
 elif menu == "الأرشيف والتقارير":
-    st.header("📁 الأرشيف السيادي")
-    data = supabase.table("reports").select("*").order("created_at", desc=True).execute().data
-    if data:
-        for r in data:
-            with st.expander(f"📌 {r.get('report_type')} - {r.get('project_name')} - {str(r.get('created_at'))[:10]}"):
-                st.code(r.get('report_content'), language="text")
-                wa_link = get_whatsapp_link("0691897126", r.get('report_content'))
-                st.link_button("📲 إعادة النشر عبر واتساب", wa_link)
-    else:
-        st.info("لا توجد تقارير مسجلة في الأرشيف حالياً.")
+    st.header("📁 الأرشيف السيادي الشامل")
+    try:
+        data = supabase.table("reports").select("*").order("created_at", desc=True).execute().data
+        if data:
+            for r in data:
+                with st.expander(f"📌 [{r.get('report_type')}] - {r.get('project_name')} - {str(r.get('created_at'))[:10]}"):
+                    st.code(r.get('report_content'), language="text")
+                    wa_link = get_whatsapp_link("0691897126", r.get('report_content'))
+                    st.link_button("📲 إعادة النشر عبر واتساب", wa_link)
+        else:
+            st.info("لا توجد تقارير مسجلة في الأرشيف حالياً.")
+    except Exception as e:
+        st.error(f"خطأ في جلب الأرشيف: {e}")
