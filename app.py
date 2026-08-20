@@ -5,13 +5,13 @@ from datetime import datetime
 import plotly.express as px
 import pandas as pd
 
-# إعدادات النظام السيادي المتقدم
-st.set_page_config(page_title="OMEGA OS - V2.7 Sovereign", layout="wide")
+# إعدادات النظام السيادي
+st.set_page_config(page_title="OMEGA OS - Sovereign Edition", layout="wide")
 
 # إعداد Supabase
 supabase: Client = create_client(st.secrets["SUPABASE_URL"], st.secrets["SUPABASE_KEY"])
 
-st.title("👑 OMEGA OS - Sovereign Edition V2.7")
+st.title("👑 Ameur Signature | النظام السيادي المتكامل")
 
 # دالة رابط الواتساب المباشر
 def get_whatsapp_link(phone_number, message):
@@ -19,7 +19,7 @@ def get_whatsapp_link(phone_number, message):
     clean_number = "212" + phone_number.lstrip('0')
     return f"https://wa.me/{clean_number}?text={encoded_msg}"
 
-# القائمة الجانبية السيادية
+# القائمة السيادية الكاملة
 menu = st.sidebar.selectbox("الوحدة السيادية", [
     "📊 لوحة تحكم التحليلات",
     "رصد الميدان", 
@@ -33,7 +33,7 @@ menu = st.sidebar.selectbox("الوحدة السيادية", [
 ])
 
 # ==========================================
-# الوحدة: لوحة تحكم التحليلات (المصححة نهائياً)
+# 1. لوحة تحكم التحليلات
 # ==========================================
 if menu == "📊 لوحة تحكم التحليلات":
     st.header("📊 لوحة الأداء والتحليلات السيادية")
@@ -53,7 +53,6 @@ if menu == "📊 لوحة تحكم التحليلات":
             st.plotly_chart(fig_pie, use_container_width=True)
             
             st.subheader("وتيرة النشاط الميداني اليومي")
-            # التصحيح الهندسي: تجميع حسب اليوم حصراً لإعطاء أعداد صحيحة
             df['date_only'] = df['created_at'].dt.date
             df_trend = df.groupby('date_only').size().reset_index(name='count')
             
@@ -65,7 +64,6 @@ if menu == "📊 لوحة تحكم التحليلات":
                 markers=True,
                 labels={'date_only': 'التاريخ', 'count': 'عدد العمليات'}
             )
-            # اجبار المحور العمودي على عرض أعداد صحيحة فقط
             fig_line.update_layout(yaxis=dict(tickformat='d'))
             st.plotly_chart(fig_line, use_container_width=True)
         else:
@@ -74,7 +72,7 @@ if menu == "📊 لوحة تحكم التحليلات":
         st.error(f"خطأ في جلب بيانات التحليلات: {e}")
 
 # ==========================================
-# الوحدة 1: رصد الميدان
+# 2. رصد الميدان
 # ==========================================
 elif menu == "رصد الميدان":
     st.header("📊 سجل بيانات الميدان")
@@ -94,14 +92,14 @@ elif menu == "رصد الميدان":
             st.warning("المرجو ملء اسم المشروع ومحتوى التقرير.")
 
 # ==========================================
-# الوحدة 2: مصنع الإعلانات العقارية
+# 3. مصنع الإعلانات العقارية (مع واتساب مباشر)
 # ==========================================
 elif menu == "مصنع الإعلانات العقارية 📢":
-    st.header("📢 مصنع صياغة الإعلانات (عقار/معدات)")
+    st.header("📢 مصنع صياغة الإعلانات العقارية")
     cat_list = ["عقار فلاحي", "عقار تجاري", "عقار صناعي", "عقار سكني", "عقار مهني وخدماتي", "عقار استثماري", "معدات واليات"]
     p_type = st.selectbox("نوع العقار:", cat_list)
     loc = st.text_input("الموقع:")
-    price = st.text_input("السعر (مثلاً: 500000 أو 500000 درهم):")
+    price = st.text_input("السعر (مثلاً: 500000 درهم):")
     
     if price:
         try:
@@ -113,8 +111,9 @@ elif menu == "مصنع الإعلانات العقارية 📢":
             pass
 
     features = st.text_area("المميزات:")
+    phone_input = st.text_input("رقم الهاتف للإرسال عبر واتساب:", value="0691897126")
     
-    if st.button("توليد + أرشفة + نشر 🚀"):
+    if st.button("توليد + أرشفة + تجهيز واتساب 🚀"):
         ad_text = f"""👑 إعلان حصري - {p_type} 👑
 
 فرصة استثنائية وعرض متميز في {loc}.
@@ -126,11 +125,11 @@ elif menu == "مصنع الإعلانات العقارية 📢":
 {features}
 
 للمعاينة والاستفسار المباشر، تواصل معنا:
-📞 0691897126
-Studio Tassaout & Sraghna Media"""
+📞 {phone_input}
+Ameur Signature & Sraghna Media"""
 
         st.code(ad_text, language="text")
-        wa_link = get_whatsapp_link("0691897126", ad_text)
+        wa_link = get_whatsapp_link(phone_input, ad_text)
         st.link_button("📲 إرسال مباشر للواتساب", wa_link, use_container_width=True, type="primary")
         
         supabase.table("reports").insert({
@@ -139,10 +138,10 @@ Studio Tassaout & Sraghna Media"""
             "report_type": "إعلان عقاري",
             "created_at": datetime.now().isoformat()
         }).execute()
-        st.success("تم التوليد والأرشفة والنشر بنجاح!")
+        st.success("تم التوليد والأرشفة بنجاح!")
 
 # ==========================================
-# الوحدة 3: مصنع الخدمات الرقمية
+# 4. مصنع الخدمات الرقمية
 # ==========================================
 elif menu == "مصنع الخدمات الرقمية 💻":
     st.header("💻 مصنع إعلانات الخدمات الرقمية")
@@ -150,8 +149,9 @@ elif menu == "مصنع الخدمات الرقمية 💻":
     selected_service = st.selectbox("نوع الخدمة:", dig_services)
     target = st.text_input("الجمهور المستهدف:")
     details = st.text_area("تفاصيل الباقة أو العرض:")
+    phone_input = st.text_input("رقم الهاتف للإرسال عبر واتساب:", value="0691897126")
     
-    if st.button("توليد + أرشفة + نشر 🚀"):
+    if st.button("توليد + أرشفة + تجهيز واتساب 🚀"):
         digital_ad = f"""🚀 عرض احترافي: {selected_service} 🚀
 
 هل ترغب في تطوير نشاطك والوصول إلى {target} باحترافية؟
@@ -161,11 +161,11 @@ elif menu == "مصنع الخدمات الرقمية 💻":
 {details}
 
 💡 اجعل مشروعك يبرز في السوق الرقمي اليوم!
-📞 تواصل معنا الآن: 0691897126
+📞 تواصل معنا الآن: {phone_input}
 DANA Digital Market & Sraghna Media"""
 
         st.code(digital_ad, language="text")
-        wa_link = get_whatsapp_link("0691897126", digital_ad)
+        wa_link = get_whatsapp_link(phone_input, digital_ad)
         st.link_button("📲 إرسال مباشر للواتساب", wa_link, use_container_width=True, type="primary")
         
         supabase.table("reports").insert({
@@ -174,10 +174,10 @@ DANA Digital Market & Sraghna Media"""
             "report_type": "إعلان رقمي",
             "created_at": datetime.now().isoformat()
         }).execute()
-        st.success("تم التوليد والأرشفة والنشر بنجاح!")
+        st.success("تم التوليد والأرشفة بنجاح!")
 
 # ==========================================
-# الوحدة 4: تدبير الصفقات العمومية
+# 5. تدبير الصفقات العمومية
 # ==========================================
 elif menu == "📑 تدبير الصفقات العمومية":
     st.header("📑 وحدة تدبير الصفقات العمومية والمناقصات")
@@ -198,17 +198,19 @@ elif menu == "📑 تدبير الصفقات العمومية":
             st.success("تم تسجيل وتتبع الصفقة العمومية بنجاح!")
 
 # ==========================================
-# الوحدة 5: الوكيل التقني والخبير
+# 6. الوكيل التقني والخبير
 # ==========================================
 elif menu == "🧠 الوكيل التقني الخبير":
     st.header("🧠 المستشار التقني وخبير الأنظمة الرقمية")
     tech_challenge = st.text_area("اطرح المشكل التقني أو المشروع:")
     if st.button("توليد الحل الهندسي 🛠️"):
         if tech_challenge:
-            st.info(f"⚙️ **التوجيه الهندسي:** اعتمد على هيكلة دقيقة وفصل الوحدات البرمجية لضمان استقرار الأنظمة التشغيلية لـ Ameur Signature.")
+            st.info(f"⚙️ **التوجيه الهندسي:** بناءً على معطياتك حول ({tech_challenge})، اعتمد على هيكلة دقيقة وفصل الوحدات البرمجية لضمان استقرار الأنظمة التشغيلية لـ Ameur Signature.")
+        else:
+            st.warning("المرجو طرح المشكل أو المشروع أولاً.")
 
 # ==========================================
-# الوحدة 6: الوكيل الذكي (AI Deal Closer)
+# 7. الوكيل الذكي (AI Deal Closer)
 # ==========================================
 elif menu == "🤖 الوكيل الذكي (AI Deal Closer)":
     st.header("🤖 مستشار إغلاق الصفقات الذكي")
@@ -218,7 +220,7 @@ elif menu == "🤖 الوكيل الذكي (AI Deal Closer)":
             st.info("💡 **الرد المقترح:** نضمن لك أعلى معايير الجودة والقيمة المضافة لضمان نجاح استثمارك وقوة مشروعك.")
 
 # ==========================================
-# الوحدة 7: CRM العملاء
+# 8. CRM العملاء
 # ==========================================
 elif menu == "CRM العملاء المهتمين":
     st.header("👤 سجل إدارة علاقات العملاء (CRM)")
@@ -232,7 +234,7 @@ elif menu == "CRM العملاء المهتمين":
         st.error(f"خطأ: {e}")
 
 # ==========================================
-# الوحدة 8: الأرشيف
+# 9. الأرشيف والتقارير
 # ==========================================
 elif menu == "الأرشيف والتقارير":
     st.header("📁 الأرشيف السيادي الشامل")
