@@ -1,290 +1,83 @@
 import streamlit as st
 from supabase import create_client, Client
-from google import genai
-from fpdf import FPDF
-import tempfile
-import time
+import ollama
+from duckduckgo_search import DDGS
 
-# إعدادات الصفحة السيادية
-st.set_page_config(
-    page_title="OMEGA OS - Elite Core [Supabase Cache Edition]",
-    page_icon="👑",
-    layout="wide"
-)
+# 1. إعدادات النظام السيادي
+st.set_page_config(page_title="OMEGA OS - Sovereign Edition", layout="wide")
 
 # الربط الآمن مع Supabase
-SUPABASE_URL = st.secrets["SUPABASE_URL"]
-SUPABASE_KEY = st.secrets["SUPABASE_KEY"]
+supabase: Client = create_client(st.secrets["SUPABASE_URL"], st.secrets["SUPABASE_KEY"])
 
-@st.cache_resource
-def init_supabase():
-    return create_client(SUPABASE_URL, SUPABASE_KEY)
-
-supabase: Client = init_supabase()
-
-st.title("👑 OMEGA OS - Elite Core [Supabase Cache Edition]")
-st.sidebar.success("مرحباً بك يا رئيس (الوصول السيادي المطلق)")
-
-# القائمة السيادية الشاملة لكافة الوحدات
-menu = st.sidebar.selectbox(
-    "اختر الوحدة السيادية", 
-    [
-        "رصد الميدان والتقارير", 
-        "إدارة الإعلانات", 
-        "الذاكرة الرقمية (Gemini Memo)", 
-        "الوكيل الذكي الخارق (Max AI Agent)"
-    ]
-)
+st.title("👑 OMEGA OS - Sovereign Edition")
+st.sidebar.markdown("---")
+menu = st.sidebar.selectbox("الوحدة السيادية", [
+    "رصد الميدان", 
+    "مصنع الإعلانات التسويقية 📢", 
+    "الوكيل الذكي المحلي (بدون API)", 
+    "الأرشيف والتقارير"
+])
 
 # ==========================================
-# 1. وحدة رصد الميدان والتقارير + مصنع الـ PDF
+# الوحدة 1: رصد الميدان
 # ==========================================
-if menu == "رصد الميدان والتقارير":
-    st.header("📊 وحدة رصد الميدان والتقارير الرسمية")
-    
-    project_name = st.text_input("اسم المشروع / الورش")
-    report_content = st.text_area("محتوى التقرير أو التحليل")
-    report_type = st.selectbox("نوع التقرير", ["ورش", "عقار", "صفقات"])
-    
-    col_btn1, col_btn2 = st.columns(2)
-    with col_btn1:
-        if st.button("حفظ التقرير بأمان في القاعدة"):
-            if project_name and report_content:
-                try:
-                    supabase.table("reports").insert({
-                        "project_name": project_name,
-                        "report_content": report_content,
-                        "report_type": report_type
-                    }).execute()
-                    st.success("تم حفظ التقرير بنجاح في قاعدة البيانات السيادية!")
-                except Exception as e:
-                    st.error(f"حدث خطأ أثناء الحفظ: {e}")
-            else:
-                st.warning("المرجو ملء جميع الحقول الأساسية.")
-
-    st.markdown("---")
-    st.subheader("📁 الأرشيف السيادي وتوليد ملفات PDF")
-    
-    try:
-        reports_data = supabase.table("reports").select("*").order("created_at", desc=True).execute()
-        
-        if reports_data.data:
-            for idx, r in enumerate(reports_data.data):
-                p_name = r.get('project_name', 'مفهرس بدون عنوان')
-                r_type = r.get('report_type', 'عام')
-                r_date = r.get('created_at', '')
-                r_text = r.get('report_content', '')
-                
-                with st.expander(f"📌 [{r_type}] {p_name} — ({r_date})"):
-                    st.write(r_text)
-                    
-                    if st.button(f"📄 تصدير كـ PDF رسمي", key=f"pdf_btn_{r.get('id', idx)}"):
-                        try:
-                            pdf = FPDF()
-                            pdf.add_page()
-                            pdf.set_font("Arial", size=12)
-                            
-                            pdf.cell(200, 10, txt="OMEGA OS - Official Report", ln=True, align="C")
-                            pdf.ln(10)
-                            pdf.cell(200, 10, txt=f"Project: {p_name}", ln=True)
-                            pdf.cell(200, 10, txt=f"Type: {r_type}", ln=True)
-                            pdf.cell(200, 10, txt=f"Date: {r_date}", ln=True)
-                            pdf.ln(10)
-                            
-                            pdf.multi_cell(0, 10, txt=r_text)
-                            
-                            with tempfile.NamedTemporaryFile(delete=False, suffix=".pdf") as tmp_file:
-                                pdf.output(tmp_file.name)
-                                tmp_path = tmp_file.name
-                                
-                            with open(tmp_path, "rb") as pdf_file:
-                                st.download_button(
-                                    label="⬇️ انقر هنا لتحميل وثيقة PDF الرسمية",
-                                    data=pdf_file,
-                                    file_name=f"OMEGA_Report_{p_name}.pdf",
-                                    mime="application/pdf",
-                                    key=f"dl_pdf_{r.get('id', idx)}"
-                                )
-                        except Exception as pdf_err:
-                            st.error(f"تعذر توليد الـ PDF: {pdf_err}")
-        else:
-            st.info("لا توجد تقارير مسجلة حتى الآن.")
-    except Exception as e:
-        st.error(f"تعذر جلب سجل التقارير: {e}")
+if menu == "رصد الميدان":
+    st.header("📊 سجل بيانات الميدان")
+    p_name = st.text_input("اسم المشروع/الورش")
+    p_content = st.text_area("محتوى التقرير أو التحديث")
+    if st.button("حفظ في السحابة السيادية"):
+        if p_name and p_content:
+            supabase.table("reports").insert({"project_name": p_name, "report_content": p_content, "report_type": "ورش"}).execute()
+            st.success("تم الحفظ!")
 
 # ==========================================
-# 2. وحدة إدارة الإعلانات الفورية
+# الوحدة 2: مصنع الإعلانات الذكي (Ollama المحلي)
 # ==========================================
-elif menu == "إدارة الإعلانات":
-    st.header("📢 وحدة إدارة الإعلانات الفورية (instant_ads)")
-    
-    default_title = "عرض عقاري مميز: بقع، شقق ومكاتب في قلعة السراغنة"
-    default_desc = """🌟 فرص ذهبية للاستثمار والسكن في قلب قلعة السراغنة! 🌟
-خدمات تساوت الرقمية للعقار توفر لكم:
-* بقع سكنية والتجارية بمواقع استراتيجية.
-* شقق عصرية بتشطيبات راقية.
-* مكاتب مهنية مجهزة.
-📞 للاتصال والحجز: 0691897126"""
-
-    title = st.text_input("عنوان الإعلان", value=default_title)
-    description = st.text_area("تفاصيل الإعلان", value=default_desc, height=150)
-    
-    if st.button("نشر الإعلان"):
-        if title and description:
-            try:
-                supabase.table("instant_ads").insert({
-                    "content": title,
-                    "message": description
-                }).execute()
-                st.success("تم نشر الإعلان العقاري بنجاح في قاعدة البيانات!")
-            except Exception as e:
-                st.error(f"خطأ أثناء النشر: {e}")
-        else:
-            st.warning("املأ العنوان والوصف.")
-            
-    st.subheader("الإعلانات المنشورة حالياً")
-    try:
-        ads_data = supabase.table("instant_ads").select("*").order("created_at", desc=True).execute()
-        if ads_data.data:
-            for ad in ads_data.data:
-                st.info(f"📌 **{ad.get('content')}**\n\n{ad.get('message')}")
-        else:
-            st.info("لا توجد إعلانات مسجلة حالياً.")
-    except Exception as e:
-        st.error(f"خطأ في جلب الإعلانات: {e}")
-
-# ==========================================
-# 3. الذاكرة الرقمية
-# ==========================================
-elif menu == "الذاكرة الرقمية (Gemini Memo)":
-    st.header("🧠 الذاكرة الرقمية")
-    memo_content = st.text_area("محتوى المذكرة أو الفكرة")
-    if st.button("حفظ في الذاكرة"):
-        if memo_content:
-            try:
-                supabase.table("gemini_memo").insert({
-                    "content": memo_content
-                }).execute()
-                st.success("تم الحفظ في الذاكرة!")
-            except Exception as e:
-                st.error(f"خطأ: {e}")
-    
-    memos = supabase.table("gemini_memo").select("*").order("created_at", desc=True).execute()
-    if memos.data:
-        for m in memos.data:
-            st.write(f"💡 {m.get('content')}")
-
-# ==========================================
-# 4. الوكيل الذكي الخارق (مزود بنظام التخزين المؤقت الذكي)
-# ==========================================
-elif menu == "الوكيل الذكي الخارق (Max AI Agent)":
-    st.header("🌐 المحرك الذكي السيادي الشامل [Cached Perplexity Style]")
-    st.write("مرحباً بك يا رئيس. هذا المحرك مفحص ومزود بالذاكرة الذكية لتجاوز حدود الحصة عبر تخزين النتائج واسترجاعها فورياً.")
-
-    gemini_api_key = st.secrets["GEMINI_API_KEY"]
-    
-    target_region = st.selectbox(
-        "نطاق البحث الجغرافي:", 
-        [
-            "جميع جهات المغرب (وطني)", 
-            "جهة مراكش آسفي", 
-            "قلعة السراغنة والنواحي", 
-            "الجهة الشرقية", 
-            "جهة الدار البيضاء سطات", 
-            "جهة الرباط سلا القنيطرة",
-            "جهة طنجة تطوان الحسيمة",
-            "جهة سوس ماسة"
-        ]
-    )
-    
-    user_query = st.text_area(
-        "ما الذي تبحث عنه أو تريد استكشافه في الإنترنت؟", 
-        value="ابحث عن أحدث الفرص، الطلبات، أو العروض المتاحة في السوق المغربي مع تحليل دقيق."
-    )
-    
+elif menu == "مصنع الإعلانات التسويقية 📢":
+    st.header("📢 مصنع صياغة الإعلانات (محلي بالكامل)")
     col1, col2 = st.columns(2)
     with col1:
-        launch_search = st.button("🔍 ابحث واقترح عبر الويب (الذاكرة أولاً)")
+        p_type = st.selectbox("نوع العقار:", ["أرض فلاحية", "فيرمة", "بقعة سكنية", "شقة"])
+        loc = st.text_input("الموقع:", value="قلعة السراغنة")
     with col2:
-        force_fresh = st.checkbox("تجاوز الذاكرة والبحث المباشر الجديد", value=False)
+        price = st.text_input("السعر:", value="تحديد بعد المعاينة")
+        features = st.text_area("المميزات:")
     
-    if launch_search:
-        if user_query:
-            search_title_key = f"بحث شبكي: {target_region} - {user_query[:30]}"
-            cached_result = None
-            
-            # 1. فحص الذاكرة المؤقتة في Supabase أولاً لتوفير الكوتا
-            if not force_fresh:
-                try:
-                    existing = supabase.table("reports").select("*").eq("project_name", f"بحث شبكي: {target_region}").execute()
-                    if existing.data:
-                        # نبحث عن تطابق قريب في النص
-                        for row in existing.data:
-                            if user_query in row.get('report_content', ''):
-                                cached_result = row.get('report_content')
-                                break
-                except Exception:
-                    pass
-            
-            if cached_result and not force_fresh:
-                st.success("⚡ تم استرجاع النتيجة فورياً من الذاكرة السيادية (بدون استهلاك الـ API):")
-                st.markdown(cached_result)
-            else:
-                with st.spinner("جاري التمشيط الشامل للإنترنت عبر محرك Gemini المتقدم..."):
-                    try:
-                        client = genai.Client(api_key=gemini_api_key)
-                        
-                        system_prompt = (
-                            f"أنت محرك بحث ووكيل استخباري ذكي ومحترف مخصص للسوق المغربي. "
-                            f"نطاق البحث المستهدف حالياً هو: {target_region}. "
-                            "قم بالبحث الحقيقي في الإنترنت عبر أدوات البحث، واستخرج تفاصيل دقيقة، روابط، إحصائيات، "
-                            "أو طلبات عروض، وقدم إجابة مهيكلة، عميقة، ومفصلة باللغة العربية مع ذكر المصادر إن وجدت."
-                        )
-                        
-                        response = None
-                        # آلية إعادة المحاولة عند حدوث الضغط (429)
-                        for attempt in range(2):
-                            try:
-                                response = client.models.generate_content(
-                                    model='gemini-3.6-flash',
-                                    contents=f"{system_prompt}\n\nالسؤال أو البحث المطلوب: {user_query}",
-                                    config={
-                                        'tools': [{'google_search': {}}],
-                                    }
-                                )
-                                break
-                            except Exception as api_err:
-                                if "429" in str(api_err) and attempt == 0:
-                                    time.sleep(4)
-                                    continue
-                                else:
-                                    raise api_err
-                        
-                        if response:
-                            search_result = response.text
-                            st.success("تم إنجاز عملية البحث والاستخراج بنجاح:")
-                            st.markdown(search_result)
-                            
-                            if response.candidates and response.candidates[0].grounding_metadata:
-                                metadata = response.candidates[0].grounding_metadata
-                                if hasattr(metadata, 'grounding_chunks') and metadata.grounding_chunks:
-                                    st.subheader("🔗 المصادر الحية المستند إليها:")
-                                    for chunk in metadata.grounding_chunks:
-                                        if chunk.web:
-                                            st.markdown(f"- [{chunk.web.title}]({chunk.web.uri})")
-                            
-                            # حفظ النتيجة تلقائياً في Supabase لاستخدامها مستقبلاً بدون استهلاك الكوتا
-                            try:
-                                supabase.table("reports").insert({
-                                    "project_name": f"بحث شبكي: {target_region}",
-                                    "report_content": f"السؤال: {user_query}\n\nالنتائج:\n{search_result}",
-                                    "report_type": "صفقات"
-                                }).execute()
-                                st.info("💾 تم حفظ وأرشفة النتيجة في قاعدة بيانات Supabase للذاكرة السيادية.")
-                            except Exception as db_err:
-                                st.warning(f"تم عرض النتائج لكن تعذر الحفظ: {db_err}")
-                                
-                    except Exception as e:
-                        st.error(f"حدث خطأ بسبب استنفاد الحصة المؤقتة (429): يرجى الانتظار قليلاً أو تفعيل زر تجاوز الذاكرة لاحقاً. التفاصيل: {e}")
-        else:
-            st.warning("المرجو كتابة ما تريد البحث عنه أولاً.")
+    if st.button("توليد إعلان ذكي"):
+        with st.spinner("الوكيل المحلي (Ollama) يكتب الإعلان..."):
+            prompt = f"اكتب إعلان عقاري احترافي باللهجة المغربية الجذابة للعقار: {p_type} في {loc}، السعر: {price}، المميزات: {features}. انتهِ برقم الهاتف 0691897126 ورابط يوتيوب Studio Tassaout."
+            res = ollama.chat(model='llama3', messages=[{'role': 'user', 'content': prompt}])
+            ad = res['message']['content']
+            st.markdown(ad)
+            supabase.table("instant_ads").insert({"content": p_type, "message": ad}).execute()
+            st.success("تم الحفظ في القاعدة!")
+
+# ==========================================
+# الوحدة 3: الوكيل الذكي المحلي (Ollama + DuckDuckGo)
+# ==========================================
+elif menu == "الوكيل الذكي المحلي (بدون API)":
+    st.header("🌐 الوكيل السيادي المطلق [محلي 100%]")
+    q = st.text_input("اسأل الوكيل عن أي شيء:")
+    if st.button("تنفيذ المهمة"):
+        with st.spinner("البحث في الويب والمعالجة محلياً عبر Ollama..."):
+            with DDGS() as ddgs:
+                res = list(ddgs.text(q, max_results=3))
+            ctx = "\n".join([r['body'] for r in res])
+            ans = ollama.chat(model='llama3', messages=[{'role': 'user', 'content': f"السؤال: {q}\nالمعلومات: {ctx}\nأجب بالعربية:"}])
+            st.markdown(ans['message']['content'])
+            supabase.table("reports").insert({"project_name": "بحث ذكي محلي", "report_content": ans['message']['content'], "report_type": "بحث"}).execute()
+
+# ==========================================
+# الوحدة 4: الأرشيف والتقارير (بدون أخطاء PDF)
+# ==========================================
+elif menu == "الأرشيف والتقارير":
+    st.header("📁 الأرشيف السيادي")
+    data = supabase.table("reports").select("*").order("created_at", desc=True).execute().data
+    if data:
+        for r in data:
+            with st.expander(f"📌 {r.get('project_name', 'بدون عنوان')} ({r.get('created_at', '')})"):
+                content = r.get('report_content', '')
+                st.text_area("محتوى التقرير المؤرشف:", value=content, height=150, key=f"txt_{r.get('id')}")
+                st.info("💡 يمكنك نسخ النص مباشرة واستخدامه في واتساب أو أي منصة دون مشاكل.")
+    else:
+        st.info("لا توجد تقارير مسجلة في الأرشيف حالياً.")
