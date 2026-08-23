@@ -12,7 +12,8 @@ def dana_whatsapp_agent(prompt_text):
     دالة وكيل الذكاء الاصطناعي الخاص بـ DANA Digital للرد والتحليل
     """
     try:
-        model = genai.GenerativeModel('gemini-1.5-pro')
+        # استخدام النموذج القياسي السريع والمدعوم حالياً
+        model = genai.GenerativeModel('gemini-1.5-flash')
         response = model.generate_content(prompt_text)
         return response.text
     except Exception as e:
