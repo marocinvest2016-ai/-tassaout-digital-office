@@ -82,7 +82,8 @@ with col1:
     user_query = st.text_area(
         "أدخل تفاصيل الطلب، فكرة المحتوى، أو توجيهات التصميم المعماري/الإعلاني:",
         placeholder="اكتب هنا برومبت أو تعليماتك، وسيتم معالجتها وإنتاج المحتوى الكتابي والهوية البصرية فوراً...",
-        height=160
+        height=160,
+        key="user_query_input"
     )
 
 with col2:
@@ -92,18 +93,20 @@ with col2:
     uploaded_files = st.file_uploader(
         "رفع الصور، التصاميم، والمستندات (عدد غير محدود):",
         type=["jpg", "jpeg", "png", "pdf", "docx", "mp4"],
-        accept_multiple_files=True
+        accept_multiple_files=True,
+        key="file_uploader_input"
     )
     
     whatsapp_number = st.text_input(
         "رقم الواتساب للتوصل بالنتيجة فورا:",
-        placeholder="+212600000000"
+        placeholder="+212600000000",
+        key="whatsapp_input"
     )
 
 st.markdown("---")
 
 # زر التنفيذ السيادي
-if st.button("🚀 تشغيل المنظومة الفائقة وإنتاج المحتوى والنشر الفوري"):
+if st.button("🚀 تشغيل المنظومة الفائقة وإنتاج المحتوى والنشر الفوري", key="execute_button"):
     if not user_query.strip() and not uploaded_files:
         st.warning("⚠️ يرجى إدخال برومبت أو رفع ملف واحد على الأقل ليتمكن الوكيل الذكي من المعالجة.")
     else:
@@ -111,15 +114,24 @@ if st.button("🚀 تشغيل المنظومة الفائقة وإنتاج ال�
             
             files_count = len(uploaded_files) if uploaded_files else 0
             
-            # تمرير البارامترات المتوافقة تماماً مع الدوال المعرفة في agent.py
-            full_prompt = f"المجال: {selected_domain} | الوضع: {camera_mode} | الاستعلام: {user_query} [الملفات المرفوعة: {files_count} ملفات/صور]"
+            # تجميع النص المرسل للذكاء الاصطناعي بشكل واضح
+            full_prompt = f"""
+            أنت وكيل ذكي مختص في مجال: {selected_domain}
+            وضع التصميم/الكاميرا: {camera_mode}
+            طلب المستخدم الأساسي: {user_query}
+            عدد الملفات المرفوعة: {files_count}
+            قم بصياغة تقرير احترافي، محتوى تسويقي، أو خطة عمل متكاملة بناءً على هذه المعطيات.
+            """
+            
+            # استدعاء دالة الذكاء الاصطناعي من ملف agent.py
             response_result = dana_whatsapp_agent(full_prompt)
             
-            # إذا كتب رقم واتساب، نقوم بتفعيل الإرسال
+            # إرسال واتساب إذا تم إدخال الرقم
             if whatsapp_number.strip():
                 send_whatsapp_message(whatsapp_number.strip(), response_result)
             
-            st.success(f"✅ تم معالجة الطلب ورفع {files_count} أصول بصرية ومستندية بنجاح إمبراطوري!")
+            # عرض النتائج مباشرة في الواجهة بشكل بارز ومنظم
+            st.success(f"✅ تم معالجة الطلب بنجاح إمبراطوري!")
             st.markdown("### 📊 تقرير المصنع والمخرجات السيادية:")
             st.markdown(response_result)
             
