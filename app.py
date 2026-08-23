@@ -1,6 +1,8 @@
-import streamlit as st
+    import streamlit as st
 from agent import dana_whatsapp_agent, send_whatsapp_message
 import datetime
+import urllib.parse
+from io import BytesIO
 
 # ===============================
 # إعدادات الواجهة الإمبراطورية الموحدة (Alpha Core Nexus)
@@ -38,6 +40,24 @@ st.markdown("""
         background-color: #3B82F6;
         color: white;
     }
+    .whatsapp-btn {
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        background-color: #25D366;
+        color: white !important;
+        padding: 12px 20px;
+        border-radius: 8px;
+        font-weight: bold;
+        text-decoration: none;
+        width: 100%;
+        margin-top: 10px;
+        text-align: center;
+        font-size: 16px;
+    }
+    .whatsapp-btn:hover {
+        background-color: #22BF5B;
+    }
     .active-agent-box {
         background-color: #EFF6FF;
         border: 2px solid #3B82F6;
@@ -52,13 +72,13 @@ st.markdown("""
 """, unsafe_allow_html=True)
 
 # رأس المنصة السيادية
-st.markdown('<div class="main-title">👑 Alpha Core Nexus | مكتب تساوت الرقمي العقار والأعمال</div>', unsafe_allow_html=TaskView if 'TaskView' in globals() else True)
-st.markdown('<div class="subtitle">الشاشة التفاعلية الكبرى - تفعيل هندسة الديكور، المعماريين، والبرومبتات البصرية بالذكاء الاصطناعي المنطقي</div>', unsafe_allow_html=True)
+st.markdown('<div class="main-title">👑 Alpha Core Nexus | مكتب تساوت الرقمي العقار والأعمال</div>', unsafe_allow_html=True)
+st.markdown('<div class="subtitle">الشاشة التفاعلية الكبرى - الإعلانات والصفقات التجارية بذكاء مستقل دون تشويش هندسي</div>', unsafe_allow_html=True)
 st.markdown("---")
 
 # 🧠 تهيئة الذاكرة المؤقتة لمنع ضياع الاختيارات
 if "active_domain" not in st.session_state:
-    st.session_state.active_domain = "🏠 العقار المتكامل (سكني، مهني، صناعي، فلاحي)"
+    st.session_state.active_domain = "🏠 العقار المتكامل (بيع، كراء، تسويق، بقع، إعلانات)"
 
 if "last_result" not in st.session_state:
     st.session_state.last_result = ""
@@ -66,21 +86,21 @@ if "last_result" not in st.session_state:
 if "saved_files" not in st.session_state:
     st.session_state.saved_files = []
 
-# اختيار الوكيل المختص ووضع الكاميرا والمهندسين
-st.markdown("### ⚙️ تفعيل القطاع، الطاقم الهندسي، والدستور البصري")
+# اختيار الوكيل المختص ووضع الكاميرا
+st.markdown("### ⚙️ تحديد القطاع النشط ووضع الكاميرا المناسب")
 col_agent1, col_agent2 = st.columns(2)
 
 with col_agent1:
     selected_domain = st.selectbox(
-        "🌐 اختر الوكيل المختص:",
+        "🌐 اختر الوكيل المختص / طبيعة المهمة:",
         [
-            "🏠 العقار المتكامل (سكني، مهني، صناعي، فلاحي)",
-            "📐 الهندسة المعمارية، الصناعية، والديكور الداخلي",
-            "🤖 الشاشة التفاعلية للمحتوى والهوية البصرية (Interactive & Content Studio)",
+            "🏠 العقار المتكامل (بيع، كراء، تسويق، بقع، إعلانات)",
             "📊 الأعمال والصفقات العمومية ومواد البناء",
-            "✈️ الأسفار، السياحة، والحج والعمرة",
             "🚗 السيارات (المستوردة، المستعملة، والآليات الفلاحية)",
+            "🤖 الشاشة التفاعلية للمحتوى والهوية البصرية",
+            "✈️ الأسفار، السياحة، والحج والعمرة",
             "📚 الثقافة والعلوم والأبحاث",
+            "📐 الهندسة المعمارية والديكور الداخلي (عند الطلب الهندسي فقط)",
             "⚡ مختلفات وطلبات استثنائية الطوارئ"
         ],
         key="main_agent_select"
@@ -89,46 +109,45 @@ with col_agent1:
 
 with col_agent2:
     camera_mode = st.selectbox(
-        "📷 وضع الكاميرا والدستور البصري المعماري:",
+        "📷 وضع الكاميرا والدستور البصري الإعلاني:",
         [
-            "ARCHITECTURE & 3D INTERIOR (هندسة المعمار وتصميم الديكور الداخلي 3D)",
-            "PRODUIT (المنتجات والعقارات المعروضة)",
+            "PRODUIT & ANNONCE (إعلانات المنتجات، العقارات، والسيارات العادية)",
             "MAGASIN & SHOWROOM (المحلات التجارية والواجهات)",
-            "PORTRAIT (صور الفريق الهندسي والمهني)",
-            "VOITURE (السيارات والآليات الفلاحية)",
-            "CINEMA & REAL ESTATE DRONE (تصوير جوي سينمائي للمشاريع الكبرى)"
+            "PORTRAIT (صور شخصية وفريق العمل المهني)",
+            "CINEMA & DRONE (تصوير جوي سينمائي للمشاريع الكبرى)",
+            "ARCHITECTURE & 3D (هندسة المعمار وتصميم الديكور - عند الطلب الهندسي)"
         ],
         key="main_camera_select"
     )
 
-st.markdown(f'<div class="active-agent-box">⚡ الوكيل المفعل حالياً: {st.session_state.active_domain} | الطاقم الهندسي والبصري في وضع الاستعداد التام</div>', unsafe_allow_html=True)
+st.markdown(f'<div class="active-agent-box">⚡ القطاع قيد التشغيل: {st.session_state.active_domain}</div>', unsafe_allow_html=True)
 st.markdown("---")
 
 # الواجهة الرئيسية
 col1, col2 = st.columns([1.5, 1])
 
 with col1:
-    st.markdown("### ✍️ الشاشة التفاعلية لاستقبال البرومبتات الهندسية والبصرية")
+    st.markdown("### ✍️ الشاشة التفاعلية لاستقبال الإعلانات والطلبات")
     user_query = st.text_area(
-        "أدخل تفاصيل التصميم، فكرة الديكور، المخطط المعماري، أو الطلب البصري:",
-        placeholder="مثال: صمم لي صالون مغربي مودرن مع إضاءة خفية، أو برومبت لتصميم واجهة فيلا فخمة بقلعة السراغنة...",
+        "أدخل تفاصيل الإعلان، الصفقة، أو الطلب المراد تنفيذه:",
+        placeholder="مثال: اكتب إعلان تسويقي لبيع شقة بقلعة السراغنة بثمن تنافسي مع رقم الاتصال...",
         height=160,
         key="user_query_input"
     )
 
 with col2:
-    st.markdown("### 📸 مركز رفع المخططات والأصول البصرية")
-    st.info("💡 ارفع المخططات الهندسية، صور الفراغات، أو الواجهات لمعالجتها وتوجيه المهندسين لإنتاج الإنستنت والتصميم.")
+    st.markdown("### 📸 مركز رفع الأصول والصور الإعلانية")
+    st.info("💡 ارفع صور العقار، السيارة، أو المنتج لتوليد الإعلان والمحتوى التسويقي فورا.")
     
     uploaded_files = st.file_uploader(
-        "رفع الصور، المخططات، والمستندات:",
+        "رفع الصور والمستندات:",
         type=["jpg", "jpeg", "png", "pdf", "docx", "mp4"],
         accept_multiple_files=True,
         key="file_uploader_input"
     )
     
     whatsapp_number = st.text_input(
-        "رقم الواتساب للتوصل بالتقرير الهندسي فورا:",
+        "رقم الواتساب للتوصل بالنتيجة فورا:",
         placeholder="+212600000000",
         key="whatsapp_input"
     )
@@ -136,68 +155,70 @@ with col2:
 st.markdown("---")
 
 # زر التنفيذ السيادي
-if st.button("🚀 تشغيل الطاقم الهندسي وتوليد البرومبت والتصميم البصري", key="execute_button"):
+if st.button("🚀 تشغيل المنظومة وتوليد المحتوى الفوري", key="execute_button"):
     if not user_query.strip() and not uploaded_files:
-        st.warning("⚠️ يرجى إدخال البرومبت أو رفع مخطط هندسي لكي يباشر المهندسون المعماريون والديكور العمل.")
+        st.warning("⚠️ يرجى إدخال تفاصيل الإعلان أو رفع ملف واحد على الأقل ليتمكن الوكيل من التنفيذ.")
     else:
-        with st.spinner(f"🔄 جاري استدعاء المهندسين المعماريين وخبراء الديكور وتفعيل وضع الكاميرا [{camera_mode}]..."):
+        with st.spinner(f"🔄 جاري معالجة الطلب عبر وكيل [{st.session_state.active_domain}]..."):
             
             files_count = len(uploaded_files) if uploaded_files else 0
-            
-            # 🧠 محرك تفعيل المهندسين المعماريين والديكور والبرومبت البصري
             current_domain = st.session_state.active_domain
             
-            if "الهندسة المعمارية، الصناعية، والديكور" in current_domain or "العقار المتكامل" in current_domain:
-                expert_persona = """
-                أنت لجنة هندسية عليا تضم:
-                1. مهندساً معمارياً أول (Senior Architect).
-                2. خبيراً في التصميم الداخلي والديكور (Interior Designer & 3D Visualizer).
-                3. مهندساً مدنياً مختصاً في دفاتر التحملات وتقييم التكاليف بجهة مراكش آسفي.
-                """
+            # 🧠 توجيه ذكي دقيق: لا يوجد تدخل هندسي نهائياً إلا إذا تم اختيار قطاع الهندسة صراحة
+            if "الهندسة المعمارية والديكور الداخلي" in current_domain:
+                expert_persona = "أنت لجنة هندسية عليا وخبراء في المعمار والديكور الداخلي. مطلوب تقديم دراسة هندسية، مقترحات تصميم، وبرومبت بصري دقيق."
+            elif "العقار المتكامل" in current_domain:
+                expert_persona = "أنت خبير تسويق عقاري احترافي بجهة مراكش آسفي (قلعة السراغنة، مراكش). تخصصك صياغة إعلانات عقارية تجارية جذابة وواضحة للزبناء دون أي تشويش هندسي."
+            elif "السيارات" in current_domain:
+                expert_persona = "أنت خبير تسويق سيارات، آليات فلاحية، ومركبات نفعية. صغ إعلانات تجارية جذابة وسريعة."
+            elif "الأعمال والصفقات العمومية" in current_domain:
+                expert_persona = "أنت مستشار أعمال وخبير في تدبير الصفقات العمومية وتوريدات المواد."
             else:
-                expert_persona = f"أنت وكيل ذكي خبير ومستشار محترف في قطاع: {current_domain}."
+                expert_persona = f"أنت وكيل ذكي محترف في قطاع: {current_domain}."
 
             full_prompt = f"""
-            [تعليمات النظام السيادي واللجنة الهندسية]:
+            [تعليمات النظام]:
             {expert_persona}
             
-            [دستور الكاميرا والبرومبت البصري المطلوب]:
-            تم تفعيل وضع التصوير والمعالجة البصرية التالي: {camera_mode}
-            قم بصياغة (Prompt مرئي دقيق ومحترف باللغات الثلاث أو الإنجليزية المخصصة لبرامج التوليد المرئي) وتوجيهات هندسية تتماشى تماماً مع هذا البرومبت البصري.
+            [دستور وضع الكاميرا]: {camera_mode}
             
-            [مدخلات المستخدم والطلب الفعلي]:
+            [طلب المستخدم]:
             {user_query}
             
-            [عدد الملفات والأصول المرفقة]: {files_count}
+            [عدد الملفات المرفقة]: {files_count}
             
-            [المخرجات المطلوبة]:
-            1. التحليل الهندسي والمقترحات الإبداعية المفصلة بناءً على نوع الكاميرا والطلب.
-            2. برومبت بصري هندسي جاهز للاستخدام في برامج التوليد (Midjourney/Stable Diffusion/DALL-E).
-            3. خطة عمل تنفيذية واضحة (عقارية، هندسية، أو تسويقية).
+            [المطلوب]: تقديم مخرجات احترافية نظيفة، مباشرة، وتخدم الهدف الإعلاني أو التجاري المطلوب بدقة متناهية دون حشو أو خروج عن السياق.
             """
             
-            # استدعاء الذكاء الاصطناعي المنطقي
+            # استدعاء الذكاء الاصطناعي المنطقي وتخزين النسخ في الجلسة
             response_result = dana_whatsapp_agent(full_prompt)
             st.session_state.last_result = response_result
             st.session_state.saved_files = uploaded_files if uploaded_files else []
             
-            # إرسال واتساب إذا وُجد الرقم
+            # إرسال واتساب إذا وُجد الرقم تلقائياً عبر الدالة البرمجية
             if whatsapp_number.strip():
                 send_whatsapp_message(whatsapp_number.strip(), response_result)
 
-# 📊 عرض النتائج الثابتة في الجلسة
+# 📊 عرض النتائج الثابتة في الجلسة مع أيقونة واتساب تفاعلية ومعاينة الصور الصحيحة
 if st.session_state.last_result:
-    st.success(f"✅ تم إنجاز التقرير الهندسي والبصري بنجاح بواسطة الطاقم المختص!")
-    st.markdown("### 📊 مخرجات الطاقم الهندسي والبرومبت البصري:")
+    st.success(f"✅ تم إنجاز الطلب الإعلاني/التجاري بنجاح!")
+    st.markdown("### 📊 تقرير المخرجات والنتيجة النهائية:")
     st.markdown(st.session_state.last_result)
     
+    # 🟢 زر واتساب تفاعلي يتيح إرسال النتيجة بضغطة زر مباشرة
+    encoded_text = urllib.parse.quote(st.session_state.last_result)
+    wa_link = f"https://api.whatsapp.com/send?text={encoded_text}"
+    st.markdown(f'<a href="{wa_link}" target="_blank" class="whatsapp-btn">💬 إرسال ومشاركة المخرجات عبر واتساب فوراً</a>', unsafe_allow_html=True)
+    
     if st.session_state.saved_files:
-        st.markdown("#### 📂 المخططات والأصول المرفقة والمعالجة:")
+        st.markdown("#### 📂 الملفات والأصول المرتبطة:")
         for file in st.session_state.saved_files:
-            st.text(f"✔️ {file.name} - تم ربطه بالدراسة الهندسية.")
+            st.text(f"✔️ {file.name} - تم ربطه بنجاح.")
+            # استخدام BytesIO لضمان ظهور الصور وثباتها وعدم اختفائها
             if file.type.startswith("image/"):
                 try:
-                    st.image(file, caption=f"معاينة المخطط/الأصل: {file.name}", use_column_width=True)
+                    bytes_data = file.getvalue()
+                    st.image(BytesIO(bytes_data), caption=f"معاينة: {file.name}", use_column_width=True)
                 except Exception as img_err:
                     st.warning(f"تعذر عرض الصورة {file.name}: {img_err}")
 
