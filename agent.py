@@ -3,17 +3,17 @@ from google import genai
 import requests
 import datetime
 
-# إعداد مفتاح API باستخدام الحزمة الحديثة
+# إعداد العميل باستخدام حزمة google-genai الحديثة
 if "GEMINI_API_KEY" in st.secrets:
     client = genai.Client(api_key=st.secrets["GEMINI_API_KEY"])
 
 def dana_whatsapp_agent(prompt_text):
     """
-    دالة وكيل الذكاء الاصطناعي باستخدام النموذج الموصى به من النظام
+    دالة وكيل الذكاء الاصطناعي باستخدام google-genai الحديثة
     """
     try:
         response = client.models.generate_content(
-            model='gemini-3.6-flash',
+            model='gemini-2.5-flash',
             contents=prompt_text,
         )
         return response.text
