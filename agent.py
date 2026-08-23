@@ -1,20 +1,21 @@
 import streamlit as st
-import google.generativeai as genai
+from google import genai
 import requests
 import datetime
 
-# إعداد مفتاح API الخاص بـ Gemini (يتم سحبه تلقائياً من أسرار Streamlit)
+# إعداد مفتاح API باستخدام الحزمة الحديثة
 if "GEMINI_API_KEY" in st.secrets:
-    genai.configure(api_key=st.secrets["GEMINI_API_KEY"])
+    client = genai.Client(api_key=st.secrets["GEMINI_API_KEY"])
 
 def dana_whatsapp_agent(prompt_text):
     """
-    دالة وكيل الذكاء الاصطناعي الخاص بـ DANA Digital للرد والتحليل
+    دالة وكيل الذكاء الاصطناعي باستخدام الحزمة الحديثة والنموذج المدعوم
     """
     try:
-        # استخدام النموذج القياسي السريع والمدعوم حالياً
-        model = genai.GenerativeModel('gemini-1.5-flash')
-        response = model.generate_content(prompt_text)
+        response = client.models.generate_content(
+            model='gemini-2.5-flash',
+            contents=prompt_text,
+        )
         return response.text
     except Exception as e:
         return f"عذراً، حدث خطأ في معالجة الطلب عبر نموذج الذكاء الاصطناعي: {str(e)}"
@@ -24,7 +25,6 @@ def send_whatsapp_message(phone_number, message):
     دالة إرسال رسائل واتساب
     """
     try:
-        # يمكنك ربطها لاحقاً بـ API حقيقي للإرسال (مثل Twilio أو Meta API)
         pass
     except Exception as e:
         print(f"Error sending WhatsApp: {e}")
