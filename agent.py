@@ -9,11 +9,11 @@ if "GEMINI_API_KEY" in st.secrets:
 
 def dana_whatsapp_agent(prompt_text):
     """
-    دالة وكيل الذكاء الاصطناعي باستخدام الحزمة الحديثة والنموذج المدعوم
+    دالة وكيل الذكاء الاصطناعي باستخدام النموذج الموصى به من النظام
     """
     try:
         response = client.models.generate_content(
-            model='gemini-2.5-flash',
+            model='gemini-3.6-flash',
             contents=prompt_text,
         )
         return response.text
