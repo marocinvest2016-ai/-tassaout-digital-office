@@ -136,9 +136,16 @@ if st.button("🚀 تشغيل المنظومة الفائقة وإنتاج ال�
             st.markdown(response_result)
             
             if uploaded_files:
-                st.markdown("#### 📂 الملفات المعالجة والموثقة سحابياً:")
+                st.markdown("#### 📂 الملفات والأصول المرفقة والمعالجة:")
                 for file in uploaded_files:
                     st.text(f"✔️ {file.name} - تم ربطه بنجاح بكاميرا النظام والنشر الفوري.")
+                    
+                    # معاينة الصور مباشرة على الشاشة التفاعلية
+                    if file.type.startswith("image/"):
+                        try:
+                            st.image(file, caption=f"معاينة الأصل المرئي: {file.name}", use_column_width=True)
+                        except Exception as img_err:
+                            st.warning(f"تعذر عرض معاينة الصورة {file.name}: {img_err}")
 
 # تذييل الصفحة الرسمي
 st.markdown("---")
