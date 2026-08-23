@@ -3,7 +3,7 @@ import io
 import os
 import urllib.parse
 import zipfile
-from google import genai
+import google.generativeai as genai
 import pandas as pd
 from PIL import Image, ImageDraw, ImageEnhance, ImageFont
 import streamlit as st
@@ -27,13 +27,17 @@ def init_system():
         url = st.secrets["SUPABASE_URL"].strip()
         key = st.secrets["SUPABASE_KEY"].strip()
         supabase = create_client(url, key)
-        ai_client = genai.Client(api_key=st.secrets["GEMINI_API_KEY"].strip())
-        return supabase, ai_client, True
+
+        genai.configure(api_key=st.secrets["GEMINI_API_KEY"].strip())
+        # اختبار النموذج الكلاسيكي
+        ai_model = genai.GenerativeModel("gemini-1.5-flash")
+
+        return supabase, ai_model, True
     except Exception:
         return None, None, False
 
 
-supabase, ai_client, db_connected = init_system()
+supabase, ai_model, db_connected = init_system()
 
 # جلسة مؤقتة للتخزين المحلي في حال عدم توفر الاتصال
 if "local_properties" not in st.session_state:
@@ -188,7 +192,7 @@ elif menu == "📸 الاستوديو البصري والوكيل الذكي ل�
         )
 
     if generate_ai_prompt_btn and user_prompt_vision:
-        if ai_client:
+        if ai_model:
             try:
                 sys_prompt = f"""
                 أنت وكيل خبير في الهندسة البصرية وإدارة الاستوديو الرقمي (Agentic Multi-Domain AI).
@@ -198,9 +202,7 @@ elif menu == "📸 الاستوديو البصري والوكيل الذكي ل�
                 with st.spinner(
                     "جاري صياغة البرومبت الهندسي البصري المحترف..."
                 ):
-                    res = ai_client.models.generate_content(
-                        model="gemini-2.5-flash", contents=sys_prompt
-                    )
+                    res = ai_model.generate_content(sys_prompt)
                     st.success("✅ البرومبت البصري المحترف جاهز للاستخدام:")
                     st.code(res.text, language="markdown")
             except Exception as e:
@@ -282,7 +284,7 @@ elif menu == "🤖 غرفة قيادة وكلاء الذكاء الاصطناع�
         )
 
         if submit_agent:
-            if user_task and ai_client:
+            if user_task and ai_model:
                 try:
                     system_personas = {
                         "🏢 وكيل العقارات وتحليل السوق المغربي": (
@@ -307,9 +309,7 @@ elif menu == "🤖 غرفة قيادة وكلاء الذكاء الاصطناع�
                     with st.spinner(
                         "جاري معالجة المهمة بواسطة الوكيل المتخصص..."
                     ):
-                        response = ai_client.models.generate_content(
-                            model="gemini-2.5-flash", contents=prompt
-                        )
+                        response = ai_model.generate_content(prompt)
                         st.success("✅ تم تنفيذ المهمة بنجاح:")
                         st.markdown(response.text)
                 except Exception as ag_err:
@@ -349,7 +349,7 @@ elif menu == "🌐 وكيل البحث العميق واستخراج الدات�
 
         if run_research:
             if research_query:
-                if ai_client:
+                if ai_model:
                     try:
                         research_prompt = f"""
                         أنت وكيل بحث عميق ومحلل أسواق خبير في السوق المغربي (قلعة السراغنة، مراكش).
@@ -358,10 +358,7 @@ elif menu == "🌐 وكيل البحث العميق واستخراج الدات�
                         with st.spinner(
                             "جاري البحث العميق واستخراج البيانات..."
                         ):
-                            response = ai_client.models.generate_content(
-                                model="gemini-2.5-flash",
-                                contents=research_prompt,
-                            )
+                            response = ai_model.generate_content(research_prompt)
                             st.success("✅ تقرير البحث العميق جاهز:")
                             st.markdown(response.text)
                     except Exception as rs_err:
@@ -403,12 +400,10 @@ elif menu == "🏠 إدارة العقارات والمشاريع الذكية":
                 "حفظ العقار في النظام", use_container_width=True
             ):
                 final_desc = desc
-                if use_ai and name and ai_client:
+                if use_ai and name and ai_model:
                     try:
                         prompt = f"اكتب إعلاناً تسويقياً جذاباً بالعربية لعقار باسم '{name}' سعره {price} درهم بسوق قلعة السراغنة ومراكش."
-                        response = ai_client.models.generate_content(
-                            model="gemini-2.5-flash", contents=prompt
-                        )
+                        response = ai_model.generate_content(prompt)
                         final_desc = response.text
                     except Exception:
                         pass
@@ -658,9 +653,9 @@ elif menu == "⚙️ الإعدادات والأمان السيادي":
                 "🟡 يعمل بنمط المحاكاة المحلية لغياب مفاتيح Supabase."
             )
     with col_s2:
-        if ai_client:
+        if ai_model:
             st.success(
-                "🤖 تم ربط وكلاء الذكاء الاصطناعي بنجاح (Gemini API)."
+                "🤖 تم ربط وكلاء الذكاء الاصطناعي بنجاح (Google Generative AI)."
             )
 
 st.markdown("---")
