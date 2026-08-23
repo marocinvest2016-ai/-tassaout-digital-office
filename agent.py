@@ -4,7 +4,7 @@ import requests
 import datetime
 
 # ===============================
-# 1. إعدادات السيادة TASSAOUT
+# 1. إعدادات السيادة المطلقة
 # ===============================
 GEMINI_API_KEY = st.secrets["gemini"]["API_KEY"]
 client = genai.Client(api_key=GEMINI_API_KEY)
@@ -17,109 +17,101 @@ WA_TOKEN = st.secrets["whatsapp"]["ACCESS_TOKEN"]
 WA_VERSION = st.secrets["whatsapp"]["API_VERSION"]
 
 # ===============================
-# 2. DANA - ALPHA NEXUS OMEGA
+# 2. منظومة الوكلاء الفائقين (SUPER AGENTS - IMPERIAL v6.0)
 # ===============================
-class DANA_Agent:
+class TassaoutGlobalEmpire:
     def __init__(self):
-        self.modes = {
-            "PRODUIT": {"engine": "FLUX.1-Pro-Ultra", "lens": "85mm"},
-            "PORTRAIT": {"engine": "Hasselblad-X2D", "lens": "50mm"},
-            "MAGASIN": {"engine": "Imagen-4", "lens": "24mm"},
-            "VOITURE": {"engine": "Midjourney-v7", "lens": "70-200mm"},
-            "CINEMA": {"engine": "ARRI-Alexa", "lens": "35mm"}
-        }
+        print("[OMEGA-CORE v6.0] نظام السيادة الرقمية العالمي والشامل متصل ومفعل 100%")
 
-    def AGENT_01_analyze(self, frame_b64, mode):
-        return f"Scene: {mode} | Tassaout Vision Verified"
+    # القطب 1: العقارات الاستثمارية والفخمة
+    def agent_real_estate(self, query: str) -> str:
+        prompt = f"أنت وكيل العقارات الاستثمارية والفخمة في منصة Tassaout Omega. أجب باحترافية بالدارجة أو اللغة المناسبة. الطلب: {query}"
+        res = client.models.generate_content(model="gemini-2.5-flash", contents=prompt)
+        return f"🏡 [القطب العقاري]: {res.text}"
 
-    def AGENT_03_digital_studio(self, prompt: str) -> str:
-        result = client.models.generate_images(
-            model="imagen-3.0-generate-002",
-            prompt=f"Professional photo Morocco, {prompt}, 8K, cinematic, {self.modes['MAGASIN']['engine']}"
-        )
-        image_bytes = result.generated_images[0].image.image_bytes
-        return self.AGENT_06_upload_to_cloud(image_bytes, "GENERATED")
+    # القطب 2: التجارة، الأعمال، الهويات البصرية والتسويق
+    def agent_commercial(self, query: str) -> str:
+        prompt = f"أنت وكيل التجارة، الأعمال، والهويات البصرية (Sraghna Media / DANA Market). أجب باحترافية. الطلب: {query}"
+        res = client.models.generate_content(model="gemini-2.5-flash", contents=prompt)
+        return f"💼 [القطب التجاري الرقمي]: {res.text}"
 
-    def AGENT_04_stamp(self, filename):
-        return f"{filename}_APPROUVE_PAR_AMEUR.jpg"
+    # القطب 3: الأسفار، السياحة، والحج والعمرة
+    def agent_travel(self, query: str) -> str:
+        prompt = f"أنت وكيل الأسفار، السياحة، والحج والعمرة الدولي. أجب باحترافية. الطلب: {query}"
+        res = client.models.generate_content(model="gemini-2.5-flash", contents=prompt)
+        return f"✈️ [قطب الأسفار والحج والعمرة]: {res.text}"
 
-    def AGENT_08_generate_ad(self, analysis, location):
-        return f"خدمة احترافية | {location} | من توقيع Signature ameur | Tassaout Vision Verified © 2026"
+    # القطب 4: السيارات والآليات الفلاحية والثقيلة
+    def agent_auto_machinery(self, query: str) -> str:
+        prompt = f"أنت وكيل السيارات الفاخرة، كراء السيارات، والآليات الفلاحية والمعدات الثقيلة. أجب باحترافية. الطلب: {query}"
+        res = client.models.generate_content(model="gemini-2.5-flash", contents=prompt)
+        return f"🚗🚜 [قطب السيارات والآليات]: {res.text}"
 
-    def AGENT_06_upload_to_cloud(self, file_bytes, subject):
-        timestamp = datetime.datetime.now().strftime("%Y%m%d_%H%M%S")
-        filename = f"DANA_{subject}_{timestamp}.jpg"
-        files = {'file': (filename, file_bytes, 'image/jpeg')}
-        data = {'location': 'Kalâa Sraghna', 'agent': 'DANA-Omega'}
-        headers = {'Authorization': f'Bearer {API_KEY}'}
+    # القطب 5: الصفقات العمومية ومواد البناء والتجهيز
+    def agent_public_tenders_construction(self, query: str) -> str:
+        prompt = f"أنت وكيل الصفقات العمومية، طلبات العروض، ومواد البناء والتجهيز الصناعي والمقاولاتي. أجب باحترافية ودقة تقنية. الطلب: {query}"
+        res = client.models.generate_content(model="gemini-2.5-flash", contents=prompt)
+        return f"🏗️ [قطب الصفقات العمومية ومواد البناء]: {res.text}"
 
-        response = requests.post(ALPHACLOUD_URL, files=files, data=data, headers=headers)
-        if response.status_code == 200:
-            return response.json().get('url', filename)
-        return filename
+    # القطب 6: الهندسة المعمارية والصناعية والميكانيكية للمعامل والديكور
+    def agent_engineering_decor(self, query: str) -> str:
+        prompt = f"أنت خبير الهندسة المعمارية، الهندسة الصناعية والميكانيكية للمعامل والشركات، وهندسة الديكور الداخلي الفاخر. أجب باحترافية عالية. الطلب: {query}"
+        res = client.models.generate_content(model="gemini-2.5-flash", contents=prompt)
+        return f"📐 [قطب الهندسة الصناعية والديكور]: {res.text}"
 
-    def AGENT_08_publish_whatsapp(self, to_number, message, image_url=None):
+    # الموجه المركزي الأذكى (DANA CEO Router)
+    def dana_ceo_router(self, user_query: str, domain: str, to_number: str = None) -> str:
+        timestamp = datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S")
+        stamp = "APPROUVÉ PAR AMEUR © 2026 - Tassaout Vision Verified"
+
+        # توجيه الطلب حسب القطب المختار في الواجهة
+        if domain == "عقارات":
+            result = self.agent_real_estate(user_query)
+        elif domain == "تجارة وأعمال":
+            result = self.agent_commercial(user_query)
+        elif domain == "أسفار وحج وعمرة":
+            result = self.agent_travel(user_query)
+        elif domain == "سيارات وآليات فلاحية":
+            result = self.agent_auto_machinery(user_query)
+        elif domain == "الصفقات العمومية ومواد البناء":
+            result = self.agent_public_tenders_construction(user_query)
+        elif domain == "الهندسة المعمارية والديكور":
+            result = self.agent_engineering_decor(user_query)
+        else:
+            # التوجيه التلقائي الذكي عبر الـ Router
+            router_prompt = f"حدد أي قطب يناسب هذا الطلب بدقة (عقارات / تجارة وأعمال / أسفار وحج وعمرة / سيارات وآليات فلاحية / الصفقات العمومية ومواد البناء / الهندسة المعمارية والديكور): {user_query}"
+            routing_res = client.models.generate_content(model="gemini-2.5-flash", contents=router_prompt)
+            result = f"🌐 [DANA CEO Router]: تم التوجيه بنجاح. تحليل النظام: {routing_res.text}"
+
+        final_output = f"{result}\n\n--- \n📌 ختم السيادة: {stamp} | الوقت: {timestamp}"
+        
+        # إرسال عبر الواتساب تلقائياً إذا توفر الرقم
+        if to_number:
+            self.send_whatsapp_broadcast(to_number, final_output)
+
+        return final_output
+
+    def send_whatsapp_broadcast(self, to_number: str, message: str):
         url = f"https://graph.facebook.com/{WA_VERSION}/{WA_PHONE_ID}/messages"
         headers = {"Authorization": f"Bearer {WA_TOKEN}", "Content-Type": "application/json"}
-
-        if image_url:
-            data = {"messaging_product": "whatsapp", "to": to_number, "type": "image", "image": {"link": image_url, "caption": message}}
-        else:
-            data = {"messaging_product": "whatsapp", "to": to_number, "type": "text", "text": {"body": message}}
+        data = {
+            "messaging_product": "whatsapp",
+            "to": to_number,
+            "type": "text",
+            "text": {"body": message}
+        }
         return requests.post(url, headers=headers, json=data).json()
 
-    def capture_execute(self, user_question: str, to_number: str, user_image_b64: str = None, mode="MAGASIN"):
-        if mode not in self.modes:
-            mode = "MAGASIN"
+# تشغيل النظام الإمبراطوري الشامل
+empire = TassaoutGlobalEmpire()
 
-        analysis = self.AGENT_01_analyze(user_image_b64, mode)
-
-        if "ولد لي" in user_question or "generate" in user_question:
-            image_url = self.AGENT_03_digital_studio(user_question)
-        else:
-            image_url = None
-
-        ad_text = self.AGENT_08_generate_ad(analysis, "مراكش وقلعة السراغنة")
-        self.AGENT_04_stamp("final")
-        self.AGENT_08_publish_whatsapp(to_number, ad_text, image_url)
-
-        return f"[DONE] SLA 5s | {ad_text}"
-
-# ===============================
-# 3. واجهة التشغيل
-# ===============================
-dana = DANA_Agent()
-
-def dana_whatsapp_agent(user_question: str, to_number: str = "", user_image_b64: str = None) -> str:
-    """الوكيل الذكي DANA للإنتاج الرقمي والتصوير"""
-    system_prompt = """
-    أنت DANA، الوكيل الذكي الخاص بخدمات الاستوديو الرقمي والتصوير والإنتاج الإعلامي.
-    مهمتك: الرد بالدارجة المغربية، باحترام واحترافية.
-    الهدف: مساعدة العملاء في حجز جلسات التصوير، تصميم الهويات البصرية، وخدمات الإنتاج الرقمي.
-    ممنوع: الوعود الكاذبة. إذا ما عرفتيش قول "غادي نرجع ليك بالجواب من الفريق"
-    """
-    
-    full_prompt = f"{system_prompt}\n\nسؤال العميل: {user_question}"
-
+def dana_whatsapp_agent(user_question: str, domain: str = "عام", to_number: str = "") -> str:
+    """الواجهة الموحدة للوكيل الإمبراطوري الشامل DANA"""
     try:
-        response = client.models.generate_content(
-            model="gemini-1.5-flash",
-            contents=full_prompt
-        )
-        if to_number:
-            dana.capture_execute(user_question, to_number, user_image_b64)
-        return response.text
+        return empire.dana_ceo_router(user_question, domain, to_number)
     except Exception as e:
-        return f"عندي مشكل تقني دابا. الخطأ: {e}"
+        return f"عندي مشكل تقني طارئ في النظام الإمبراطوري. الخطأ: {e}"
 
 def send_whatsapp_message(to_number, message):
-    """إرسال رسالة عبر WhatsApp Business API"""
-    url = f"https://graph.facebook.com/{WA_VERSION}/{WA_PHONE_ID}/messages"
-    headers = {"Authorization": f"Bearer {WA_TOKEN}", "Content-Type": "application/json"}
-    data = {
-        "messaging_product": "whatsapp", 
-        "to": to_number, 
-        "type": "text", 
-        "text": {"body": message}
-    }
-    return requests.post(url, headers=headers, json=data).json()
+    """إرسال رسالة مباشرة عبر WhatsApp API"""
+    return empire.send_whatsapp_broadcast(to_number, message)
