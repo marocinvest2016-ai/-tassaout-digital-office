@@ -15,14 +15,14 @@ st.markdown("""
     <style>
     .main-title {
         text-align: center;
-        font-size: 30px;
+        font-size: 28px;
         font-weight: bold;
         color: #1E3A8A;
         margin-bottom: 5px;
     }
     .subtitle {
         text-align: center;
-        font-size: 15px;
+        font-size: 14px;
         color: #4B5563;
         margin-bottom: 20px;
     }
@@ -74,21 +74,21 @@ camera_mode = st.sidebar.selectbox(
     ]
 )
 
-# الواجهة الرئيسية: التقسيم الهندسي للعمليات
+# الواجهة الرئيسية
 col1, col2 = st.columns([1.5, 1])
 
 with col1:
     st.markdown("### ✍️ الشاشة التفاعلية لاستقبال البرومبتات والتعليمات")
     user_query = st.text_area(
         "أدخل تفاصيل الطلب، فكرة المحتوى، أو توجيهات التصميم المعماري/الإعلاني:",
-        placeholder="اكتب هنا برومبت أو تعليماتك، وسيتم معالجتها وإنتاج المحتوى الكتابي والهوية البصرية فوراً...",
+        placeholder="اكتب هنا برومبت أو تعليماتك، وسيتم معالجتها وإنتاج المحتوى الفوري...",
         height=160,
         key="user_query_input"
     )
 
 with col2:
     st.markdown("### 📸 مركز رفع الأصول وكاميرا الهاتف")
-    st.info("💡 يمكنك التقاط الصور مباشرة بكاميرا الهاتف أو رفع عدد **غير محدود** من الصور والمستندات للنشر الفوري.")
+    st.info("💡 يمكنك التقاط الصور مباشرة بكاميرا الهاتف أو رفع عدد غير محدود من الصور والمستندات للنشر الفوري.")
     
     uploaded_files = st.file_uploader(
         "رفع الصور، التصاميم، والمستندات (عدد غير محدود):",
@@ -114,7 +114,7 @@ if st.button("🚀 تشغيل المنظومة الفائقة وإنتاج ال�
             
             files_count = len(uploaded_files) if uploaded_files else 0
             
-            # تجميع النص المرسل للذكاء الاصطناعي بشكل واضح
+            # تجميع النص المرسل للذكاء الاصطناعي بشكل دقيق
             full_prompt = f"""
             أنت وكيل ذكي مختص في مجال: {selected_domain}
             وضع التصميم/الكاميرا: {camera_mode}
