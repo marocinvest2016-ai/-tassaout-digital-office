@@ -109,16 +109,15 @@ if st.button("🚀 تشغيل المنظومة الفائقة وإنتاج ال�
     else:
         with st.spinner("🔄 جاري التنسيق بين DANA والوكيل المختص، معالجة الملفات، وإصدار المخرجات بالختم السيادي..."):
             
-            # حساب عدد الملفات المرفوعة
             files_count = len(uploaded_files) if uploaded_files else 0
             
-            # استدعاء الدماغ البرمجي
-            response_result = dana_whatsapp_agent(
-                user_question=f"{user_query} [الملفات المرفوعة: {files_count} ملفات/صور]",
-                domain=selected_domain,
-                mode=camera_mode.split()[0],
-                to_number=whatsapp_number.strip()
-            )
+            # تمرير البارامترات المتوافقة تماماً مع الدوال المعرفة في agent.py
+            full_prompt = f"المجال: {selected_domain} | الوضع: {camera_mode} | الاستعلام: {user_query} [الملفات المرفوعة: {files_count} ملفات/صور]"
+            response_result = dana_whatsapp_agent(full_prompt)
+            
+            # إذا كتب رقم واتساب، نقوم بتفعيل الإرسال
+            if whatsapp_number.strip():
+                send_whatsapp_message(whatsapp_number.strip(), response_result)
             
             st.success(f"✅ تم معالجة الطلب ورفع {files_count} أصول بصرية ومستندية بنجاح إمبراطوري!")
             st.markdown("### 📊 تقرير المصنع والمخرجات السيادية:")
