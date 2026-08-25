@@ -203,11 +203,10 @@ if st.button("🚀 تشغيل المنظومة وتوليد المحتوى ال�
             st.session_state.last_result = response_result
             st.session_state.saved_files = uploaded_files if uploaded_files else []
             
-            # إرسال واتساب إذا وُجد الرقم
             if whatsapp_number.strip():
                 send_whatsapp_message(whatsapp_number.strip(), response_result)
 
-# 📊 عرض النتائج وثبات الصور عبر BytesIO وإعادة تعيين المؤشر بـ seek(0)
+# 📊 عرض النتائج وثبات الصور عبر BytesIO وإعادة تعيين المؤشر بـ seek(0) بدون أي معاملات إضافية لمعاينة st.image
 if st.session_state.last_result:
     st.success(f"✅ تم إنجاز الطلب بنجاح!")
     st.markdown("### 📊 تقرير المخرجات والنتيجة النهائية:")
@@ -228,7 +227,7 @@ if st.session_state.last_result:
             if file.type.startswith("image/"):
                 try:
                     bytes_data = file.read()
-                    st.image(BytesIO(bytes_data), caption=f"معاينة: {file.name}", use_column_width=True)
+                    st.image(BytesIO(bytes_data), caption=f"معاينة: {file.name}")
                 except Exception as img_err:
                     st.warning(f"تعذر عرض الصورة {file.name}: {img_err}")
 
