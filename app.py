@@ -73,7 +73,7 @@ st.markdown("""
 
 # رأس المنصة السيادية
 st.markdown('<div class="main-title">👑 Alpha Core Nexus | مكتب تساوت الرقمي العقار والأعمال</div>', unsafe_allow_html=True)
-st.markdown('<div class="subtitle">الشاشة التفاعلية الكبرى - الإعلانات والصفقات التجارية بذكاء مستقل دون إجبار بصري</div>', unsafe_allow_html=True)
+st.markdown('<div class="subtitle">الشاشة التفاعلية الكبرى - الإعلانات والصفقات التجارية بذكاء مستقل</div>', unsafe_allow_html=True)
 st.markdown("---")
 
 # 🧠 تهيئة الذاكرة المؤقتة لمنع ضياع الاختيارات
@@ -86,8 +86,8 @@ if "last_result" not in st.session_state:
 if "saved_files" not in st.session_state:
     st.session_state.saved_files = []
 
-# اختيار الوكيل المختص ووضع الكاميرا الاختياري
-st.markdown("### ⚙️ تحديد القطاع النشط ودستور العرض البصري")
+# اختيار الوكيل المختص وقائمة استدعاء الكاميرا والدستور البصري
+st.markdown("### ⚙️ تحديد القطاع النشط واستدعاء دستور العرض البصري عند الحاجة")
 col_agent1, col_agent2 = st.columns(2)
 
 with col_agent1:
@@ -97,7 +97,7 @@ with col_agent1:
             "🏠 العقار المتكامل (بيع، كراء، تسويق، بقع، إعلانات)",
             "📊 الأعمال والصفقات العمومية ومواد البناء",
             "🚗 السيارات (المستوردة، المستعملة، والآليات الفلاحية)",
-            "🤖 الشاشة التفاعلية للمحتوى والهوية البصرية",
+            "🤖 الشاشة التفاعلية للمحتوى والهوية البصرية والتصوير",
             "📚 الثقافة، العلوم، والأبحاث الأدبية والمعلوماتية",
             "✈️ الأسفار، السياحة، والحج والعمرة",
             "📐 الهندسة المعمارية والديكور الداخلي",
@@ -109,19 +109,19 @@ with col_agent1:
 
 with col_agent2:
     camera_mode = st.selectbox(
-        "📷 وضع الكاميرا والدستور البصري (اختياري - يفعل عند الطلب البصري فقط):",
+        "📷 استدعاء وضع الكاميرا والدستور البصري (متاح حسب الحاجة):",
         [
             "بدون كاميرا (معالجة نصية ومعلوماتية بحتة)",
-            "PRODUIT & ANNONCE (إعلانات المنتجات، العقارات، والسيارات العادية)",
+            "PORTRAIT (تصوير شخصي وبورترييه أدبي أو مهني)",
+            "PRODUIT & ANNONCE (إعلانات المنتجات، العقارات، والسيارات)",
             "MAGASIN & SHOWROOM (المحلات التجارية والواجهات)",
-            "PORTRAIT (صور شخصية وفريق العمل المهني)",
             "CINEMA & DRONE (تصوير جوي سينمائي للمشاريع الكبرى)",
             "ARCHITECTURE & 3D (هندسة المعمار وتصميم الديكور)"
         ],
         key="main_camera_select"
     )
 
-st.markdown(f'<div class="active-agent-box">⚡ القطاع قيد التشغيل: {st.session_state.active_domain}</div>', unsafe_allow_html=True)
+st.markdown(f'<div class="active-agent-box">⚡ القطاع قيد التشغيل: {st.session_state.active_domain} | 📷 وضع الكاميرا: {camera_mode}</div>', unsafe_allow_html=True)
 st.markdown("---")
 
 # الواجهة الرئيسية
@@ -138,7 +138,7 @@ with col1:
 
 with col2:
     st.markdown("### 📸 مركز رفع الأصول والصور المرفقة")
-    st.info("💡 ارفع الصور أو المستندات ذات الصلة عند الحاجة لتتم معالجتها عرضاً وتخزيناً.")
+    st.info("💡 ارفع الصور أو المستندات لتظهر بانتظام وتتم معالجتها.")
     
     uploaded_files = st.file_uploader(
         "رفع الصور والمستندات:",
@@ -165,22 +165,25 @@ if st.button("🚀 تشغيل المنظومة وتوليد المحتوى ال�
             files_count = len(uploaded_files) if uploaded_files else 0
             current_domain = st.session_state.active_domain
             
-            # 🧠 توجيه ذكي دقيق يتجنب فرض الهوية البصرية إذا كان الطلب بحثياً أو ثقافياً بحتاً
+            # توجيه ذكي حسب القطاع
             if "الثقافة، العلوم، والأبحاث" in current_domain:
-                expert_persona = "أنت باحث ومستشار ثقافي وأدبي محترف. قدم تحليلات دقيقة، معلومات موثقة، وسرديات معرفية وعميقة دون إقحام أي إعلانات أو قوالب بصرية."
+                expert_persona = "أنت باحث ومستشار ثقافي وأدبي محترف. قدم تحليلات دقيقة، معلومات موثقة، وسرديات معرفية عميقة دون إقحام أي إعلانات."
             elif "الهندسة المعمارية والديكور الداخلي" in current_domain:
-                expert_persona = "أنت لجنة هندسية عليا وخبراء في المعمار والديكور الداخلي. مطلوب تقديم دراسة هندسية، مقترحات تصميم، وبرومبت بصري دقيق."
+                expert_persona = "أنت لجنة هندسية عليا وخبراء في المعمار والديكور الداخلي. مطلوب تقديم دراسة هندسية ومقترحات تصميم."
             elif "العقار المتكامل" in current_domain:
-                expert_persona = "أنت خبير تسويق عقاري احترافي بجهة مراكش آسفي (قلعة السراغنة، مراكش). تخصصك صياغة إعلانات عقارية تجارية جذابة وواضحة."
+                expert_persona = "أنت خبير تسويق عقاري احترافي بجهة مراكش آسفي (قلعة السراغنة، مراكش). صغ إعلانات عقارية تجارية جذابة وواضحة."
             elif "السيارات" in current_domain:
-                expert_persona = "أنت خبير تسويق سيارات، آليات فلاحية، ومركبات نفعية. صغ إعلانات تجارية جذابة وسريعة."
+                expert_persona = "أنت خبير تسويق سيارات، آليات فلاحية، ومركبات نفعية."
             elif "الأعمال والصفقات العمومية" in current_domain:
                 expert_persona = "أنت مستشار أعمال وخبير في تدبير الصفقات العمومية وتوريدات المواد."
             else:
                 expert_persona = f"أنت وكيل ذكي محترف في قطاع: {current_domain}."
 
-            # تفعيل الكاميرا فقط إذا اختار المستخدم وضعاً غير "بدون كاميرا"
-            camera_instruction = f"[دستور وضع الكاميرا والبصريات]: {camera_mode}" if "بدون كاميرا" not in camera_mode else "[دستور الكاميرا]: معالجة نصية بحتة (لا يوجد استدعاء للمولد البصري)."
+            # التحكم في تفعيل الكاميرا حسب اختيار القائمة المنسدلة
+            if "بدون كاميرا" in camera_mode:
+                camera_instruction = "[دستور الكاميرا]: معالجة نصية ومعلوماتية بحتة (لا يوجد استدعاء للمولد البصري)."
+            else:
+                camera_instruction = f"[دستور وضع الكاميرا والبصريات المستدعى]: {camera_mode}"
 
             full_prompt = f"""
             [تعليمات النظام]:
@@ -193,25 +196,23 @@ if st.button("🚀 تشغيل المنظومة وتوليد المحتوى ال�
             
             [عدد الملفات المرفقة]: {files_count}
             
-            [المطلوب]: تقديم مخرجات احترافية نظيفة ومباشرة تخدم الهدف الأساسي للمستخدم بدقة متناهية دون حشو أو خروج عن سياق الطلب.
+            [المطلوب]: تقديم مخرجات احترافية نظيفة ومباشرة تخدم الهدف الأساسي للمستخدم بدقة متناهية دون حشو.
             """
             
-            # استدعاء الذكاء الاصطناعي المنطقي وتخزين النتائج في الجلسة
             response_result = dana_whatsapp_agent(full_prompt)
             st.session_state.last_result = response_result
             st.session_state.saved_files = uploaded_files if uploaded_files else []
             
-            # إرسال واتساب إذا وُجد الرقم تلقائياً
+            # إرسال واتساب إذا وُجد الرقم
             if whatsapp_number.strip():
                 send_whatsapp_message(whatsapp_number.strip(), response_result)
 
-# 📊 عرض النتائج وثبات الصور عبر BytesIO وعدم اختفائها
+# 📊 عرض النتائج وثبات الصور عبر BytesIO وإعادة تعيين المؤشر بـ seek(0)
 if st.session_state.last_result:
     st.success(f"✅ تم إنجاز الطلب بنجاح!")
     st.markdown("### 📊 تقرير المخرجات والنتيجة النهائية:")
     st.markdown(st.session_state.last_result)
     
-    # 🟢 زر واتساب تفاعلي يتيح إرسال النتيجة بضغطة زر مباشرة
     encoded_text = urllib.parse.quote(st.session_state.last_result)
     wa_link = f"https://api.whatsapp.com/send?text={encoded_text}"
     st.markdown(f'<a href="{wa_link}" target="_blank" class="whatsapp-btn">💬 إرسال ومشاركة المخرجات عبر واتساب فوراً</a>', unsafe_allow_html=True)
@@ -220,10 +221,13 @@ if st.session_state.last_result:
         st.markdown("#### 📂 الملفات والأصول المرتبطة:")
         for file in st.session_state.saved_files:
             st.text(f"✔️ {file.name} - تم ربطه بنجاح.")
-            # استخدام BytesIO لضمان ظهور الصور وثباتها وعدم اختفائها نهائياً
+            
+            # إعادة مؤشر الملف للصفر لضمان ظهور الصورة بشكل مستقر ودائم
+            file.seek(0)
+            
             if file.type.startswith("image/"):
                 try:
-                    bytes_data = file.getvalue()
+                    bytes_data = file.read()
                     st.image(BytesIO(bytes_data), caption=f"معاينة: {file.name}", use_column_width=True)
                 except Exception as img_err:
                     st.warning(f"تعذر عرض الصورة {file.name}: {img_err}")
