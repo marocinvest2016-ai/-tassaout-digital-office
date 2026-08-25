@@ -113,10 +113,17 @@ with tab5:
                     file_options={"content-type": uploaded_file.type or "application/octet-stream"}
                 )
                 
+                # توليد Signed URL آمن للاختبار والتحقق
                 signed_url_res = supabase.storage.from_("tassaout-media").create_signed_url(path, 300)
                 signed_url = None
                 if isinstance(signed_url_res, dict):
-                    signed_url = signed_url_res.get("signedURL") or signed_url_res.get("signedUrl") or signed_url_res.get("url")
+                    signed_url = (
+                        signed_url_res.get("signedURL")
+                        or signed_url_res.get("signedUrl")
+                        or signed_url_res.get("url")
+                    )
+                if not signed_url:
+                    signed_url = getattr(signed_url_res, "signedURL", None) or getattr(signed_url_res, "signed_url", None)
                 
                 st.success("✅ تم الرفع وإنشاء الرابط الآمن بنجاح!")
                 if signed_url:
@@ -128,13 +135,20 @@ with tab5:
     st.markdown("### 🧪 اختبار التخزين الآمن (Storage Test)")
     if st.button("🚀 تشخيص اختبار التخزين الفوري"):
         try:
-            test_path = f"admin_uploads/test-{int(datetime.datetime.utcnow().timestamp())}.txt"
+            test_path = f"admin_uploads/streamlit-test-{int(datetime.datetime.utcnow().timestamp())}.txt"
             supabase.storage.from_("tassaout-media").upload(
                 path=test_path, 
                 file=b"Alpha Nexus Storage Test Content", 
                 file_options={"content-type": "text/plain"}
             )
-            obj_check = supabase.table("storage.objects").select("name").eq("bucket_id", "tassaout-media").eq("name", test_path).maybe_single().execute()
+            obj_check = (
+                supabase.table("storage.objects")
+                .select("name, bucket_id, created_at")
+                .eq("bucket_id", "tassaout-media")
+                .eq("name", test_path)
+                .maybe_single()
+                .execute()
+            )
             if obj_check.data:
                 st.success(f"✅ تم التحقق من وجود الملف في قاعدة البيانات: {obj_check.data.get('name')}")
             else:
