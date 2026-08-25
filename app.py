@@ -7,7 +7,7 @@ from supabase import create_client
 # إعداد الصفحة
 st.set_page_config(page_title="Alpha Nexus Omega | Master Control", page_icon="⚡", layout="wide")
 
-# الاتصال بـ Supabase (يتم سحب المفاتيح من Streamlit Secrets أو مباشرة)
+# الاتصال بـ Supabase
 SUPABASE_URL = st.secrets.get("SUPABASE_URL", "YOUR_SUPABASE_URL")
 SUPABASE_KEY = st.secrets.get("SUPABASE_KEY", "YOUR_SERVICE_ROLE_KEY")
 
@@ -50,7 +50,7 @@ with tab1:
             else:
                 try:
                     payload = {"content": content.strip(), "message": message.strip(), "source": source.strip()}
-                    insert_res = supabase.table("instant_ads").insert(payload).execute()
+                    supabase.table("instant_ads").insert(payload).execute()
                     st.success("✅ تم حفظ الإعلان بنجاح وتجاوز قيود RLS عبر Service Role.")
                 except Exception as e:
                     st.error(f"❌ خطأ: {e}")
@@ -60,7 +60,7 @@ with tab1:
     try:
         ads_res = supabase.table("instant_ads").select("*").order("created_at", desc=True).limit(5).execute()
         if ads_res.data:
-            st.dataframe(ads_res.data, use_container_width=True)
+            st.dataframe(ads_res.data, width='stretch')
         else:
             st.info("لا توجد إعلانات.")
     except Exception as e:
@@ -71,7 +71,7 @@ with tab2:
     try:
         queue_res = supabase.table("alpha_nexus_omega_queue").select("*").order("created_at", desc=True).limit(10).execute()
         if queue_res.data:
-            st.dataframe(queue_res.data, use_container_width=True)
+            st.dataframe(queue_res.data, width='stretch')
         else:
             st.info("الطابور فارغ.")
     except Exception as e:
@@ -82,7 +82,7 @@ with tab3:
     try:
         logs_res = supabase.table("tassaout_omega_logs").select("*").order("created_at", desc=True).limit(5).execute()
         if logs_res.data:
-            st.dataframe(logs_res.data, use_container_width=True)
+            st.dataframe(logs_res.data, width='stretch')
         else:
             st.info("لا توجد سجلات كاميرا.")
     except Exception as e:
@@ -93,7 +93,7 @@ with tab4:
     try:
         audit_res = supabase.table("alpha_system_audit_logs").select("*").order("created_at", desc=True).limit(10).execute()
         if audit_res.data:
-            st.dataframe(audit_res.data, use_container_width=True)
+            st.dataframe(audit_res.data, width='stretch')
         else:
             st.info("لا توجد حركات مسجلة.")
     except Exception as e:
@@ -113,7 +113,6 @@ with tab5:
                     file_options={"content-type": uploaded_file.type or "application/octet-stream"}
                 )
                 
-                # توليد رابط مؤقت آمن Signed URL لـ Private Bucket
                 signed_url_res = supabase.storage.from_("tassaout-media").create_signed_url(path, 300)
                 signed_url = None
                 if isinstance(signed_url_res, dict):
@@ -158,7 +157,7 @@ with tab7:
     try:
         notif_res = supabase.table("alpha_notifications").select("*").order("created_at", desc=True).limit(5).execute()
         if notif_res.data:
-            st.dataframe(notif_res.data, use_container_width=True)
+            st.dataframe(notif_res.data, width='stretch')
         else:
             st.info("لا توجد إشعارات جديدة.")
     except Exception as e:
