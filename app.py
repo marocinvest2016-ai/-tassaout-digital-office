@@ -1,243 +1,199 @@
 import streamlit as st
-from agent import dana_whatsapp_agent, send_whatsapp_message
+import pandas as pd
+import io
 import datetime
-import urllib.parse
-from io import BytesIO
+from supabase import create_client
 
-# ===============================
-# إعدادات الواجهة الإمبراطورية الموحدة (Alpha Core Nexus)
-# ===============================
-st.set_page_config(
-    page_title="مكتب تساوت الرقمي | العقار والأعمال والذكاء الاصطناعي",
-    page_icon="👑",
-    layout="wide"
-)
+# إعداد الصفحة
+st.set_page_config(page_title="Alpha Nexus Omega | Master Control", page_icon="⚡", layout="wide")
 
-st.markdown("""
-    <style>
-    .main-title {
-        text-align: center;
-        font-size: 26px;
-        font-weight: bold;
-        color: #1E3A8A;
-        margin-bottom: 5px;
-    }
-    .subtitle {
-        text-align: center;
-        font-size: 13px;
-        color: #4B5563;
-        margin-bottom: 15px;
-    }
-    .stButton>button {
-        width: 100%;
-        background-color: #1E3A8A;
-        color: white;
-        font-weight: bold;
-        border-radius: 8px;
-        height: 50px;
-    }
-    .stButton>button:hover {
-        background-color: #3B82F6;
-        color: white;
-    }
-    .whatsapp-btn {
-        display: inline-flex;
-        align-items: center;
-        justify-content: center;
-        background-color: #25D366;
-        color: white !important;
-        padding: 12px 20px;
-        border-radius: 8px;
-        font-weight: bold;
-        text-decoration: none;
-        width: 100%;
-        margin-top: 10px;
-        text-align: center;
-        font-size: 16px;
-    }
-    .whatsapp-btn:hover {
-        background-color: #22BF5B;
-    }
-    .active-agent-box {
-        background-color: #EFF6FF;
-        border: 2px solid #3B82F6;
-        padding: 10px 15px;
-        border-radius: 8px;
-        color: #1E3A8A;
-        font-weight: bold;
-        margin-bottom: 15px;
-        text-align: center;
-    }
-    </style>
-""", unsafe_allow_html=True)
+# الاتصال بـ Supabase (يتم سحب المفاتيح من Streamlit Secrets أو مباشرة)
+SUPABASE_URL = st.secrets.get("SUPABASE_URL", "YOUR_SUPABASE_URL")
+SUPABASE_KEY = st.secrets.get("SUPABASE_KEY", "YOUR_SERVICE_ROLE_KEY")
 
-# رأس المنصة السيادية
-st.markdown('<div class="main-title">👑 Alpha Core Nexus | مكتب تساوت الرقمي العقار والأعمال</div>', unsafe_allow_html=True)
-st.markdown('<div class="subtitle">الشاشة التفاعلية الكبرى - الإعلانات والصفقات التجارية بذكاء مستقل</div>', unsafe_allow_html=True)
-st.markdown("---")
+@st.cache_resource
+def init_supabase():
+    return create_client(SUPABASE_URL, SUPABASE_KEY)
 
-# 🧠 تهيئة الذاكرة المؤقتة لمنع ضياع الاختيارات
-if "active_domain" not in st.session_state:
-    st.session_state.active_domain = "🏠 العقار المتكامل (بيع، كراء، تسويق، بقع، إعلانات)"
+supabase = init_supabase()
 
-if "last_result" not in st.session_state:
-    st.session_state.last_result = ""
+st.title("⚡ Alpha Nexus Omega — Master Command Center")
+st.markdown("نظـام التحكم المركزي المتكامل لإدارة العقارات، الحملات الإعلانية، والسجلات الذكية.")
 
-if "saved_files" not in st.session_state:
-    st.session_state.saved_files = []
+# التبويبات الرئيسية (Tabs) للوحة التحكم الكبرى
+tab1, tab2, tab3, tab4, tab5, tab6, tab7, tab8, tab9 = st.tabs([
+    "📣 Instant Ads", 
+    "🚀 Omega Queue", 
+    "📊 Camera Logs", 
+    "🛡️ Audit Trail", 
+    "📁 Storage Media", 
+    "⚙️ Config & Notifs",
+    "🔔 الإشعارات",
+    "🛠️ الإعدادات الديناميكية",
+    "📥 التصدير السريع"
+])
 
-# اختيار الوكيل المختص وقائمة استدعاء الكاميرا والدستور البصري
-st.markdown("### ⚙️ تحديد القطاع النشط واستدعاء دستور العرض البصري عند الحاجة")
-col_agent1, col_agent2 = st.columns(2)
-
-with col_agent1:
-    selected_domain = st.selectbox(
-        "🌐 اختر الوكيل المختص / طبيعة المهمة:",
-        [
-            "🏠 العقار المتكامل (بيع، كراء، تسويق، بقع، إعلانات)",
-            "📊 الأعمال والصفقات العمومية ومواد البناء",
-            "🚗 السيارات (المستوردة، المستعملة، والآليات الفلاحية)",
-            "🤖 الشاشة التفاعلية للمحتوى والهوية البصرية والتصوير",
-            "📚 الثقافة، العلوم، والأبحاث الأدبية والمعلوماتية",
-            "✈️ الأسفار، السياحة، والحج والعمرة",
-            "📐 الهندسة المعمارية والديكور الداخلي",
-            "⚡ مختلفات وطلبات استثنائية الطوارئ"
-        ],
-        key="main_agent_select"
-    )
-    st.session_state.active_domain = selected_domain
-
-with col_agent2:
-    camera_mode = st.selectbox(
-        "📷 استدعاء وضع الكاميرا والدستور البصري (متاح حسب الحاجة):",
-        [
-            "بدون كاميرا (معالجة نصية ومعلوماتية بحتة)",
-            "PORTRAIT (تصوير شخصي وبورترييه أدبي أو مهني)",
-            "PRODUIT & ANNONCE (إعلانات المنتجات، العقارات، والسيارات)",
-            "MAGASIN & SHOWROOM (المحلات التجارية والواجهات)",
-            "CINEMA & DRONE (تصوير جوي سينمائي للمشاريع الكبرى)",
-            "ARCHITECTURE & 3D (هندسة المعمار وتصميم الديكور)"
-        ],
-        key="main_camera_select"
-    )
-
-st.markdown(f'<div class="active-agent-box">⚡ القطاع قيد التشغيل: {st.session_state.active_domain} | 📷 وضع الكاميرا: {camera_mode}</div>', unsafe_allow_html=True)
-st.markdown("---")
-
-# الواجهة الرئيسية
-col1, col2 = st.columns([1.5, 1])
-
-with col1:
-    st.markdown("### ✍️ الشاشة التفاعلية لاستقبال الطلبات، النصوص، أو الإعلانات")
-    user_query = st.text_area(
-        "أدخل تفاصيل الطلب، السؤال الأدبي، أو الإعلان المراد تنفيذه:",
-        placeholder="مثال: قدم لي نبذة شاملة وتحليلاً لأعمال الكاتب ميشيل ويلبيك...",
-        height=160,
-        key="user_query_input"
-    )
-
-with col2:
-    st.markdown("### 📸 مركز رفع الأصول والصور المرفقة")
-    st.info("💡 ارفع الصور أو المستندات لتظهر بانتظام وتتم معالجتها.")
-    
-    uploaded_files = st.file_uploader(
-        "رفع الصور والمستندات:",
-        type=["jpg", "jpeg", "png", "pdf", "docx", "mp4"],
-        accept_multiple_files=True,
-        key="file_uploader_input"
-    )
-    
-    whatsapp_number = st.text_input(
-        "رقم الواتساب للتوصل بالنتيجة فورا (اختياري):",
-        placeholder="+212600000000",
-        key="whatsapp_input"
-    )
-
-st.markdown("---")
-
-# زر التنفيذ السيادي
-if st.button("🚀 تشغيل المنظومة وتوليد المحتوى الفوري", key="execute_button"):
-    if not user_query.strip() and not uploaded_files:
-        st.warning("⚠️ يرجى إدخال تفاصيل الطلب أو رفع ملف واحد على الأقل ليتمكن الوكيل من التنفيذ.")
-    else:
-        with st.spinner(f"🔄 جاري معالجة الطلب عبر وكيل [{st.session_state.active_domain}]..."):
-            
-            files_count = len(uploaded_files) if uploaded_files else 0
-            current_domain = st.session_state.active_domain
-            
-            # توجيه ذكي حسب القطاع
-            if "الثقافة، العلوم، والأبحاث" in current_domain:
-                expert_persona = "أنت باحث ومستشار ثقافي وأدبي محترف. قدم تحليلات دقيقة، معلومات موثقة، وسرديات معرفية عميقة دون إقحام أي إعلانات."
-            elif "الهندسة المعمارية والديكور الداخلي" in current_domain:
-                expert_persona = "أنت لجنة هندسية عليا وخبراء في المعمار والديكور الداخلي. مطلوب تقديم دراسة هندسية ومقترحات تصميم."
-            elif "العقار المتكامل" in current_domain:
-                expert_persona = "أنت خبير تسويق عقاري احترافي بجهة مراكش آسفي (قلعة السراغنة، مراكش). صغ إعلانات عقارية تجارية جذابة وواضحة."
-            elif "السيارات" in current_domain:
-                expert_persona = "أنت خبير تسويق سيارات، آليات فلاحية، ومركبات نفعية."
-            elif "الأعمال والصفقات العمومية" in current_domain:
-                expert_persona = "أنت مستشار أعمال وخبير في تدبير الصفقات العمومية وتوريدات المواد."
+with tab1:
+    st.subheader("إدارة نظام الإعلانات الفورية (Instant Ads)")
+    with st.form("instant_ads_form"):
+        col_a, col_b = st.columns(2)
+        with col_a:
+            content = st.text_area("محتوى الإعلان (Content)")
+        with col_b:
+            message = st.text_area("الرسالة النهائية (Message)")
+        source = st.text_input("المصدر", value="streamlit-agent")
+        submitted = st.form_submit_button("🚀 حفظ الإعلان")
+        
+        if submitted:
+            if not content.strip() or not message.strip():
+                st.warning("⚠️ حقل الـ content والـ message مطلوبان.")
             else:
-                expert_persona = f"أنت وكيل ذكي محترف في قطاع: {current_domain}."
-
-            # التحكم في تفعيل الكاميرا حسب اختيار القائمة المنسدلة
-            if "بدون كاميرا" in camera_mode:
-                camera_instruction = "[دستور الكاميرا]: معالجة نصية ومعلوماتية بحتة (لا يوجد استدعاء للمولد البصري)."
-            else:
-                camera_instruction = f"[دستور وضع الكاميرا والبصريات المستدعى]: {camera_mode}"
-
-            full_prompt = f"""
-            [تعليمات النظام]:
-            {expert_persona}
-            
-            {camera_instruction}
-            
-            [طلب المستخدم]:
-            {user_query}
-            
-            [عدد الملفات المرفقة]: {files_count}
-            
-            [المطلوب]: تقديم مخرجات احترافية نظيفة ومباشرة تخدم الهدف الأساسي للمستخدم بدقة متناهية دون حشو.
-            """
-            
-            response_result = dana_whatsapp_agent(full_prompt)
-            st.session_state.last_result = response_result
-            st.session_state.saved_files = uploaded_files if uploaded_files else []
-            
-            if whatsapp_number.strip():
-                send_whatsapp_message(whatsapp_number.strip(), response_result)
-
-# 📊 عرض النتائج وثبات الصور عبر BytesIO وإعادة تعيين المؤشر بـ seek(0) بدون أي معاملات إضافية لمعاينة st.image
-if st.session_state.last_result:
-    st.success(f"✅ تم إنجاز الطلب بنجاح!")
-    st.markdown("### 📊 تقرير المخرجات والنتيجة النهائية:")
-    st.markdown(st.session_state.last_result)
-    
-    encoded_text = urllib.parse.quote(st.session_state.last_result)
-    wa_link = f"https://api.whatsapp.com/send?text={encoded_text}"
-    st.markdown(f'<a href="{wa_link}" target="_blank" class="whatsapp-btn">💬 إرسال ومشاركة المخرجات عبر واتساب فوراً</a>', unsafe_allow_html=True)
-    
-    if st.session_state.saved_files:
-        st.markdown("#### 📂 الملفات والأصول المرتبطة:")
-        for file in st.session_state.saved_files:
-            st.text(f"✔️ {file.name} - تم ربطه بنجاح.")
-            
-            # إعادة مؤشر الملف للصفر لضمان ظهور الصورة بشكل مستقر ودائم
-            file.seek(0)
-            
-            if file.type.startswith("image/"):
                 try:
-                    bytes_data = file.read()
-                    st.image(BytesIO(bytes_data), caption=f"معاينة: {file.name}")
-                except Exception as img_err:
-                    st.warning(f"تعذر عرض الصورة {file.name}: {img_err}")
+                    payload = {"content": content.strip(), "message": message.strip(), "source": source.strip()}
+                    insert_res = supabase.table("instant_ads").insert(payload).execute()
+                    st.success("✅ تم حفظ الإعلان بنجاح وتجاوز قيود RLS عبر Service Role.")
+                except Exception as e:
+                    st.error(f"❌ خطأ: {e}")
 
-# تذييل الموقع الرسمي المعتمد
-st.markdown("---")
-st.markdown("""
-<div style="text-align: center; color: #1E3A8A; font-weight: bold; font-size: 14px; margin-top: 20px; padding: 15px; border-top: 2px solid #E5E7EB; background-color: #F9FAFB; border-radius: 8px;">
-    مكتب تساوت الرقمي العقار والاعمال مدعوم بالذكاء الاصطناعي المنطقي<br>
-    <span style="color: #4B5563; font-size: 12px; font-weight: normal;">
-        انتاج السيد عامر بوخدادة قلعة السراغنة مراكش | كل الحقوق محفوظة © 2026
-    </span>
-</div>
-""", unsafe_allow_html=True)
+    st.markdown("---")
+    st.subheader("📋 آخر الإعلانات المسجلة")
+    try:
+        ads_res = supabase.table("instant_ads").select("*").order("created_at", desc=True).limit(5).execute()
+        if ads_res.data:
+            st.dataframe(ads_res.data, use_container_width=True)
+        else:
+            st.info("لا توجد إعلانات.")
+    except Exception as e:
+        st.warning(f"تعذر الجلب: {e}")
+
+with tab2:
+    st.subheader("طابور الحملات والإعلانات (Omega Queue)")
+    try:
+        queue_res = supabase.table("alpha_nexus_omega_queue").select("*").order("created_at", desc=True).limit(10).execute()
+        if queue_res.data:
+            st.dataframe(queue_res.data, use_container_width=True)
+        else:
+            st.info("الطابور فارغ.")
+    except Exception as e:
+        st.warning(f"خطأ في الجلب: {e}")
+
+with tab3:
+    st.subheader("سجلات الكاميرا والعمليات (Omega Logs)")
+    try:
+        logs_res = supabase.table("tassaout_omega_logs").select("*").order("created_at", desc=True).limit(5).execute()
+        if logs_res.data:
+            st.dataframe(logs_res.data, use_container_width=True)
+        else:
+            st.info("لا توجد سجلات كاميرا.")
+    except Exception as e:
+        st.warning(f"خطأ: {e}")
+
+with tab4:
+    st.subheader("سجل التدقيق المركزي (Immutable Audit Trail)")
+    try:
+        audit_res = supabase.table("alpha_system_audit_logs").select("*").order("created_at", desc=True).limit(10).execute()
+        if audit_res.data:
+            st.dataframe(audit_res.data, use_container_width=True)
+        else:
+            st.info("لا توجد حركات مسجلة.")
+    except Exception as e:
+        st.warning(f"خطأ: {e}")
+
+with tab5:
+    st.subheader("إدارة رفع الملفات والوسائط السحابية (Private Storage & Signed URLs)")
+    
+    uploaded_file = st.file_uploader("اختر ملفاً للرفع:", type=["png", "jpg", "jpeg", "pdf", "mp4", "txt"])
+    if uploaded_file is not None:
+        if st.button("🚀 رفع للسحابة الآن"):
+            try:
+                path = f"admin_uploads/{uploaded_file.name}"
+                supabase.storage.from_("tassaout-media").upload(
+                    path=path, 
+                    file=uploaded_file.getvalue(), 
+                    file_options={"content-type": uploaded_file.type or "application/octet-stream"}
+                )
+                
+                # توليد رابط مؤقت آمن Signed URL لـ Private Bucket
+                signed_url_res = supabase.storage.from_("tassaout-media").create_signed_url(path, 300)
+                signed_url = None
+                if isinstance(signed_url_res, dict):
+                    signed_url = signed_url_res.get("signedURL") or signed_url_res.get("signedUrl") or signed_url_res.get("url")
+                
+                st.success("✅ تم الرفع وإنشاء الرابط الآمن بنجاح!")
+                if signed_url:
+                    st.code(signed_url)
+            except Exception as e:
+                st.error(f"❌ فشل الرفع: {e}")
+
+    st.markdown("---")
+    st.markdown("### 🧪 اختبار التخزين الآمن (Storage Test)")
+    if st.button("🚀 تشخيص اختبار التخزين الفوري"):
+        try:
+            test_path = f"admin_uploads/test-{int(datetime.datetime.utcnow().timestamp())}.txt"
+            supabase.storage.from_("tassaout-media").upload(
+                path=test_path, 
+                file=b"Alpha Nexus Storage Test Content", 
+                file_options={"content-type": "text/plain"}
+            )
+            obj_check = supabase.table("storage.objects").select("name").eq("bucket_id", "tassaout-media").eq("name", test_path).maybe_single().execute()
+            if obj_check.data:
+                st.success(f"✅ تم التحقق من وجود الملف في قاعدة البيانات: {obj_check.data.get('name')}")
+            else:
+                st.warning("تم الرفع ولكن تعذر العثور على السجل في storage.objects مباشرة.")
+        except Exception as e:
+            st.error(f"❌ خطأ التشخيص: {e}")
+
+with tab6:
+    st.subheader("إعدادات المنظومة الأساسية")
+    try:
+        config_res = supabase.table("alpha_site_config").select("*").execute()
+        if config_res.data:
+            for row in config_res.data:
+                st.text_input(f"الإعداد [{row['key']}]:", value=row['value'], disabled=True)
+    except Exception as e:
+        st.warning(f"خطأ: {e}")
+
+with tab7:
+    st.markdown("### 🔔 سجل الإشعارات الإدارية")
+    try:
+        notif_res = supabase.table("alpha_notifications").select("*").order("created_at", desc=True).limit(5).execute()
+        if notif_res.data:
+            st.dataframe(notif_res.data, use_container_width=True)
+        else:
+            st.info("لا توجد إشعارات جديدة.")
+    except Exception as e:
+        st.warning(f"تعذر جلب الإشعارات: {e}")
+
+with tab8:
+    st.markdown("### 🛠️ إدارة وتعديل إعدادات النظام الديناميكية")
+    try:
+        config_res = supabase.table("alpha_site_config").select("*").execute()
+        if config_res.data:
+            for row in config_res.data:
+                new_val = st.text_input(f"تعديل [{row['key']}]:", value=row['value'], help=row['description'])
+                if st.button(f"حفظ التعديل: {row['key']}", key=f"btn_{row['key']}"):
+                    supabase.table("alpha_site_config").update({"value": new_val, "updated_at": "now()"}).eq("key", row['key']).execute()
+                    st.success(f"✅ تم تحديث الإعداد {row['key']} بنجاح!")
+        else:
+            st.info("لا توجد إعدادات مسجلة.")
+    except Exception as e:
+        st.warning(f"تعذر جلب الإعدادات: {e}")
+
+with tab9:
+    st.markdown("### 📥 تصدير سجلات الحملات كملف CSV")
+    if st.button("📥 تجهيز وتنزيل ملف CSV للحملات"):
+        try:
+            export_res = supabase.table("alpha_nexus_omega_queue").select("*").execute()
+            if export_res.data:
+                df = pd.DataFrame(export_res.data)
+                csv_data = df.to_csv(index=False).encode('utf-8')
+                st.download_button(
+                    label="📂 اضغط هنا لتحميل الملف (CSV)",
+                    data=csv_data,
+                    file_name="alpha_nexus_campaigns_export.csv",
+                    mime="text/csv",
+                )
+            else:
+                st.warning("لا توجد بيانات لتصديرها.")
+        except Exception as e:
+            st.error(f"❌ فشل عملية التصدير: {e}")
