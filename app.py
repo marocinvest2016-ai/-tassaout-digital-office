@@ -36,12 +36,12 @@ gemini_client = init_gemini_client()
 # 3. دوال الذكاء الاصطناعي وقاعدة البيانات
 # ==========================================
 def generate_ad_content(prompt: str) -> str:
-    """توليد نص الإعلان باستخدام Gemini Flash الجديدة"""
+    """توليد نص الإعلان باستخدام Gemini 3.6 Flash"""
     if not gemini_client:
         return "⚠️ مفتاح GEMINI_API_KEY غير مضبوط في الإعدادات."
     try:
         response = gemini_client.models.generate_content(
-            model="gemini-2.5-flash",
+            model="gemini-3.6-flash",
             contents=prompt,
         )
         return response.text
