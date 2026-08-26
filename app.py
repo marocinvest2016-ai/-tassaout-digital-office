@@ -1,23 +1,48 @@
 import streamlit as st
 from supabase import create_client, Client
 from google import genai
+from google.genai import types
 import requests
 import json
 from datetime import datetime
 
 # ==========================================
-# 1. تهيئة الإعدادات والأسرار
+# 1. تهيئة الإعدادات والأسرار (Secrets)
 # ==========================================
 SUPABASE_URL = st.secrets.get("SUPABASE_URL")
 SUPABASE_KEY = st.secrets.get("SUPABASE_KEY") or st.secrets.get("SUPABASE_SECRET_KEY")
 GEMINI_API_KEY = st.secrets.get("GEMINI_API_KEY")
 
+# أسرار WhatsApp Cloud API
+WA_PHONE_ID = st.secrets.get("WHATSAPP_PHONE_NUMBER_ID")
+WA_TOKEN = st.secrets.get("WHATSAPP_ACCESS_TOKEN")
+WA_RECIPIENT = st.secrets.get("WHATSAPP_BUSINESS_NUMBER")
+WA_VERSION = st.secrets.get("WHATSAPP_API_VERSION", "v20.0")
+
 if not SUPABASE_URL or not SUPABASE_KEY:
-    st.error("⚠️ يرجى التأكد من ضبط SUPABASE_URL و SUPABASE_KEY في ملف secrets.toml")
+    st.error("⚠️ يرجى التأكد من ضبط مفاتيح Supabase في Secrets.")
     st.stop()
 
 # ==========================================
-# 2. إنشاء عملاء الاتصال (Supabase & Gemini Flash)
+# 2. حقن مصفوفة النظام (Claude Bernard Core Matrix)
+# ==========================================
+CLAUDE_BERNARD_MATRIX = """
+أنت "Claude Bernard" - الوكيل العقاري والتجاري الذكي الخبير المتعدد المجالات (Super Multi-Domain Agentic AI).
+تتمتع بصلاحيات ومعرفة شاملة تُغطي:
+
+1. **التقييم العقاري والاستثماري:** حساب العائد على الاستثمار (ROI)، تقدير قيمة الأراضي السكنية والفلاحية والمحلات التجارية، تمييز العقارات المحفظة وغير المحفظة، وحساب تكاليف التحفيظ والرسوم.
+2. **التسويق وصناعة المحتوى:** صياغة إعلانات احترافية فائقة الجاذبية باللغة العربية، الدارجة المغربية، أو الفرنسية، مع تعزيزها بالرموز التعبيرية 📢 والهاشتاغات ودعوة مباشرة لاتخاذ الإجراء (CTA).
+3. **الدعم القانوني والتمويلي المبدئي:** تقدير مصاريف الموثق (Notary Fees)، أرباح الأسهم والضرائب العقارية (TPI)، والالتزامات القانونية لعقود البيع والكراء وفق المساطر المغربية.
+4. **الوساطة متعددة المجالات:** إدارة طلبات الكراء، بيع العقارات، المركبات، والخدمات اللوجستية والتجارية.
+
+عند صياغة أي رد أو إعلان:
+- كن دقيقاً، واحترافياً، ومباشراً.
+- نسق النتائج في أسطر منظمة وسهلة القراءة.
+- أضف دائماً قسماً خاصاً بالنصائح التشغيلية أو التنبيهات القانونية إن وجدت.
+"""
+
+# ==========================================
+# 3. إنشاء عملاء الاتصال (Clients Init)
 # ==========================================
 @st.cache_resource
 def init_supabase_client() -> Client:
@@ -33,22 +58,58 @@ supabase = init_supabase_client()
 gemini_client = init_gemini_client()
 
 # ==========================================
-# 3. دوال الذكاء الاصطناعي وقاعدة البيانات
+# 4. محرك الوكيل الذكي (Agent Processing Engine)
 # ==========================================
-def generate_ad_content(prompt: str) -> str:
-    """توليد نص الإعلان باستخدام Gemini 3.6 Flash"""
+def run_claude_bernard_agent(user_prompt: str, task_domain: str) -> tuple[str, str]:
+    """تشغيل الوكيل Claude Bernard لحل المهمة بناءً على المجال المحدد بالمصفوفة"""
     if not gemini_client:
-        return "⚠️ مفتاح GEMINI_API_KEY غير مضبوط في الإعدادات."
+        return None, "مفتاح GEMINI_API_KEY غير متوفر في الإعدادات."
+    
+    contextual_prompt = f"""
+    [المجال المطلوب]: {task_domain}
+    [المدخلات والمهمة]: {user_prompt}
+    
+    قم بتنفيذ المهمة بأعلى درجة من الاحترافية والاستقلالية وفق مصفوفة قواعدك.
+    """
+    
     try:
         response = gemini_client.models.generate_content(
             model="gemini-3.6-flash",
-            contents=prompt,
+            contents=contextual_prompt,
+            config=types.GenerateContentConfig(
+                system_instruction=CLAUDE_BERNARD_MATRIX,
+                temperature=0.3,
+            )
         )
-        return response.text
+        return response.text, None
     except Exception as e:
-        return f"خطأ في التوليد: {str(e)}"
+        return None, str(e)
 
-def insert_instant_ad(content: str, message: str, source: str = "Alpha-Core-Nexus"):
+def send_whatsapp_notification(message_text: str) -> tuple[bool, str]:
+    """توجيه الرسالة تلقائياً عبر WhatsApp API"""
+    if not WA_PHONE_ID or not WA_TOKEN or not WA_RECIPIENT:
+        return False, "إعدادات WhatsApp غير مكتملة."
+    
+    url = f"https://graph.facebook.com/{WA_VERSION}/{WA_PHONE_ID}/messages"
+    headers = {
+        "Authorization": f"Bearer {WA_TOKEN}",
+        "Content-Type": "application/json"
+    }
+    payload = {
+        "messaging_product": "whatsapp",
+        "to": WA_RECIPIENT,
+        "type": "text",
+        "text": {"body": message_text}
+    }
+    try:
+        res = requests.post(url, headers=headers, json=payload)
+        if res.status_code in [200, 201]:
+            return True, "تم الإرسال بنجاح عبر WhatsApp!"
+        return False, f"خطأ WhatsApp ({res.status_code}): {res.text}"
+    except Exception as e:
+        return False, str(e)
+
+def insert_instant_ad(content: str, message: str, source: str = "Claude-Bernard-Nexus"):
     try:
         response = supabase.table("instant_ads").insert({
             "content": content,
@@ -67,57 +128,87 @@ def fetch_instant_ads():
         return False, str(e)
 
 # ==========================================
-# 4. واجهة المستخدم (Streamlit UI)
+# 5. واجهة التشغيل والتحكم (Streamlit UI)
 # ==========================================
-st.set_page_config(page_title="Alpha Core Nexus", layout="centered", page_icon="📢")
+st.set_page_config(page_title="Claude Bernard - Super AI Agent", layout="wide", page_icon="🏛️")
 
-st.title("📢 إدارة نظام الإعلانات الفورية (Instant Ads)")
-st.markdown("أدخل تفاصيل الإعلان الجديد أو استخدم **Gemini Flash** للمساعدة في صياغته.")
+st.title("🏛️ Claude Bernard — Agent Immobilier Super Multidomaine")
+st.caption("نظام الوكيل العقاري والتجاري المستقل المحقون بمصفوفة التحليل والتسويق والأوتوماتيكية")
 
-# قسم الذكاء الاصطناعي التفاعلي
-with st.expander("✨ توليد إعلان ذكي بواسطة Google Gemini Flash"):
-    ai_prompt = st.text_input("عن ماذا تريد إعلانك؟ (مثال: شقة للبيع في مراكش)")
-    if st.button("توليد النص بالذكاء الاصطناعي"):
-        if ai_prompt:
-            with st.spinner("جاري التوليد..."):
-                generated_text = generate_ad_content(f"اكتب إعلان احترافي قصير للتسويق عن: {ai_prompt}")
-                st.session_state["generated_message"] = generated_text
+col1, col2 = st.columns([1, 1])
+
+with col1:
+    st.markdown("### ⚙️ غرفة عمليات الوكيل الذكي")
+    
+    domain_choice = st.selectbox(
+        "اختر مسار العمل المطلوب من المحرك:",
+        [
+            "📢 صياغة وتسويق إعلان عقاري/تجاري (Marketing Copy)",
+            "📊 تحليل وتقييم عقاري وحساب الـ ROI (Real Estate Valuation)",
+            "⚖️ استشارة قانونية وتقدير مصاريف التحفيظ/الموثق (Legal & Fees)",
+            "🚗 وساطة تجارية ولوجستية متنوعة (Multi-Domain Commerce)"
+        ]
+    )
+    
+    user_input = st.text_area(
+        "أدخل تفاصيل الطلب أو المعطيات الخام:",
+        placeholder="مثال: بقعة أرضية تجارية R+3 بمساحة 120 متر بقلعة السراغنة، محفظة، المطلوب كتابة إعلان جذّاب وتقييم المصاريف التقريبية.",
+        height=140
+    )
+    
+    auto_wa = st.checkbox("توجيه النشر الفوري عبر WhatsApp عند الاعتماد", value=True)
+    
+    if st.button("🚀 تشغيل Claude Bernard", type="primary"):
+        if not user_input:
+            st.warning("يرجى إدخال تفاصيل المهمة أولاً.")
         else:
-            st.warning("يرجى كتابة وصف قصير أولاً.")
+            with st.status("🏛️ Claude Bernard يقوم بمعالجة البيانات...", expanded=True) as status:
+                st.write("🧠 1. قراءة المعطيات وتطبيق مصفوفة القواعد...")
+                agent_res, err = run_claude_bernard_agent(user_input, domain_choice)
+                
+                if err:
+                    status.update(label="فشلت المعالجة!", state="error")
+                    st.error(f"خطأ: {err}")
+                else:
+                    st.write("💾 2. أرشفة التقرير في قاعدة بيانات Supabase...")
+                    db_ok, db_res = insert_instant_ad(content=user_input, message=agent_res, source=f"Claude-Bernard ({domain_choice.split()[0]})")
+                    
+                    wa_info = "لم يفعل خيار WhatsApp."
+                    if auto_wa and db_ok:
+                        st.write("💬 3. إرسال النسخة التنفيذية إلى WhatsApp...")
+                        _, wa_info = send_whatsapp_notification(agent_res)
+                    
+                    if db_ok:
+                        status.update(label="✅ اكتملت المهمة بنجاح واستقلالية تامّة!", state="complete")
+                        st.session_state["latest_output"] = agent_res
+                        st.session_state["latest_wa_info"] = wa_info
+                    else:
+                        status.update(label="فشل الأرشفة في قاعدة البيانات!", state="error")
+                        st.error(f"خطأ Supabase: {db_res}")
 
-# نموذج الإدخال الرئيسي
-with st.form("instant_ads_form", clear_on_submit=True):
-    content = st.text_input("محتوى الإعلان (Content)")
-    
-    default_msg = st.session_state.get("generated_message", "")
-    message = st.text_area("الرسالة النهائية (Message)", value=default_msg)
-    source = st.text_input("المصدر", value="Alpha-Core-Nexus")
-    
-    submitted = st.form_submit_button("حفظ وإرسال الإعلان")
-    
-    if submitted:
-        if not content or not message:
-            st.error("الرجاء ملء حقل المحتوى والرسالة على الأقل.")
-        else:
-            success, result = insert_instant_ad(content, message, source)
-            if success:
-                st.success("✅ تم حفظ الإعلان بنجاح في قاعدة البيانات!")
-            else:
-                st.error(f"❌ حدث خطأ أثناء الحفظ: {result}")
+with col2:
+    st.markdown("### 📜 المخرجات والتقرير التنفيذي")
+    if "latest_output" in st.session_state:
+        st.success("تم توليد النتيجة بنجاح:")
+        st.text_area("التقرير / الإعلان النهائي:", value=st.session_state["latest_output"], height=300)
+        if "latest_wa_info" in st.session_state:
+            st.info(f"حالة الواتساب: {st.session_state['latest_wa_info']}")
+    else:
+        st.info("في انتظار تشغيل المهمة لعرض المخرجات هنا.")
 
 st.divider()
 
-# عرض الإعلانات
-st.subheader("📋 الإعلانات الفورية الحالية في النظام")
+# عرض السجل التراكمي للإعلانات والتقارير
+st.subheader("📋 أرشيف العمليات المسجلة في النظام (Claude Bernard Logs)")
 success, ads_data = fetch_instant_ads()
 
 if success:
     if ads_data:
         for ad in ads_data:
-            with st.expander(f"إعلان: {ad.get('content')} | المصدر: {ad.get('source')}"):
-                st.write(f"**الرسالة:** {ad.get('message')}")
-                st.caption(f"تاريخ الإنشاء: {ad.get('created_at')}")
+            with st.expander(f"📌 {ad.get('content')} | المصدر: {ad.get('source')}"):
+                st.markdown(ad.get('message'))
+                st.caption(f"تاريخ التسجيل: {ad.get('created_at')}")
     else:
-        st.info("لا توجد إعلانات حالياً.")
+        st.info("لا توجد سجلات حالياً.")
 else:
-    st.error(f"تعذر جلب الإعلانات: {ads_data}")
+    st.error(f"تعذر جلب البيانات: {ads_data}")
