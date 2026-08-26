@@ -1,100 +1,123 @@
 import streamlit as st
-from supabase import create_client
-import google.generativeai as genai
+from supabase import create_client, Client
+from google import genai
 import requests
 import json
 from datetime import datetime
 
-st.set_page_config(page_title="Tassaout Reality AI", page_icon="🏛️", layout="wide")
+# ==========================================
+# 1. تهيئة الإعدادات والأسرار
+# ==========================================
+SUPABASE_URL = st.secrets.get("SUPABASE_URL")
+SUPABASE_KEY = st.secrets.get("SUPABASE_KEY") or st.secrets.get("SUPABASE_SECRET_KEY")
+GEMINI_API_KEY = st.secrets.get("GEMINI_API_KEY")
 
-# ====== تحميل المفاتيح ======
-s = st.secrets
-supabase = create_client(s["SUPABASE_URL"], s["SUPABASE_KEY"])
-genai.configure(api_key=s["GEMINI_API_KEY"])
-model = genai.GenerativeModel("gemini-1.5-flash")
+if not SUPABASE_URL or not SUPABASE_KEY:
+    st.error("⚠️ يرجى التأكد من ضبط SUPABASE_URL و SUPABASE_KEY في ملف secrets.toml")
+    st.stop()
 
-WHATSAPP_URL = f"https://graph.facebook.com/{s['WHATSAPP_API_VERSION']}/{s['WHATSAPP_PHONE_NUMBER_ID']}/messages"
-WHATSAPP_HEADERS = {"Authorization": f"Bearer {s['WHATSAPP_ACCESS_TOKEN']}", "Content-Type": "application/json"}
+# ==========================================
+# 2. إنشاء عملاء الاتصال (Supabase & Gemini Flash)
+# ==========================================
+@st.cache_resource
+def init_supabase_client() -> Client:
+    return create_client(SUPABASE_URL, SUPABASE_KEY)
 
-st.title("🏛️ Tassaout Reality AI")
-st.subheader("وكيل عقاري رقمي متعدد المجالات | Agent Immobilier Super Multidomaine")
+@st.cache_resource
+def init_gemini_client():
+    if GEMINI_API_KEY:
+        return genai.Client(api_key=GEMINI_API_KEY)
+    return None
 
-# ====== دوال الوكيل ======
-def generate_listing(property_data):
-    """توليد وصف العقار بالعربية والفرنسية بالـ Gemini"""
-    prompt = f"""
-    أنت وكيل عقاري محترف في مراكش. اكتب وصف تسويقي جذاب للعقار التالي باللغتين العربية الفصحى والفرنسية.
-    البيانات: {property_data}
-    أضف في النهاية: APPROUVÉ PAR AMEUR | Tassaout Vision Verified © 2026
-    """
-    response = model.generate_content(prompt)
-    return response.text
+supabase = init_supabase_client()
+gemini_client = init_gemini_client()
 
-def save_to_supabase(property_data):
-    """حفظ العقار في Supabase"""
-    data = {
-        "created_at": datetime.now().isoformat(),
-        "title_ar": property_data["title_ar"],
-        "title_fr": property_data["title_fr"],
-        "prix": property_data["prix"],
-        "region": property_data["region"],
-        "description": property_data["description"]
-    }
-    supabase.table("properties").insert(data).execute()
-    return True
+# ==========================================
+# 3. دوال الذكاء الاصطناعي وقاعدة البيانات
+# ==========================================
+def generate_ad_content(prompt: str) -> str:
+    """توليد نص الإعلان باستخدام Gemini Flash الجديدة"""
+    if not gemini_client:
+        return "⚠️ مفتاح GEMINI_API_KEY غير مضبوط في الإعدادات."
+    try:
+        response = gemini_client.models.generate_content(
+            model="gemini-2.5-flash",
+            contents=prompt,
+        )
+        return response.text
+    except Exception as e:
+        return f"خطأ في التوليد: {str(e)}"
 
-def send_whatsapp(to_number, message):
-    """إرسال رسالة WhatsApp"""
-    payload = {
-        "messaging_product": "whatsapp",
-        "to": to_number,
-        "type": "text",
-        "text": {"body": message}
-    }
-    res = requests.post(WHATSAPP_URL, headers=WHATSAPP_HEADERS, json=payload)
-    return res.status_code == 200
+def insert_instant_ad(content: str, message: str, source: str = "Alpha-Core-Nexus"):
+    try:
+        response = supabase.table("instant_ads").insert({
+            "content": content,
+            "message": message,
+            "source": source
+        }).execute()
+        return True, response.data
+    except Exception as e:
+        return False, str(e)
 
-# ====== الواجهة ======
-tab1, tab2, tab3 = st.tabs(["➕ إضافة عقار", "📊 قاعدة البيانات", "💬 اختبار WhatsApp"])
+def fetch_instant_ads():
+    try:
+        response = supabase.table("instant_ads").select("*").order("created_at", desc=True).execute()
+        return True, response.data
+    except Exception as e:
+        return False, str(e)
 
-with tab1:
-    st.markdown("### إضافة عقار جديد - الوكيل سيولد الوصف تلقائيا")
-    with st.form("add_property"):
-        c1, c2 = st.columns(2)
-        with c1:
-            title_ar = st.text_input("عنوان العقار AR", "فيلا فاخرة بتاساوت")
-            region = st.selectbox("المنطقة", ["Marrakech", "El Haouz", "Tassaout"])
-        with c2:
-            title_fr = st.text_input("Titre FR", "Villa de luxe à Tassaout")
-            prix = st.number_input("السعر MAD", 0, 10000000, 3500000)
-        
-        details = st.text_area("تفاصيل إضافية", "3 غرف، 2 حمام، حديقة، 200م²")
-        
-        if st.form_submit_button("🚀 نشر بالوكيل الذكي", type="primary"):
-            property_data = {"title_ar": title_ar, "title_fr": title_fr, "prix": prix, "region": region, "details": details}
-            
-            with st.spinner("الوكيل يولد الوصف..."):
-                description = generate_listing(property_data)
-                property_data["description"] = description
-                save_to_supabase(property_data)
-            
-            st.success("✅ تم النشر بنجاح")
-            st.text_area("الوصف المولد", description, height=200)
+# ==========================================
+# 4. واجهة المستخدم (Streamlit UI)
+# ==========================================
+st.set_page_config(page_title="Alpha Core Nexus", layout="centered", page_icon="📢")
 
-with tab2:
-    st.markdown("### العقارات المسجلة")
-    data = supabase.table("properties").select("*").execute()
-    st.dataframe(data.data)
+st.title("📢 إدارة نظام الإعلانات الفورية (Instant Ads)")
+st.markdown("أدخل تفاصيل الإعلان الجديد أو استخدم **Gemini Flash** للمساعدة في صياغته.")
 
-with tab3:
-    st.markdown("### اختبار إرسال WhatsApp")
-    phone = st.text_input("رقم العميل", "2126")
-    msg = st.text_area("الرسالة", "مرحبا، لدينا عقار جديد بتاساوت. هل تود الزيارة؟")
-    if st.button("إرسال"):
-        if send_whatsapp(phone, msg):
-            st.success("✅ تم الإرسال")
+# قسم الذكاء الاصطناعي التفاعلي
+with st.expander("✨ توليد إعلان ذكي بواسطة Google Gemini Flash"):
+    ai_prompt = st.text_input("عن ماذا تريد إعلانك؟ (مثال: شقة للبيع في مراكش)")
+    if st.button("توليد النص بالذكاء الاصطناعي"):
+        if ai_prompt:
+            with st.spinner("جاري التوليد..."):
+                generated_text = generate_ad_content(f"اكتب إعلان احترافي قصير للتسويق عن: {ai_prompt}")
+                st.session_state["generated_message"] = generated_text
         else:
-            st.error("❌ فشل الإرسال")
+            st.warning("يرجى كتابة وصف قصير أولاً.")
 
-st.markdown("---")
-st.caption("#D4AF37 #800020 | APPROUVÉ PAR AMEUR")
+# نموذج الإدخال الرئيسي
+with st.form("instant_ads_form", clear_on_submit=True):
+    content = st.text_input("محتوى الإعلان (Content)")
+    
+    default_msg = st.session_state.get("generated_message", "")
+    message = st.text_area("الرسالة النهائية (Message)", value=default_msg)
+    source = st.text_input("المصدر", value="Alpha-Core-Nexus")
+    
+    submitted = st.form_submit_button("حفظ وإرسال الإعلان")
+    
+    if submitted:
+        if not content or not message:
+            st.error("الرجاء ملء حقل المحتوى والرسالة على الأقل.")
+        else:
+            success, result = insert_instant_ad(content, message, source)
+            if success:
+                st.success("✅ تم حفظ الإعلان بنجاح في قاعدة البيانات!")
+            else:
+                st.error(f"❌ حدث خطأ أثناء الحفظ: {result}")
+
+st.divider()
+
+# عرض الإعلانات
+st.subheader("📋 الإعلانات الفورية الحالية في النظام")
+success, ads_data = fetch_instant_ads()
+
+if success:
+    if ads_data:
+        for ad in ads_data:
+            with st.expander(f"إعلان: {ad.get('content')} | المصدر: {ad.get('source')}"):
+                st.write(f"**الرسالة:** {ad.get('message')}")
+                st.caption(f"تاريخ الإنشاء: {ad.get('created_at')}")
+    else:
+        st.info("لا توجد إعلانات حالياً.")
+else:
+    st.error(f"تعذر جلب الإعلانات: {ads_data}")
