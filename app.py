@@ -1,83 +1,100 @@
 import streamlit as st
-from supabase import create_client, Client
+from supabase import create_client
+import google.generativeai as genai
 import requests
 import json
 from datetime import datetime
 
-# ==========================================
-# 1. تهيئة الإعدادات (Supabase)
-# ==========================================
-SUPABASE_URL = st.secrets.get("SUPABASE_URL")
-SUPABASE_SECRET_KEY = st.secrets.get("SUPABASE_SECRET_KEY")
+st.set_page_config(page_title="Tassaout Reality AI", page_icon="🏛️", layout="wide")
 
-if not SUPABASE_URL or not SUPABASE_SECRET_KEY:
-    st.error("⚠️ خطأ في النظام: المفاتيح السرية غير موجودة.")
-    st.stop()
+# ====== تحميل المفاتيح ======
+s = st.secrets
+supabase = create_client(s["SUPABASE_URL"], s["SUPABASE_KEY"])
+genai.configure(api_key=s["GEMINI_API_KEY"])
+model = genai.GenerativeModel("gemini-1.5-flash")
 
-@st.cache_resource
-def init_supabase_client() -> Client:
-    return create_client(SUPABASE_URL, SUPABASE_SECRET_KEY)
+WHATSAPP_URL = f"https://graph.facebook.com/{s['WHATSAPP_API_VERSION']}/{s['WHATSAPP_PHONE_NUMBER_ID']}/messages"
+WHATSAPP_HEADERS = {"Authorization": f"Bearer {s['WHATSAPP_ACCESS_TOKEN']}", "Content-Type": "application/json"}
 
-supabase = init_supabase_client()
+st.title("🏛️ Tassaout Reality AI")
+st.subheader("وكيل عقاري رقمي متعدد المجالات | Agent Immobilier Super Multidomaine")
 
-# ==========================================
-# 2. الدوال البرمجية (Alpha Core Nexus Operations)
-# ==========================================
-def insert_instant_ad(content: str, message: str, source: str = "Alpha-Core"):
-    try:
-        response = supabase.table("instant_ads").insert({
-            "content": content,
-            "message": message,
-            "source": source
-        }).execute()
-        return True, response.data
-    except Exception as e:
-        return False, str(e)
+# ====== دوال الوكيل ======
+def generate_listing(property_data):
+    """توليد وصف العقار بالعربية والفرنسية بالـ Gemini"""
+    prompt = f"""
+    أنت وكيل عقاري محترف في مراكش. اكتب وصف تسويقي جذاب للعقار التالي باللغتين العربية الفصحى والفرنسية.
+    البيانات: {property_data}
+    أضف في النهاية: APPROUVÉ PAR AMEUR | Tassaout Vision Verified © 2026
+    """
+    response = model.generate_content(prompt)
+    return response.text
 
-def fetch_instant_ads():
-    try:
-        response = supabase.table("instant_ads").select("*").order("created_at", desc=True).execute()
-        return True, response.data
-    except Exception as e:
-        return False, str(e)
+def save_to_supabase(property_data):
+    """حفظ العقار في Supabase"""
+    data = {
+        "created_at": datetime.now().isoformat(),
+        "title_ar": property_data["title_ar"],
+        "title_fr": property_data["title_fr"],
+        "prix": property_data["prix"],
+        "region": property_data["region"],
+        "description": property_data["description"]
+    }
+    supabase.table("properties").insert(data).execute()
+    return True
 
-# ==========================================
-# 3. واجهة التحكم (Nexus UI)
-# ==========================================
-st.set_page_config(page_title="Alpha Core Nexus", layout="centered", page_icon="💠")
+def send_whatsapp(to_number, message):
+    """إرسال رسالة WhatsApp"""
+    payload = {
+        "messaging_product": "whatsapp",
+        "to": to_number,
+        "type": "text",
+        "text": {"body": message}
+    }
+    res = requests.post(WHATSAPP_URL, headers=WHATSAPP_HEADERS, json=payload)
+    return res.status_code == 200
 
-st.title("💠 Alpha Core Nexus - Instant Ads")
-st.markdown("لوحة التحكم المركزية لنشر الإعلانات الفورية في قاعدة البيانات.")
+# ====== الواجهة ======
+tab1, tab2, tab3 = st.tabs(["➕ إضافة عقار", "📊 قاعدة البيانات", "💬 اختبار WhatsApp"])
 
-with st.form("nexus_ads_form", clear_on_submit=True):
-    content = st.text_input("محتوى الإعلان (Content)")
-    message = st.text_area("الرسالة النهائية (Message)")
-    source = st.text_input("المصدر", value="Alpha-Core-Nexus")
-    
-    submitted = st.form_submit_button("إرسال إلى قاعدة البيانات")
-    
-    if submitted:
-        if not content or not message:
-            st.error("الرجاء ملء حقل المحتوى والرسالة.")
+with tab1:
+    st.markdown("### إضافة عقار جديد - الوكيل سيولد الوصف تلقائيا")
+    with st.form("add_property"):
+        c1, c2 = st.columns(2)
+        with c1:
+            title_ar = st.text_input("عنوان العقار AR", "فيلا فاخرة بتاساوت")
+            region = st.selectbox("المنطقة", ["Marrakech", "El Haouz", "Tassaout"])
+        with c2:
+            title_fr = st.text_input("Titre FR", "Villa de luxe à Tassaout")
+            prix = st.number_input("السعر MAD", 0, 10000000, 3500000)
+        
+        details = st.text_area("تفاصيل إضافية", "3 غرف، 2 حمام، حديقة، 200م²")
+        
+        if st.form_submit_button("🚀 نشر بالوكيل الذكي", type="primary"):
+            property_data = {"title_ar": title_ar, "title_fr": title_fr, "prix": prix, "region": region, "details": details}
+            
+            with st.spinner("الوكيل يولد الوصف..."):
+                description = generate_listing(property_data)
+                property_data["description"] = description
+                save_to_supabase(property_data)
+            
+            st.success("✅ تم النشر بنجاح")
+            st.text_area("الوصف المولد", description, height=200)
+
+with tab2:
+    st.markdown("### العقارات المسجلة")
+    data = supabase.table("properties").select("*").execute()
+    st.dataframe(data.data)
+
+with tab3:
+    st.markdown("### اختبار إرسال WhatsApp")
+    phone = st.text_input("رقم العميل", "2126")
+    msg = st.text_area("الرسالة", "مرحبا، لدينا عقار جديد بتاساوت. هل تود الزيارة؟")
+    if st.button("إرسال"):
+        if send_whatsapp(phone, msg):
+            st.success("✅ تم الإرسال")
         else:
-            success, result = insert_instant_ad(content, message, source)
-            if success:
-                st.success("✅ تم تسجيل البيانات بنجاح في Alpha Core Nexus!")
-            else:
-                st.error(f"❌ فشل الاتصال بقاعدة البيانات: {result}")
+            st.error("❌ فشل الإرسال")
 
-st.divider()
-
-st.subheader("📋 سجل الإعلانات (Nexus Database)")
-success, ads_data = fetch_instant_ads()
-
-if success:
-    if ads_data:
-        for ad in ads_data:
-            with st.expander(f"إعلان: {ad.get('content')} | المصدر: {ad.get('source')}"):
-                st.write(f"**الرسالة:** {ad.get('message')}")
-                st.caption(f"تاريخ التسجيل: {ad.get('created_at')}")
-    else:
-        st.info("قاعدة البيانات فارغة حالياً.")
-else:
-    st.error(f"❌ خطأ في جلب البيانات: {ads_data}")
+st.markdown("---")
+st.caption("#D4AF37 #800020 | APPROUVÉ PAR AMEUR")
