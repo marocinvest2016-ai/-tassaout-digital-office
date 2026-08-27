@@ -1,7 +1,6 @@
-streamlit==1.62.0
-supabase==2.31.0
-pandas==3.0.5
-pillow==12.3.0
+streamlit
+pandas
+pillow
 google-genai
-pyarrow==24.0.0
 requests
+supabase
