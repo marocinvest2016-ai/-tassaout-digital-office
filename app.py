@@ -1,12 +1,12 @@
 import io
 import time
 import zipfile
+import base64
 import pandas as pd
 from PIL import Image, ImageDraw, ImageFont
 import arabic_reshaper
 from bidi.algorithm import get_display
-from google import genai
-from google.genai import types
+from openai import OpenAI
 import requests
 import streamlit as st
 from supabase import create_client, Client
@@ -23,9 +23,7 @@ st.set_page_config(
 
 SUPABASE_URL = st.secrets.get("SUPABASE_URL", "").strip()
 SUPABASE_KEY = st.secrets.get("SUPABASE_KEY", "").strip()
-
-raw_gemini_key = st.secrets.get("GEMINI_API_KEY", "").strip()
-GEMINI_API_KEY = raw_gemini_key.encode("ascii", "ignore").decode("ascii")
+OPENAI_API_KEY = st.secrets.get("OPENAI_API_KEY", "").strip()
 
 WHATSAPP_PHONE_NUMBER_ID = st.secrets.get("WHATSAPP_PHONE_NUMBER_ID", "").strip()
 WHATSAPP_ACCESS_TOKEN = st.secrets.get("WHATSAPP_ACCESS_TOKEN", "").strip()
@@ -45,18 +43,18 @@ def init_supabase() -> Client | None:
         return None
 
 @st.cache_resource
-def init_gemini() -> genai.Client | None:
-    if not GEMINI_API_KEY:
-        st.error("⚠️ مفتاح GEMINI_API_KEY غير متاح أو يحتوي على رموز غير صالحة.")
+def init_openai() -> OpenAI | None:
+    if not OPENAI_API_KEY:
+        st.error("⚠️ مفتاح OPENAI_API_KEY غير متاح في الخزنة.")
         return None
     try:
-        return genai.Client(api_key=GEMINI_API_KEY)
+        return OpenAI(api_key=OPENAI_API_KEY)
     except Exception as e:
-        st.error(f"❌ فشل تهيئة عميل Gemini: {e}")
+        st.error(f"❌ فشل تهيئة عميل OpenAI: {e}")
         return None
 
 supabase = init_supabase()
-gemini_client = init_gemini()
+openai_client = init_openai()
 
 BRAND_NAME = "خدمات السراغنة للتسويق الرقمي"
 BRAND_PHONE = "+212691897126"
@@ -132,7 +130,8 @@ def upload_bytes_to_supabase(image_bytes, filename, mime_type="image/jpeg"):
         )
         return supabase.storage.from_("property-images").get_public_url(path)
     except Exception as e:
-        st.error(f"خطأ رفع الصورة: {e}")
+        error_msg = getattr(e, 'message', str(e))
+        st.error(f"❌ خطأ Storage (403/RLS): {error_msg}")
         return None
 
 def send_whatsapp_media(image_url: str, caption: str, recipient_number: str):
@@ -155,25 +154,48 @@ def send_whatsapp_media(image_url: str, caption: str, recipient_number: str):
         return False
 
 def process_single_image(image_file, sector, user_prompt):
-    if not gemini_client:
-        st.error("⚠️ عميل Gemini غير متصل.")
+    if not openai_client:
+        st.error("⚠️ عميل OpenAI غير متصل.")
         return None, "خطأ اتصال"
     try:
         img_bytes = image_file.getvalue()
-        image_part = types.Part.from_bytes(data=img_bytes, mime_type=image_file.type)
-        analysis_query = f"القطاع: {sector}. الطلب: {user_prompt}. حلل الصورة وأنشئ وصف إنجليزي لتصميم بوستر إعلاني احترافي."
-        res_desc = gemini_client.models.generate_content(model="gemini-2.0-flash", contents=[image_part, analysis_query])
-        
-        imagen_prompt = f"Commercial banner for {sector}, {res_desc.text}, photorealistic 8k, professional advertising"
-        gen_res = gemini_client.models.generate_images(
-            model="imagen-3.0-generate-002",
-            prompt=imagen_prompt,
-            config=types.GenerateImagesConfig(number_of_images=1, aspect_ratio="1:1", output_mime_type="image/jpeg")
+        base64_image = base64.b64encode(img_bytes).decode('utf-8')
+        mime_type = image_file.type
+
+        # 1. تحليل الصورة بواسطة GPT-4o-mini
+        analysis_res = openai_client.chat.completions.create(
+            model="gpt-4o-mini",
+            messages=[
+                {
+                    "role": "user",
+                    "content": [
+                        {"type": "text", "text": f"القطاع: {sector}. الطلب: {user_prompt}. حلل الصورة وأنشئ وصفاً إنجليزياً دقيقاً لتصميم بوستر إعلاني احترافي."},
+                        {"type": "image_url", "image_url": {"url": f"data:{mime_type};base64,{base64_image}"}}
+                    ]
+                }
+            ],
+            max_tokens=300
         )
-        watermarked_bytes = add_watermark(gen_res.generated_images[0].image.image_bytes)
-        return watermarked_bytes, res_desc.text
+        desc_text = analysis_res.choices[0].message.content
+
+        # 2. توليد صورة جديدة بواسطة DALL-E 3
+        dalle_prompt = f"Commercial advertising poster for {sector}, {desc_text}, photorealistic 8k, high quality banner"
+        gen_res = openai_client.images.generate(
+            model="dall-e-3",
+            prompt=dalle_prompt,
+            size="1024x1024",
+            quality="standard",
+            n=1
+        )
+        
+        img_url = gen_res.data[0].url
+        raw_image_data = requests.get(img_url).content
+        watermarked_bytes = add_watermark(raw_image_data)
+        
+        return watermarked_bytes, desc_text
     except Exception as e:
-        st.error(f"فشل معالجة الصورة ({image_file.name}): {e}")
+        error_msg = getattr(e, 'message', str(e))
+        st.error(f"فشل معالجة الصورة ({image_file.name}): {error_msg}")
         return None, str(e)
 
 def save_to_supabase_logs(sector, message, image_count, content=""):
@@ -189,7 +211,8 @@ def save_to_supabase_logs(sector, message, image_count, content=""):
             "status": "completed"
         }).execute()
     except Exception as e:
-        st.error(f"خطأ حفظ السجل: {e}")
+        error_msg = getattr(e, 'message', str(e))
+        st.error(f"❌ خطأ Database Insert (403/RLS): {error_msg}")
 
 # ==========================================
 # 3. واجهة المستخدم
@@ -213,18 +236,21 @@ if menu == "🚀 مولد الإعلانات الشامل":
     if st.button("✨ توليد الحملة الإعلانية", type="primary"):
         if not project_details:
             st.warning("يرجى كتابة تفاصيل المشروع أولاً.")
-        elif not gemini_client:
-            st.error("⚠️ لم يتم الاتصال بخدمة Gemini. تحقق من API Key.")
+        elif not openai_client:
+            st.error("⚠️ لم يتم الاتصال بخدمة OpenAI. تحقق من OPENAI_API_KEY.")
         else:
             with st.status("🧠 الذكاء الاصطناعي يصيغ الحملة الإعلانية...", expanded=True) as status:
                 prompt_input = f"المجال: {sector_text}\nالتفاصيل: {project_details}\nالمنصات: {', '.join(target_platform)}\nأنتج نصاً إعلانياً جذاباً مع منشورات جاهزة للنشر وهاشتاغات مناسبة."
                 try:
-                    res = gemini_client.models.generate_content(
-                        model="gemini-2.0-flash",
-                        contents=prompt_input,
-                        config=types.GenerateContentConfig(system_instruction=SYSTEM_MARKETING_OS, temperature=0.3)
+                    res = openai_client.chat.completions.create(
+                        model="gpt-4o-mini",
+                        messages=[
+                            {"role": "system", "content": SYSTEM_MARKETING_OS},
+                            {"role": "user", "content": prompt_input}
+                        ],
+                        temperature=0.3
                     )
-                    final_ad = res.text
+                    final_ad = res.choices[0].message.content
                     save_to_supabase_logs(sector=sector_text, message=project_details, image_count=0, content=final_ad)
                     status.update(label="✅ تم إنشاء الحملة بنجاح!", state="complete")
 
