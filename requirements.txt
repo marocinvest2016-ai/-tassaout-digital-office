@@ -1,6 +1,8 @@
 streamlit
+supabase
+google-genai
 pandas
 pillow
-google-genai
+arabic-reshaper
+python-bidi
 requests
-supabase
