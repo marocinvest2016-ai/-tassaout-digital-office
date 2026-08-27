@@ -2,12 +2,12 @@ import io
 import time
 import zipfile
 import base64
+import requests
 import pandas as pd
 from PIL import Image, ImageDraw, ImageFont
 import arabic_reshaper
 from bidi.algorithm import get_display
 from openai import OpenAI
-import requests
 import streamlit as st
 from supabase import create_client, Client
 
@@ -23,7 +23,7 @@ st.set_page_config(
 
 SUPABASE_URL = st.secrets.get("SUPABASE_URL", "").strip()
 SUPABASE_KEY = st.secrets.get("SUPABASE_KEY", "").strip()
-OPENAI_API_KEY = st.secrets.get("OPENAI_API_KEY", "").strip()
+GROQ_API_KEY = st.secrets.get("GROQ_API_KEY", "").strip()
 
 WHATSAPP_PHONE_NUMBER_ID = st.secrets.get("WHATSAPP_PHONE_NUMBER_ID", "").strip()
 WHATSAPP_ACCESS_TOKEN = st.secrets.get("WHATSAPP_ACCESS_TOKEN", "").strip()
@@ -43,18 +43,21 @@ def init_supabase() -> Client | None:
         return None
 
 @st.cache_resource
-def init_openai() -> OpenAI | None:
-    if not OPENAI_API_KEY:
-        st.error("⚠️ مفتاح OPENAI_API_KEY غير متاح في الخزنة.")
+def init_groq() -> OpenAI | None:
+    if not GROQ_API_KEY:
+        st.error("⚠️ مفتاح GROQ_API_KEY غير متاح في الخزنة.")
         return None
     try:
-        return OpenAI(api_key=OPENAI_API_KEY)
+        return OpenAI(
+            base_url="https://api.groq.com/openai/v1",
+            api_key=GROQ_API_KEY
+        )
     except Exception as e:
-        st.error(f"❌ فشل تهيئة عميل OpenAI: {e}")
+        st.error(f"❌ فشل تهيئة عميل Groq: {e}")
         return None
 
 supabase = init_supabase()
-openai_client = init_openai()
+groq_client = init_groq()
 
 BRAND_NAME = "خدمات السراغنة للتسويق الرقمي"
 BRAND_PHONE = "+212691897126"
@@ -154,17 +157,17 @@ def send_whatsapp_media(image_url: str, caption: str, recipient_number: str):
         return False
 
 def process_single_image(image_file, sector, user_prompt):
-    if not openai_client:
-        st.error("⚠️ عميل OpenAI غير متصل.")
+    if not groq_client:
+        st.error("⚠️ عميل Groq غير متصل.")
         return None, "خطأ اتصال"
     try:
         img_bytes = image_file.getvalue()
         base64_image = base64.b64encode(img_bytes).decode('utf-8')
         mime_type = image_file.type
 
-        # 1. تحليل الصورة بواسطة GPT-4o-mini
-        analysis_res = openai_client.chat.completions.create(
-            model="gpt-4o-mini",
+        # 1. تحليل الصورة بواسطة نموذج الرؤية الفائق السرعة من Groq
+        analysis_res = groq_client.chat.completions.create(
+            model="llama-3.2-11b-vision-preview",
             messages=[
                 {
                     "role": "user",
@@ -178,18 +181,12 @@ def process_single_image(image_file, sector, user_prompt):
         )
         desc_text = analysis_res.choices[0].message.content
 
-        # 2. توليد صورة جديدة بواسطة DALL-E 3
+        # 2. توليد صورة إعلانية مجانية وعالية الدقة عبر Pollinations AI
         dalle_prompt = f"Commercial advertising poster for {sector}, {desc_text}, photorealistic 8k, high quality banner"
-        gen_res = openai_client.images.generate(
-            model="dall-e-3",
-            prompt=dalle_prompt,
-            size="1024x1024",
-            quality="standard",
-            n=1
-        )
+        encoded_prompt = requests.utils.quote(dalle_prompt)
+        img_url = f"https://image.pollinations.ai/prompt/{encoded_prompt}?width=1024&height=1024&seed={int(time.time())}&nologo=true"
         
-        img_url = gen_res.data[0].url
-        raw_image_data = requests.get(img_url).content
+        raw_image_data = requests.get(img_url, timeout=30).content
         watermarked_bytes = add_watermark(raw_image_data)
         
         return watermarked_bytes, desc_text
@@ -218,7 +215,7 @@ def save_to_supabase_logs(sector, message, image_count, content=""):
 # 3. واجهة المستخدم
 # ==========================================
 st.title("📢 خدمات السراغنة للتسويق الرقمي")
-st.caption("المنصة الذكية لصناعة الإعلانات والبوسترات الرقمية لكافة القطاعات والمشاريع")
+st.caption("المنصة الذكية لصناعة الإعلانات والبوسترات الرقمية لكافة القطاعات والمشاريع (مدعوم بـ Groq)")
 
 menu = st.sidebar.radio("📌 القائمة الرئيسية", ["🚀 مولد الإعلانات الشامل", "📸 استوديو التصاميم", "📊 أرشيف الحملات والإحصائيات"])
 
@@ -236,14 +233,14 @@ if menu == "🚀 مولد الإعلانات الشامل":
     if st.button("✨ توليد الحملة الإعلانية", type="primary"):
         if not project_details:
             st.warning("يرجى كتابة تفاصيل المشروع أولاً.")
-        elif not openai_client:
-            st.error("⚠️ لم يتم الاتصال بخدمة OpenAI. تحقق من OPENAI_API_KEY.")
+        elif not groq_client:
+            st.error("⚠️ لم يتم الاتصال بخدمة Groq. تحقق من GROQ_API_KEY.")
         else:
-            with st.status("🧠 الذكاء الاصطناعي يصيغ الحملة الإعلانية...", expanded=True) as status:
+            with st.status("🧠 الذكاء الاصطناعي يصيغ الحملة الإعلانية عبر Groq...", expanded=True) as status:
                 prompt_input = f"المجال: {sector_text}\nالتفاصيل: {project_details}\nالمنصات: {', '.join(target_platform)}\nأنتج نصاً إعلانياً جذاباً مع منشورات جاهزة للنشر وهاشتاغات مناسبة."
                 try:
-                    res = openai_client.chat.completions.create(
-                        model="gpt-4o-mini",
+                    res = groq_client.chat.completions.create(
+                        model="llama-3.3-70b-versatile",
                         messages=[
                             {"role": "system", "content": SYSTEM_MARKETING_OS},
                             {"role": "user", "content": prompt_input}
