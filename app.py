@@ -9,7 +9,6 @@ import requests
 import streamlit as st
 from supabase import create_client, Client
 from datetime import datetime, timezone
-import pyperclip
 
 # إعداد الصفحة
 st.set_page_config(page_title="وكالة تساوت للإنتاج الرقمي", page_icon="⚙️", layout="wide")
@@ -167,11 +166,8 @@ elif menu == "🚀 توليد إعلان سريع":
         col_btn1, col_btn2 = st.columns(2)
         with col_btn1:
             if st.button("📋 نسخ الإعلان", use_container_width=True):
-                try: 
-                    pyperclip.copy(st.session_state["last_ad"])
-                    st.success("✅ تم النسخ!")
-                except: 
-                    st.warning("انسخ يدوياً: Ctrl+C")
+                st.code(st.session_state["last_ad"], language="text")
+                st.success("✅ حدد النص وأشر عليه بـ Ctrl+C للنسخ")
         with col_btn2: 
             st.download_button("📄 تحميل", st.session_state["last_ad"], "tassaout_ad.txt", use_container_width=True)
 
