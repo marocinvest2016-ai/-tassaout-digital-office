@@ -68,9 +68,10 @@ MASTER_SYSTEM_PROMPT = """
 def run_super_agent(user_task: str):
     messages = [{"role": "system", "content": MASTER_SYSTEM_PROMPT}, {"role": "user", "content": user_task}]
     
-    # الاعتماد الحصري والمباشر على نموذج Gemma 2 المتاح في لوحة التحكم
+    # الاعتماد على النماذج البديلة والمستقرة الحالية في Groq
     models_to_try = [
-        "gemma2-9b-it"
+        "llama-3.1-8b-instant",
+        "llama-3.3-70b-versatile"
     ]
 
     last_error = ""
@@ -82,7 +83,7 @@ def run_super_agent(user_task: str):
                 temperature=0.6,
                 max_tokens=2000
             )
-            st.success(f"✅ الوكيل خدام الآن بـ: {model_name}")
+            st.success(f"✅ الوكيل خدام الآن بنجاح عبر: {model_name}")
             return response.choices[0].message.content
         except Exception as e:
             last_error = str(e)
@@ -147,17 +148,17 @@ def create_zip_file(images_list):
             zip_file.writestr(f"tassaout_poster_{i+1}_{item['orig_name']}", item['bytes'])
     zip_buffer.seek(0); return zip_buffer
 
-# ========== الواجهة التفاعلية v8.7.2 النهائية ==========
+# ========== الواجهة التفاعلية v8.7.3 النهائية ==========
 st.title("⚙️ وكالة تساوت للإنتاج الرقمي")
-st.caption("النظام المستقل المدمج بالأتمتة والواتساب - v8.7.2 (Gemma 2 Stable)")
+st.caption("النظام المستقل المدمج بالأتمتة والواتساب - v8.7.3 (Llama Stable)")
 menu = st.sidebar.radio("📌 القائمة الرئيسية", ["🧠 وكيل تساوت الرقمي", "🚀 توليد إعلان سريع", "📸 استوديو التصوير والمعاينة", "📊 الأرشيف السحابي"])
 
 if menu == "🧠 وكيل تساوت الرقمي":
-    st.subheader("🧠 وكيل تساوت للإنتاج الرقمي - v8.7.2")
+    st.subheader("🧠 وكيل تساوت للإنتاج الرقمي - v8.7.3")
     user_task = st.text_area("اطرح أي مهمة (عقار، مواد بناء، مقال فكري، تحليل، أو نص أدبي):", height=180, placeholder="مثال: تحليل استراتيجي لفرص الاستثمار العقاري بقلعة السراغنة...")
     if st.button("⚡ تنفيذ المهمة عبر الوكيل", type="primary", use_container_width=True):
         if user_task:
-            with st.spinner("جاري معالجة البرومبت وتحليل البيانات عبر نموذج Gemma 2..."):
+            with st.spinner("جاري معالجة البرومبت وتحليل البيانات عبر نموذج Llama..."):
                 result = run_super_agent(user_task)
                 st.markdown("### 📊 تقرير ومخرجات وكيل تساوت:")
                 st.markdown(result)
