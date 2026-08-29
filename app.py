@@ -68,10 +68,9 @@ MASTER_SYSTEM_PROMPT = """
 def run_super_agent(user_task: str):
     messages = [{"role": "system", "content": MASTER_SYSTEM_PROMPT}, {"role": "user", "content": user_task}]
     
-    # 100% النماذج النشطة في توثيق Groq الحالي (Qwen و GPT-OSS)
     models_to_try = [
-        "qwen/qwen3.8-27b",      # أفضل نموذج للغة العربية (2M توكن/نهار)
-        "openai/gpt-oss-120b"    # احتياط قوي ومستقر
+        "qwen/qwen3.8-27b",
+        "openai/gpt-oss-120b"
     ]
 
     last_error = ""
