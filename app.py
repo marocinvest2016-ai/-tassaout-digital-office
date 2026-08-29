@@ -68,11 +68,11 @@ MASTER_SYSTEM_PROMPT = """
 def run_super_agent(user_task: str):
     messages = [{"role": "system", "content": MASTER_SYSTEM_PROMPT}, {"role": "user", "content": user_task}]
     
+    # قائمة محدثة بالكامل تدعم الموديلات الحالية في المنصة
     models_to_try = [
+        "openai/gpt-oss-120b",
         "llama-3.3-70b-versatile",
-        "llama-3.1-70b-versatile",
-        "llama3-70b-8192",
-        "llama3-8b-8192"
+        "llama-3.1-8b-instant"
     ]
 
     last_error = ""
@@ -149,13 +149,13 @@ def create_zip_file(images_list):
             zip_file.writestr(f"tassaout_poster_{i+1}_{item['orig_name']}", item['bytes'])
     zip_buffer.seek(0); return zip_buffer
 
-# ========== الواجهة التفاعلية v8.4 ==========
+# ========== الواجهة التفاعلية v8.6 ==========
 st.title("⚙️ وكالة تساوت للإنتاج الرقمي")
-st.caption("النظام المستقل المدمج بالأتمتة والواتساب - v8.4")
+st.caption("النظام المستقل المدمج بالأتمتة والواتساب - v8.6")
 menu = st.sidebar.radio("📌 القائمة الرئيسية", ["🧠 وكيل تساوت الرقمي", "🚀 توليد إعلان سريع", "📸 استوديو التصوير الميداني", "📊 الأرشيف السحابي"])
 
 if menu == "🧠 وكيل تساوت الرقمي":
-    st.subheader("🧠 وكيل تساوت للإنتاج الرقمي - v8.4")
+    st.subheader("🧠 وكيل تساوت للإنتاج الرقمي - v8.6")
     user_task = st.text_area("اطرح أي مهمة (عقار، مواد بناء، مقال فكري، تحليل، أو نص أدبي):", height=180, placeholder="مثال: حلل لي جدوى استثمار فيرمة سقوية بقلعة السراغنة...")
     if st.button("⚡ تنفيذ المهمة عبر الوكيل", type="primary", use_container_width=True):
         if user_task:
@@ -174,7 +174,7 @@ elif menu == "🚀 توليد إعلان سريع":
     details = st.text_area("تفاصيل إضافية", "الطابق الأول، متوفرة بنظام الدعم أو غير مشمولة بالدعم.")
 
     if st.button("⚡ توليد الإعلان الميداني", type="primary", use_container_width=True):
-        prompt = f"اكتب إعلان تسويقي احترافي ومنظم بالايقونات والكلمات المفتاحية والهاشتاقات المناسبة لبيع الشقق العصرية: {title}, {price}, {details}. أضف معلومات الاتصال والهاشتاغات الخاصة بوكالة تساوت."
+        prompt = f"اكتب إعلان تسويقي احترافي ومنظم بالايقونات والكلمات المفتاحية والهاشتاقات المناسبة لبيع الشقق العصرية: {title}, {price}, {details}. أضف معلومات الاتصال والهاشتاقات الخاصة بوكالة تساوت."
         ad_text = run_super_agent(prompt)
         st.text_area("الإعلان الجاهز للنشر:", ad_text, height=250)
 
