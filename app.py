@@ -1,3 +1,4 @@
+import urllib.parse
 import streamlit as st
 from groq import Groq
 from supabase import create_client
@@ -9,6 +10,7 @@ import gdown
 import pandas as pd
 import random
 import base64
+import requests
 
 # إعداد الصفحة
 st.set_page_config(page_title="وكالة تساوت للانتاج الرقمي والخدمات", page_icon="⚙️", layout="wide")
@@ -39,11 +41,11 @@ font_main = load_ar_font()
 
 # مصفوفة الألوان والأنماط الفنية للعلامة المائية
 PROFESSIONAL_PALETTES = [
-    {"bg": (15, 23, 42, 255), "glow": (59, 130, 246, 255), "text": (255, 255, 255, 255)},   # كحلي داكن
+    {"bg": (15, 23, 42, 255), "glow": (59, 130, 246, 255), "text": (255, 255, 255, 255)},    # كحلي داكن
     {"bg": (127, 29, 29, 255), "glow": (254, 240, 138, 255), "text": (255, 255, 255, 255)}, # أحمر قرمزي فاخر
-    {"bg": (6, 78, 59, 255), "glow": (167, 243, 208, 255), "text": (255, 255, 255, 255)},   # أخضر زمردي
+    {"bg": (6, 78, 59, 255), "glow": (167, 243, 208, 255), "text": (255, 255, 255, 255)},    # أخضر زمردي
     {"bg": (88, 28, 135, 255), "glow": (221, 214, 254, 255), "text": (255, 255, 255, 255)}, # بنفسجي ملكي
-    {"bg": (10, 10, 10, 255), "glow": (245, 158, 11, 255), "text": (255, 255, 255, 255)},   # أسود فاحم مع ذهبي
+    {"bg": (10, 10, 10, 255), "glow": (245, 158, 11, 255), "text": (255, 255, 255, 255)},    # أسود فاحم مع ذهبي
 ]
 
 def add_artistic_watermark(image_bytes):
@@ -82,6 +84,20 @@ def add_artistic_watermark(image_bytes):
     final_img.convert("RGB").save(buf, format="JPEG", quality=95)
     return buf.getvalue()
 
+# دالة توليد الصورة برمجياً عبر وصف نصي وتطبيق الهوية البصرية
+def generate_ai_image(prompt_text):
+    encoded_prompt = urllib.parse.quote(prompt_text)
+    image_url = f"https://image.pollinations.ai/prompt/{encoded_prompt}?width=1024&height=1024&nologo=true"
+    
+    try:
+        res = requests.get(image_url, timeout=30)
+        if res.status_code == 200:
+            return res.content
+    except Exception as e:
+        st.error(f"خطأ في توليد الصورة: {e}")
+    
+    return None
+
 # واجهة القائمة الجانبية للتحكم والأقسام
 st.sidebar.title("📌 لوحة التحكم والخدمات")
 menu = st.sidebar.radio("اختر القسم:", [
@@ -90,6 +106,7 @@ menu = st.sidebar.radio("اختر القسم:", [
     "🧠 وكيل تساوت للإنتاج الرقمي", 
     "🚀 توليد الإعلانات الفورية", 
     "📸 استوديو التصوير والهوية البصرية", 
+    "🎨 استوديو توليد الصور بالذكاء الاصطناعي",
     "📊 الأرشيف السحابي",
     "📞 التواصل والاتصال المباشر"
 ])
@@ -329,7 +346,39 @@ elif menu == "📸 استوديو التصوير والهوية البصرية":
                 )
 
 # ==========================================
-# 6. الأرشيف السحابي
+# 6. استوديو توليد الصور بالذكاء الاصطناعي
+# ==========================================
+elif menu == "🎨 استوديو توليد الصور بالذكاء الاصطناعي":
+    st.subheader("🎨 استوديو توليد الصور البصرية والتسويقية بالذكاء الاصطناعي")
+    st.info("أدخل وصفاً تفصيلياً للصورة أو التصميم الذي ترغب في إنشائه (مثل: واجهة فيلا عصرية بقلعة السراغنة، لافتة محل تجاري، إلخ).")
+
+    ai_prompt_input = st.text_area("وصف الصورة المطلوبة (Prompt):", "Modern luxury apartment exterior design in Morocco, architectural rendering, high quality")
+    
+    if st.button("🚀 توليد الصورة وتطبيق الهوية البصرية", type="primary"):
+        if ai_prompt_input:
+            with st.spinner("جاري توليد الصورة عبر الذكاء الاصطناعي..."):
+                raw_image_bytes = generate_ai_image(ai_prompt_input)
+                
+                if raw_image_bytes:
+                    # تطبيق العلامة المائية الخاصة بوكالة تساوت تلقائياً
+                    final_watermarked_bytes = add_artistic_watermark(raw_image_bytes)
+                    
+                    st.success("✅ تم توليد الصورة وتطبيق الهوية البصرية بنجاح!")
+                    st.image(final_watermarked_bytes, caption="الصورة المولدة مع العلامة المائية الرسمية", use_container_width=True)
+                    
+                    st.download_button(
+                        label="📥 تحميل الصورة النهائية",
+                        data=final_watermarked_bytes,
+                        file_name="tassaout_ai_generated_image.jpg",
+                        mime="image/jpeg"
+                    )
+                else:
+                    st.error("تعذر توليد الصورة، يرجى المحاولة مرة أخرى بوصف مختلف.")
+        else:
+            st.warning("الرجاء إدخال وصف صالح للصورة أولاً.")
+
+# ==========================================
+# 7. الأرشيف السحابي
 # ==========================================
 elif menu == "📊 الأرشيف السحابي":
     st.subheader("📊 الأرشيف السحابي (قاعدة بيانات instant_ads)")
@@ -347,7 +396,7 @@ elif menu == "📊 الأرشيف السحابي":
         st.warning("اتصال Supabase غير مهفر أو غير متوفر في الأسرار.")
 
 # ==========================================
-# 7. التواصل والاتصال المباشر
+# 8. التواصل والاتصال المباشر
 # ==========================================
 elif menu == "📞 التواصل والاتصال المباشر":
     st.subheader("📞 مركز الاتصال والخدمات")
