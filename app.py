@@ -68,10 +68,10 @@ MASTER_SYSTEM_PROMPT = """
 def run_super_agent(user_task: str):
     messages = [{"role": "system", "content": MASTER_SYSTEM_PROMPT}, {"role": "user", "content": user_task}]
     
-    # الاعتماد على النماذج البديلة والمستقرة الحالية في Groq
+    # 100% النماذج النشطة في توثيق Groq الحالي (Qwen و GPT-OSS)
     models_to_try = [
-        "llama-3.1-8b-instant",
-        "llama-3.3-70b-versatile"
+        "qwen/qwen3.8-27b",      # أفضل نموذج للغة العربية (2M توكن/نهار)
+        "openai/gpt-oss-120b"    # احتياط قوي ومستقر
     ]
 
     last_error = ""
@@ -148,17 +148,17 @@ def create_zip_file(images_list):
             zip_file.writestr(f"tassaout_poster_{i+1}_{item['orig_name']}", item['bytes'])
     zip_buffer.seek(0); return zip_buffer
 
-# ========== الواجهة التفاعلية v8.7.3 النهائية ==========
+# ========== الواجهة التفاعلية الرسمية v8.7.6 ==========
 st.title("⚙️ وكالة تساوت للإنتاج الرقمي")
-st.caption("النظام المستقل المدمج بالأتمتة والواتساب - v8.7.3 (Llama Stable)")
+st.caption("النظام المستقل المدمج بالأتمتة والواتساب - v8.7.6 (Qwen Active Engine)")
 menu = st.sidebar.radio("📌 القائمة الرئيسية", ["🧠 وكيل تساوت الرقمي", "🚀 توليد إعلان سريع", "📸 استوديو التصوير والمعاينة", "📊 الأرشيف السحابي"])
 
 if menu == "🧠 وكيل تساوت الرقمي":
-    st.subheader("🧠 وكيل تساوت للإنتاج الرقمي - v8.7.3")
-    user_task = st.text_area("اطرح أي مهمة (عقار، مواد بناء، مقال فكري، تحليل، أو نص أدبي):", height=180, placeholder="مثال: تحليل استراتيجي لفرص الاستثمار العقاري بقلعة السراغنة...")
+    st.subheader("🧠 وكيل تساوت للإنتاج الرقمي - v8.7.6")
+    user_task = st.text_area("اطرح أي مهمة (عقار، مواد بناء، مقال فكري، تحليل، أو نص أدبي):", height=180, placeholder="مثال: شقق ممتازة عصرية للبيع بقلعة السراغنة مشمولة او غير مشمولة بالدعم...")
     if st.button("⚡ تنفيذ المهمة عبر الوكيل", type="primary", use_container_width=True):
         if user_task:
-            with st.spinner("جاري معالجة البرومبت وتحليل البيانات عبر نموذج Llama..."):
+            with st.spinner("جاري معالجة البرومبت وتحليل البيانات عبر نموذج Qwen المتقدم..."):
                 result = run_super_agent(user_task)
                 st.markdown("### 📊 تقرير ومخرجات وكيل تساوت:")
                 st.markdown(result)
@@ -170,8 +170,8 @@ elif menu == "🚀 توليد إعلان سريع":
     st.subheader("✨ إنتاج النص الإعلاني والتجاري مع الحفظ السحابي")
     col1, col2 = st.columns(2)
     with col1: title = st.text_input("عنوان المشروع أو العقار", "شقق عصرية للبيع بقلعة السراغنة")
-    with col2: price = st.text_input("الثمن أو التفاصيل التجارية", "من 40 إلى 64 مليون سنتيم")
-    details = st.text_area("تفاصيل إضافية", "الطابق الأول، متوفرة بنظام الدعم أو غير مشمولة بالدعم.")
+    with col2: price = st.text_input("الثمن أو التفاصيل التجارية", "من 40 إلى 46 مليون سنتيم")
+    details = st.text_area("تفاصيل إضافية", "مشمولة أو غير مشمولة بالدعم، المساحة من 70 إلى 120 متر، الطابق الأول.")
 
     if st.button("⚡ توليد الإعلان الميداني", type="primary", use_container_width=True):
         prompt = f"اكتب إعلان تسويقي احترافي ومنظم بالايقونات والكلمات المفتاحية والهاشتاقات المناسبة لبيع الشقق العصرية: {title}, {price}, {details}. أضف معلومات الاتصال والهاشتاقات الخاصة بوكالة تساوت."
