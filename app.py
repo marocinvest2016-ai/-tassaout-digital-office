@@ -59,62 +59,39 @@ MASTER_SYSTEM_PROMPT = """
 القاعدة الذهبية: حلل طلب المستخدم بدقة، وتقمص القبعة المناسبة فوراً.
 أجب دائماً باللغة العربية الفصحى بأسلوب رصين، بليغ، واحترافي خالٍ من السطحية.
 
-في ختام كل إجابة استراتيجية، قدمها وفق "ثلاثية القيمة":
+ في ختام كل إجابة استراتيجية، قدمها وفق "ثلاثية القيمة":
 1. **الجانب التقني/التنفيذي**: خطوات التطبيق العملي.
 2. **الجانب الاستثماري/الاقتصادي**: الجدوى والعائد المتوقع.
 3. **الجانب الاستراتيجي/الفلسفي**: الأثر بعيد المدى والمنطق الكامن.
 """
 
-def get_active_groq_model():
-    """البحث حصرياً عن نماذج الدردشة والتوليد الحقيقية وتجنب نماذج الحماية والفلترة"""
-    try:
-        models = groq_client.models.list()
-        for m in models.data:
-            model_id = m.id.lower()
-            # استبعاد موديلات الحماية والفلترة والـ Guard
-            if any(bad in model_id for bad in ["guard", "embed", "whisper", "tool"]):
-                continue
-            # تفضيل نماذج الدردشة المعروفة
-            if any(good in model_id for good in ["gemma", "llama", "versatile", "instant"]):
-                return m.id
-        
-        # إذا لم يجد بالكلمات المفتاحية، يأخذ أول نموذج لا يحتوي على guard
-        for m in models.data:
-            if "guard" not in m.id.lower():
-                return m.id
-    except Exception:
-        pass
-    
-    # القيمة الافتراضية الآمنة
-    return "gemma2-9b-it"
-
 def run_super_agent(user_task: str):
     messages = [{"role": "system", "content": MASTER_SYSTEM_PROMPT}, {"role": "user", "content": user_task}]
     
-    active_model = get_active_groq_model()
+    # قائمة آمنة ونشطة لأحدث موديلات Llama النصية (تتجنب تماماً النماذج الملغاة أو الصوتية)
+    models_to_try = [
+        "llama-3.3-70b-versatile",
+        "llama-3.1-70b-versatile",
+        "llama3-70b-8192",
+        "llama3-8b-8192"
+    ]
 
-    try:
-        response = groq_client.chat.completions.create(
-            model=active_model,
-            messages=messages,
-            temperature=0.6,
-            max_tokens=2000
-        )
-        st.success(f"✅ الوكيل خدام الآن بـ: {active_model}")
-        return response.choices[0].message.content
-    except Exception as e:
-        # خطة بديلة فورية إذا حدث أي خطأ في الـ tokens أو الموديل
+    last_error = ""
+    for model_name in models_to_try:
         try:
             response = groq_client.chat.completions.create(
-                model="gemma2-9b-it",
+                model=model_name,
                 messages=messages,
                 temperature=0.6,
-                max_tokens=1000
+                max_tokens=2000
             )
-            st.success("✅ الوكيل خدام الآن بالنموذج الاحتياطي: gemma2-9b-it")
+            st.success(f"✅ الوكيل خدام الآن بنجاح عبر نموذج: {model_name}")
             return response.choices[0].message.content
-        except Exception as inner_e:
-            return f"❌ خطأ في الاتصال بالموديل ({active_model}): {e}\nالخطأ الاحتياطي: {inner_e}"
+        except Exception as e:
+            last_error = str(e)
+            continue
+
+    return f"❌ تعذر الاتصال بنماذج النص. الخطأ الأخير: {last_error}"
 
 def add_watermark(image_bytes):
     img = Image.open(io.BytesIO(image_bytes)).convert("RGBA")
@@ -173,17 +150,17 @@ def create_zip_file(images_list):
             zip_file.writestr(f"tassaout_poster_{i+1}_{item['orig_name']}", item['bytes'])
     zip_buffer.seek(0); return zip_buffer
 
-# ========== الواجهة التفاعلية v8.3 ==========
+# ========== الواجهة التفاعلية v8.4 ==========
 st.title("⚙️ وكالة تساوت للإنتاج الرقمي")
-st.caption("النظام المستقل المدمج بالأتمتة والواتساب - v8.3 (تصفية ذكية للموديلات)")
+st.caption("النظام المستقل المدمج بالأتمتة والواتساب - v8.4 (تثبيت نماذج Llama النصية المضمونة)")
 menu = st.sidebar.radio("📌 القائمة الرئيسية", ["🧠 وكيل تساوت الرقمي", "🚀 توليد إعلان سريع", "📸 استوديو التصوير الميداني", "📊 الأرشيف السحابي"])
 
 if menu == "🧠 وكيل تساوت الرقمي":
-    st.subheader("🧠 وكيل تساوت للإنتاج الرقمي - v8.3")
+    st.subheader("🧠 وكيل تساوت للإنتاج الرقمي - v8.4")
     user_task = st.text_area("اطرح أي مهمة (عقار، مواد بناء، مقال فكري، تحليل، أو نص أدبي):", height=180, placeholder="مثال: حلل لي جدوى استثمار فيرمة سقوية بقلعة السراغنة...")
     if st.button("⚡ تنفيذ المهمة عبر الوكيل", type="primary", use_container_width=True):
         if user_task:
-            with st.spinner("وكيل تساوت يختار نموذج التوليد المناسب ويحلل وفق ثلاثية القيمة..."):
+            with st.spinner("وكيل تساوت يربط مع شبكة Llama النصية ويحلل وفق ثلاثية القيمة..."):
                 result = run_super_agent(user_task)
                 st.markdown("### 📊 تقرير ومخرجات وكيل تساوت:")
                 st.markdown(result)
@@ -198,7 +175,7 @@ elif menu == "🚀 توليد إعلان سريع":
     details = st.text_area("تفاصيل إضافية", "الطابق الأول، متوفرة بنظام الدعم أو غير مشمولة بالدعم.")
 
     if st.button("⚡ توليد الإعلان الميداني", type="primary", use_container_width=True):
-        prompt = f"اكتب إعلان تسويقي احترافي ومنظم بالايقونات والكلمات المفتاحية والهاشتاقات المناسبة لبيع الشقق العصرية: {title}, {price}, {details}. أضف معلومات الاتصال والهاشتاقات الخاصة بوكالة تساوت."
+        prompt = f"اكتب إعلان تسويقي احترافي ومنظم بالايقونات والكلمات المفتاحية والهاشتاقات المناسبة لبيع الشقق العصرية: {title}, {price}, {details}. أضف معلومات الاتصال والهاشتاغات الخاصة بوكالة تساوت."
         ad_text = run_super_agent(prompt)
         st.text_area("الإعلان الجاهز للنشر:", ad_text, height=250)
 
