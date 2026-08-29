@@ -65,31 +65,39 @@ MASTER_SYSTEM_PROMPT = """
 3. **الجانب الاستراتيجي/الفلسفي**: الأثر بعيد المدى والمنطق الكامن.
 """
 
+def get_active_groq_model():
+    """جلب أول موديل نصي متاح تلقائياً من حساب Groq الخاص بك لمنع خطأ 404 نهائياً"""
+    try:
+        models = groq_client.models.list()
+        for m in models.data:
+            model_id = m.id
+            # نفضل الموديلات السريعة أو موديلات الدردشة الشائعة
+            if any(k in model_id.lower() for k in ["gemma", "llama", "versatile", "instant"]):
+                return model_id
+        # إذا وجد أي موديل آخر
+        if models.data:
+            return models.data[0].id
+    except Exception:
+        pass
+    # كاحتياط أخطر
+    return "gemma2-9b-it"
+
 def run_super_agent(user_task: str):
     messages = [{"role": "system", "content": MASTER_SYSTEM_PROMPT}, {"role": "user", "content": user_task}]
+    
+    active_model = get_active_groq_model()
 
-    # النسخة v8.0: الاعتماد حصرياً على النماذج النشطة في منصة Groq حالياً
-    models_to_try = [
-        "gemma2-9b-it",             # 1. ممتاز للغة العربية وتحليل النصوص
-        "llama-3.3-70b-versatile",  # 2. النموذج الأقوى والأحدث من ميتا المتاح حالياً
-    ]
-
-    last_error = ""
-    for model in models_to_try:
-        try:
-            response = groq_client.chat.completions.create(
-                model=model,
-                messages=messages,
-                temperature=0.6,
-                max_tokens=2000
-            )
-            st.success(f"✅ الوكيل خدام الآن بـ: {model}")
-            return response.choices[0].message.content
-        except Exception as e:
-            last_error = str(e)
-            continue
-
-    return f"❌ فشل في كل الموديلات. الخطأ الأخير: {last_error}. \n\nالحل: تأكد من تفعيل أحد الموديلات من https://console.groq.com/models"
+    try:
+        response = groq_client.chat.completions.create(
+            model=active_model,
+            messages=messages,
+            temperature=0.6,
+            max_tokens=2000
+        )
+        st.success(f"✅ الوكيل خدام الآن بـ (النموذج المكتشف تلقائياً): {active_model}")
+        return response.choices[0].message.content
+    except Exception as e:
+        return f"❌ خطأ في الاتصال بالموديل ({active_model}): {e}\n\nيرجى التأكد من صلاحيات المفتاح في https://console.groq.com/keys"
 
 def add_watermark(image_bytes):
     img = Image.open(io.BytesIO(image_bytes)).convert("RGBA")
@@ -148,17 +156,17 @@ def create_zip_file(images_list):
             zip_file.writestr(f"tassaout_poster_{i+1}_{item['orig_name']}", item['bytes'])
     zip_buffer.seek(0); return zip_buffer
 
-# ========== الواجهة التفاعلية v8.0 ==========
+# ========== الواجهة التفاعلية v8.2 ==========
 st.title("⚙️ وكالة تساوت للإنتاج الرقمي")
-st.caption("النظام المستقل المدمج بالأتمتة والواتساب - v8.0")
+st.caption("النظام المستقل المدمج بالأتمتة والواتساب - v8.2 (اكتشاف تلقائي للموديلات)")
 menu = st.sidebar.radio("📌 القائمة الرئيسية", ["🧠 وكيل تساوت الرقمي", "🚀 توليد إعلان سريع", "📸 استوديو التصوير الميداني", "📊 الأرشيف السحابي"])
 
 if menu == "🧠 وكيل تساوت الرقمي":
-    st.subheader("🧠 وكيل تساوت للإنتاج الرقمي - v8.0")
+    st.subheader("🧠 وكيل تساوت للإنتاج الرقمي - v8.2")
     user_task = st.text_area("اطرح أي مهمة (عقار، مواد بناء، مقال فكري، تحليل، أو نص أدبي):", height=180, placeholder="مثال: حلل لي جدوى استثمار فيرمة سقوية بقلعة السراغنة...")
     if st.button("⚡ تنفيذ المهمة عبر الوكيل", type="primary", use_container_width=True):
         if user_task:
-            with st.spinner("وكيل تساوت يحلل وينتج وفق ثلاثية القيمة..."):
+            with st.spinner("وكيل تساوت يكتشف الموديل المتاح ويحلل وفق ثلاثية القيمة..."):
                 result = run_super_agent(user_task)
                 st.markdown("### 📊 تقرير ومخرجات وكيل تساوت:")
                 st.markdown(result)
