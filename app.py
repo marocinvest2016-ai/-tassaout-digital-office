@@ -37,7 +37,6 @@ def load_ar_font():
         font_small = ImageFont.truetype("Cairo-Bold.ttf", 28)
         return font_big, font_small
     except Exception:
-        # احتياط في حال انقطاع الشبكة أو فشل التحميل
         return ImageFont.load_default(), ImageFont.load_default()
 
 supabase = init_supabase()
@@ -70,7 +69,7 @@ def run_super_agent(user_task: str):
     messages = [{"role": "system", "content": MASTER_SYSTEM_PROMPT}, {"role": "user", "content": user_task}]
     try:
         response = groq_client.chat.completions.create(
-            model="llama-3.1-8b-instant",
+            model="llama-3.3-70b-versatile",
             messages=messages, temperature=0.6, max_tokens=1800
         )
         return response.choices[0].message.content
@@ -134,13 +133,13 @@ def create_zip_file(images_list):
             zip_file.writestr(f"tassaout_poster_{i+1}_{item['orig_name']}", item['bytes'])
     zip_buffer.seek(0); return zip_buffer
 
-# ========== الواجهة التفاعلية v7.5 ==========
+# ========== الواجهة التفاعلية v7.5.2 ==========
 st.title("⚙️ وكالة تساوت للإنتاج الرقمي")
-st.caption("النظام المستقل المدمج بالأتمتة والواتساب - v7.5")
+st.caption("النظام المستقل المدمج بالأتمتة والواتساب - v7.5.2")
 menu = st.sidebar.radio("📌 القائمة الرئيسية", ["🧠 وكيل تساوت الرقمي", "🚀 توليد إعلان سريع", "📸 استوديو التصوير الميداني", "📊 الأرشيف السحابي"])
 
 if menu == "🧠 وكيل تساوت الرقمي":
-    st.subheader("🧠 وكيل تساوت للإنتاج الرقمي - v7.5")
+    st.subheader("🧠 وكيل تساوت للإنتاج الرقمي - v7.5.2")
     user_task = st.text_area("اطرح أي مهمة (عقار، مواد بناء، مقال فكري، تحليل، أو نص أدبي):", height=180, placeholder="مثال: حلل لي جدوى استثمار فيرمة سقوية بقلعة السراغنة...")
     if st.button("⚡ تنفيذ المهمة عبر الوكيل", type="primary", use_container_width=True):
         if user_task:
@@ -165,9 +164,13 @@ elif menu == "🚀 توليد إعلان سريع":
 
         try:
             supabase.table("instant_ads").insert({
-                "title": title,
+                "sector": "عقارات وديكور",
+                "message": f"إعلان: {title}",
                 "content": ad_text,
-                "phone": BRAND_PHONE,
+                "client_phone": BRAND_PHONE,
+                "status": "completed",
+                "source": "Tassaout-DigitalProduction",
+                "image_count": 0,
                 "created_at": datetime.now().isoformat()
             }).execute()
             st.success("✅ تم حفظ الإعلان وتحديث أرشيف Supabase سحابياً")
@@ -212,7 +215,6 @@ elif menu == "📸 استوديو التصوير الميداني":
         else: 
             st.warning("الرجاء التقاط صورة أو رفع صور للمعالجة أولاً.")
 
-    # لوحة التحكم وإرسال الواتساب الفوري للصور المحفوظة سحابياً
     if "results_gallery" in st.session_state and st.session_state["results_gallery"]:
         st.markdown("---")
         st.subheader("📤 الإرسال الفوري عبر WhatsApp API")
