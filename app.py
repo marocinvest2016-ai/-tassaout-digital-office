@@ -12,7 +12,7 @@ from datetime import datetime
 
 st.set_page_config(page_title="وكالة تساوت للإنتاج الرقمي", page_icon="⚙️", layout="wide")
 
-# ========== الأسرار ==========
+# ========== الأسرار (Secrets) ==========
 SUPABASE_URL = st.secrets.get("SUPABASE_URL", "")
 SUPABASE_KEY = st.secrets.get("SUPABASE_KEY", "")
 GROQ_API_KEY = st.secrets.get("GROQ_API_KEY", "")
@@ -30,12 +30,15 @@ def init_groq():
 
 @st.cache_resource
 def load_ar_font():
-    # تحميل خط القاهرة لدعم العربية على السحاب
-    url = "https://github.com/google/fonts/raw/main/ofl/cairo/Cairo-Bold.ttf"
-    gdown.download(url, "Cairo-Bold.ttf", quiet=True)
-    font_big = ImageFont.truetype("Cairo-Bold.ttf", 40)
-    font_small = ImageFont.truetype("Cairo-Bold.ttf", 28)
-    return font_big, font_small
+    try:
+        url = "https://github.com/google/fonts/raw/main/ofl/cairo/Cairo-Bold.ttf"
+        gdown.download(url, "Cairo-Bold.ttf", quiet=True)
+        font_big = ImageFont.truetype("Cairo-Bold.ttf", 40)
+        font_small = ImageFont.truetype("Cairo-Bold.ttf", 28)
+        return font_big, font_small
+    except Exception:
+        # احتياط في حال انقطاع الشبكة أو فشل التحميل
+        return ImageFont.load_default(), ImageFont.load_default()
 
 supabase = init_supabase()
 groq_client = init_groq()
@@ -44,7 +47,6 @@ font_big, font_small = load_ar_font()
 BRAND_NAME = "وكالة تساوت للإنتاج الرقمي"
 BRAND_PHONE = "+212691897126"
 
-# ========== البرومبت الأم v7.3 مع ثلاثية القيمة ==========
 MASTER_SYSTEM_PROMPT = """
 أنت "وكيل تساوت للإنتاج الرقمي" (Tassaout Digital Production Agent).
 أنت ذكاء اصطناعي استراتيجي، متعدد التخصصات، وعميق المعرفة، تعمل كشريك تنفيذي وفكري لعامر.
@@ -86,6 +88,45 @@ def add_watermark(image_bytes):
     buf = io.BytesIO(); Image.alpha_composite(img, txt).convert("RGB").save(buf, format="JPEG", quality=95)
     return buf.getvalue()
 
+def upload_image_to_supabase_storage(image_bytes, filename):
+    try:
+        path = f"tassaout_media/{int(time.time())}_{filename}"
+        supabase.storage.from_("property-images").upload(
+            path=path, file=image_bytes, file_options={"content-type": "image/jpeg", "upsert": True}
+        )
+        return supabase.storage.from_("property-images").get_public_url(path)
+    except Exception as e:
+        st.error(f"خطأ رفع الصورة لسحاب Supabase: {e}")
+        return None
+
+def send_whatsapp_media(image_url: str, caption: str, recipient_number: str):
+    if not (WHATSAPP_PHONE_NUMBER_ID and WHATSAPP_ACCESS_TOKEN):
+        return False, "بيانات ربط واتساب ناقصة في الأسرار (Secrets)."
+    
+    url = f"https://graph.facebook.com/{WHATSAPP_API_VERSION}/{WHATSAPP_PHONE_NUMBER_ID}/messages"
+    payload = {
+        "messaging_product": "whatsapp",
+        "to": recipient_number,
+        "type": "image",
+        "image": {
+            "link": image_url,
+            "caption": caption
+        }
+    }
+    headers = {
+        "Authorization": f"Bearer {WHATSAPP_ACCESS_TOKEN}",
+        "Content-Type": "application/json"
+    }
+    
+    try:
+        response = requests.post(url, headers=headers, json=payload)
+        if response.status_code == 200:
+            return True, "تم الإرسال بنجاح عبر الواتساب!"
+        else:
+            return False, f"خطأ من واجهة الواتساب: {response.text}"
+    except Exception as e:
+        return False, f"خطأ شبكي أثناء الإرسال: {e}"
+
 def create_zip_file(images_list):
     zip_buffer = io.BytesIO()
     with zipfile.ZipFile(zip_buffer, "w", zipfile.ZIP_DEFLATED) as zip_file:
@@ -93,13 +134,13 @@ def create_zip_file(images_list):
             zip_file.writestr(f"tassaout_poster_{i+1}_{item['orig_name']}", item['bytes'])
     zip_buffer.seek(0); return zip_buffer
 
-# ========== الواجهة ==========
+# ========== الواجهة التفاعلية v7.5 ==========
 st.title("⚙️ وكالة تساوت للإنتاج الرقمي")
-st.caption("النظام المنطقي السحابي - v7.3")
-menu = st.sidebar.radio("📌 القائمة الرئيسية", ["🧠 وكيل تساوت الرقمي", "🚀 توليد إعلان سريع", "📸 استوديو الصور", "📊 الأرشيف"])
+st.caption("النظام المستقل المدمج بالأتمتة والواتساب - v7.5")
+menu = st.sidebar.radio("📌 القائمة الرئيسية", ["🧠 وكيل تساوت الرقمي", "🚀 توليد إعلان سريع", "📸 استوديو التصوير الميداني", "📊 الأرشيف السحابي"])
 
 if menu == "🧠 وكيل تساوت الرقمي":
-    st.subheader("🧠 وكيل تساوت للإنتاج الرقمي - v7.3")
+    st.subheader("🧠 وكيل تساوت للإنتاج الرقمي - v7.5")
     user_task = st.text_area("اطرح أي مهمة (عقار، مواد بناء، مقال فكري، تحليل، أو نص أدبي):", height=180, placeholder="مثال: حلل لي جدوى استثمار فيرمة سقوية بقلعة السراغنة...")
     if st.button("⚡ تنفيذ المهمة عبر الوكيل", type="primary", use_container_width=True):
         if user_task:
@@ -111,7 +152,7 @@ if menu == "🧠 وكيل تساوت الرقمي":
         else: st.warning("الرجاء كتابة المهمة أو السؤال أولاً.")
 
 elif menu == "🚀 توليد إعلان سريع":
-    st.subheader("✨ إنتاج النص الإعلاني والتجاري")
+    st.subheader("✨ إنتاج النص الإعلاني والتجاري مع الحفظ السحابي")
     col1, col2 = st.columns(2)
     with col1: title = st.text_input("عنوان المشروع أو العقار", "أرض فلاحية سقوية بقلعة السراغنة")
     with col2: price = st.text_input("الثمن أو التفاصيل التجارية", "عرض خاص للمستثمرين")
@@ -122,7 +163,6 @@ elif menu == "🚀 توليد إعلان سريع":
         ad_text = run_super_agent(prompt)
         st.text_area("الإعلان الجاهز للنشر:", ad_text, height=250)
 
-        # الحفظ التلقائي في Supabase
         try:
             supabase.table("instant_ads").insert({
                 "title": title,
@@ -130,31 +170,81 @@ elif menu == "🚀 توليد إعلان سريع":
                 "phone": BRAND_PHONE,
                 "created_at": datetime.now().isoformat()
             }).execute()
-            st.success("✅ تم حفظ الإعلان في أرشيف تساوت بنجاح")
+            st.success("✅ تم حفظ الإعلان وتحديث أرشيف Supabase سحابياً")
         except Exception as e:
-            st.error(f"خطأ في الحفظ: {e}")
+            st.error(f"خطأ في الحفظ السحابي: {e}")
 
-elif menu == "📸 استوديو الصور":
-    st.subheader("🖼️ معالجة الصور البصرية (العقارية والهندسية)")
-    uploaded_files = st.file_uploader("ارفع صور المشاريع أو التصاميم", type=["jpg", "jpeg", "png"], accept_multiple_files=True)
-    if st.button("🚀 تطبيق العلامة والمعالجة", type="primary"):
+elif menu == "📸 استوديو التصوير الميداني":
+    st.subheader("📸 التقاط، معالجة، وإرسال مباشر عبر الواتساب")
+    
+    tab_cam, tab_up = st.tabs(["📷 التقاط بالكاميرا المباشرة", "📁 رفع صور متعددة"])
+    
+    captured_image = None
+    uploaded_files = None
+    
+    with tab_cam:
+        camera_file = st.camera_input("التقط صورة ميدانية للعقار أو الورش")
+        if camera_file:
+            captured_image = camera_file.getvalue()
+            
+    with tab_up:
+        uploaded_files = st.file_uploader("أو رفع مجموعة صور", type=["jpg", "jpeg", "png"], accept_multiple_files=True)
+
+    if st.button("🚀 تطبيق العلامة وحفظها في Supabase", type="primary"):
+        processed_items = []
+        
+        if captured_image:
+            processed_bytes = add_watermark(captured_image)
+            pub_url = upload_image_to_supabase_storage(processed_bytes, "camera_capture.jpg")
+            processed_items.append({"orig_name": "camera_capture.jpg", "bytes": processed_bytes, "url": pub_url})
+            
         if uploaded_files:
-            with st.spinner("جاري معالجة الصور..."):
-                st.session_state["results_gallery"] = [{"orig_name": f.name, "bytes": add_watermark(f.getvalue())} for f in uploaded_files]
-            st.success(f"تمت معالجة {len(uploaded_files)} صورة بنجاح")
-            st.download_button("📦 تحميل الكل ZIP", create_zip_file(st.session_state["results_gallery"]), "tassaout_posters.zip")
-            cols = st.columns(3)
-            for i, item in enumerate(st.session_state["results_gallery"]):
-                with cols[i%3]: st.image(item["bytes"], caption=f"صورة معالجة {i+1}")
-        else: st.warning("الرجاء رفع صورة واحدة على الأقل")
+            for f in uploaded_files:
+                f_bytes = f.getvalue()
+                processed_bytes = add_watermark(f_bytes)
+                pub_url = upload_image_to_supabase_storage(processed_bytes, f.name)
+                processed_items.append({"orig_name": f.name, "bytes": processed_bytes, "url": pub_url})
+                
+        if processed_items:
+            st.success(f"تمت معالجة وحفظ {len(processed_items)} صورة سحابياً بنجاح!")
+            st.session_state["results_gallery"] = processed_items
+            st.download_button("📦 تحميل الكل ZIP", create_zip_file(processed_items), "tassaout_posters.zip")
+        else: 
+            st.warning("الرجاء التقاط صورة أو رفع صور للمعالجة أولاً.")
 
-elif menu == "📊 الأرشيف":
-    st.subheader("📊 أرشيف العمليات والسجلات")
+    # لوحة التحكم وإرسال الواتساب الفوري للصور المحفوظة سحابياً
+    if "results_gallery" in st.session_state and st.session_state["results_gallery"]:
+        st.markdown("---")
+        st.subheader("📤 الإرسال الفوري عبر WhatsApp API")
+        
+        recipient_phone = st.text_input("رقم الهاتف المستلم (بالصيغة الدولية مع الرمز، مثال: 2126XXXXXXXX)", value="212")
+        wa_caption = st.text_area("نص التوضيح (Caption) المرافق للصورة على الواتساب", value="🏡 عرض حصري من وكالة تساوت للإنتاج الرقمي:\nللتواصل والاستعلام: +212691897126")
+
+        for idx, item in enumerate(st.session_state["results_gallery"]):
+            col_img, col_btn = st.columns([2, 1])
+            with col_img:
+                st.image(item["bytes"], caption=f"صورة رقم {idx+1}")
+                if item["url"]:
+                    st.code(item["url"], language="text")
+            with col_btn:
+                if st.button(f"📲 إرسال الصورة {idx+1} للواتساب", key=f"wa_btn_{idx}DATA"):
+                    if item["url"]:
+                        with st.spinner("جاري الإرسال عبر خوادم واتساب..."):
+                            success, msg = send_whatsapp_media(item["url"], wa_caption, recipient_phone)
+                            if success:
+                                st.success(msg)
+                            else:
+                                st.error(msg)
+                    else:
+                        st.error("رابط الصورة السحابي غير متوفر.")
+
+elif menu == "📊 الأرشيف السحابي":
+    st.subheader("📊 أرشيف السجلات والبيانات من Supabase")
     try:
         ads_data = supabase.table("instant_ads").select("*").order("created_at", desc=True).limit(100).execute()
         if ads_data.data:
             df = pd.DataFrame(ads_data.data)
             st.dataframe(df, use_container_width=True)
-            st.metric("إجمالي الإعلانات المسجلة", len(df))
+            st.metric("إجمالي السجلات السحابية", len(df))
         else: st.info("لا توجد سجلات مسجلة حالياً في Supabase")
     except Exception as e: st.error(f"خطأ في جلب الأرشيف: {e}")
