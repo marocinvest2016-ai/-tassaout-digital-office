@@ -67,11 +67,7 @@ MASTER_SYSTEM_PROMPT = """
 
 def run_super_agent(user_task: str):
     messages = [{"role": "system", "content": MASTER_SYSTEM_PROMPT}, {"role": "user", "content": user_task}]
-    
-    models_to_try = [
-        "qwen/qwen3.8-27b",
-        "openai/gpt-oss-120b"
-    ]
+    models_to_try = ["qwen/qwen3.8-27b", "openai/gpt-oss-120b"]
 
     last_error = ""
     for model_name in models_to_try:
@@ -82,12 +78,10 @@ def run_super_agent(user_task: str):
                 temperature=0.6,
                 max_tokens=2000
             )
-            st.success(f"✅ الوكيل خدام الآن بنجاح عبر: {model_name}")
             return response.choices[0].message.content
         except Exception as e:
             last_error = str(e)
             continue
-
     return f"❌ تعذر الاتصال بنماذج النص. الخطأ الأخير: {last_error}"
 
 def add_watermark(image_bytes):
@@ -121,10 +115,7 @@ def send_whatsapp_media(image_url: str, caption: str, recipient_number: str):
         "messaging_product": "whatsapp",
         "to": recipient_number,
         "type": "image",
-        "image": {
-            "link": image_url,
-            "caption": caption
-        }
+        "image": {"link": image_url, "caption": caption}
     }
     headers = {
         "Authorization": f"Bearer {WHATSAPP_ACCESS_TOKEN}",
@@ -147,33 +138,34 @@ def create_zip_file(images_list):
             zip_file.writestr(f"tassaout_poster_{i+1}_{item['orig_name']}", item['bytes'])
     zip_buffer.seek(0); return zip_buffer
 
-# ========== الواجهة التفاعلية الرسمية v8.7.6 ==========
+# ========== الواجهة التفاعلية الرسمية v9.5.0 ==========
 st.title("⚙️ وكالة تساوت للإنتاج الرقمي")
-st.caption("النظام المستقل المدمج بالأتمتة والواتساب - v8.7.6 (Qwen Active Engine)")
-menu = st.sidebar.radio("📌 القائمة الرئيسية", ["🧠 وكيل تساوت الرقمي", "🚀 توليد إعلان سريع", "📸 استوديو التصوير والمعاينة", "📊 الأرشيف السحابي"])
+st.caption("النظام الشامل المدمج (الوكيل الذكي + الاستوديو الميداني من الهاتف + التحميل السريع + واتساب) - v9.5.0")
+
+menu = st.sidebar.radio("📌 القائمة الرئيسية", ["🧠 وكيل تساوت الرقمي", "🚀 توليد إعلان سريع", "📸 استوديو التصوير والمعاينة (هاتف)", "📊 الأرشيف السحابي"])
 
 if menu == "🧠 وكيل تساوت الرقمي":
-    st.subheader("🧠 وكيل تساوت للإنتاج الرقمي - v8.7.6")
-    user_task = st.text_area("اطرح أي مهمة (عقار، مواد بناء، مقال فكري، تحليل، أو نص أدبي):", height=180, placeholder="مثال: شقق ممتازة عصرية للبيع بقلعة السراغنة مشمولة او غير مشمولة بالدعم...")
+    st.subheader("🧠 وكيل تساوت للإنتاج الرقمي (تفاعل كامل مع التعليمات)")
+    user_task = st.text_area("اطرح أي مهمة استراتيجية، عقارية، فكرية، أو تسويقية:", height=180, placeholder="مثال: تحليل سوق العقار بقلعة السراغنة، أو كتابة مقال...")
     if st.button("⚡ تنفيذ المهمة عبر الوكيل", type="primary", use_container_width=True):
         if user_task:
-            with st.spinner("جاري معالجة البرومبت وتحليل البيانات عبر نموذج Qwen المتقدم..."):
+            with st.spinner("جاري معالجة التعليمات عبر نموذج الذكاء الاصطناعي..."):
                 result = run_super_agent(user_task)
                 st.markdown("### 📊 تقرير ومخرجات وكيل تساوت:")
                 st.markdown(result)
                 st.download_button("📄 تحميل التقرير (TXT)", result, f"tassaout_report_{int(time.time())}.txt")
         else: 
-            st.warning("الرجاء كتابة المهمة أو البرومبت أولاً.")
+            st.warning("الرجاء كتابة التعليمات أو المهمة أولاً.")
 
 elif menu == "🚀 توليد إعلان سريع":
     st.subheader("✨ إنتاج النص الإعلاني والتجاري مع الحفظ السحابي")
     col1, col2 = st.columns(2)
     with col1: title = st.text_input("عنوان المشروع أو العقار", "شقق عصرية للبيع بقلعة السراغنة")
     with col2: price = st.text_input("الثمن أو التفاصيل التجارية", "من 40 إلى 46 مليون سنتيم")
-    details = st.text_area("تفاصيل إضافية", "مشمولة أو غير مشمولة بالدعم، المساحة من 70 إلى 120 متر، الطابق الأول.")
+    details = st.text_area("تفاصيل إضافية", "مشمولة أو غير مشمولة بالدعم، المساحة من 70 إلى 120 متر.")
 
     if st.button("⚡ توليد الإعلان الميداني", type="primary", use_container_width=True):
-        prompt = f"اكتب إعلان تسويقي احترافي ومنظم بالايقونات والكلمات المفتاحية والهاشتاقات المناسبة لبيع الشقق العصرية: {title}, {price}, {details}. أضف معلومات الاتصال والهاشتاقات الخاصة بوكالة تساوت."
+        prompt = f"اكتب إعلان تسويقي احترافي ومنظم لبيع الشقق: {title}, {price}, {details}."
         with st.spinner("جاري صياغة الإعلان..."):
             ad_text = run_super_agent(prompt)
         st.text_area("الإعلان الجاهز للنشر:", ad_text, height=250)
@@ -193,17 +185,33 @@ elif menu == "🚀 توليد إعلان سريع":
         except Exception as e:
             st.error(f"خطأ في الحفظ السحابي: {e}")
 
-elif menu == "📸 استوديو التصوير والمعاينة":
-    st.subheader("📸 استوديو تساوت الميداني: رفع، معاينة فورية، وحفظ")
+elif menu == "📸 استوديو التصوير والمعاينة (هاتف)":
+    st.subheader("📸 استوديو تساوت الميداني: التقاط مباشر من الهاتف، معالجة، وتحميل")
     
-    tab_up, tab_cam = st.tabs(["📁 رفع صور متعددة للمعاينة", "📷 التقاط بالكاميرا المباشرة"])
+    tab_cam, tab_up = st.tabs(["📷 التقاط مباشر بالكاميرا (من شاشة الهاتف)", "📁 رفع صور متعددة"])
     
     processed_items = []
     
+    with tab_cam:
+        st.markdown("استخدم كاميرا هاتفك الذكي مباشرة لالتقاط الصور الميدانية:")
+        camera_file = st.camera_input("التقط صورة فورية الآن")
+        if camera_file:
+            cam_bytes = camera_file.getvalue()
+            processed_cam_bytes = add_watermark(cam_bytes)
+            pub_cam_url = upload_image_to_supabase_storage(processed_cam_bytes, "mobile_capture.jpg")
+            processed_items.append({"orig_name": "mobile_capture.jpg", "bytes": processed_cam_bytes, "url": pub_cam_url})
+            
+            col_c1, col_c2 = st.columns(2)
+            with col_c1:
+                st.image(cam_bytes, caption="الصورة الأصلية الملتقطة", use_container_width=True)
+            with col_c2:
+                st.image(processed_cam_bytes, caption="الصورة المعالجة بالعارضة والعلامة المائية", use_container_width=True)
+            if pub_cam_url:
+                st.code(pub_cam_url, language="text")
+
     with tab_up:
-        uploaded_files = st.file_uploader("اختر الصور المراد معالجتها وتطبيق العلامة المائية عليها", type=["jpg", "jpeg", "png"], accept_multiple_files=True)
+        uploaded_files = st.file_uploader("اختر الصور من ألبوم الهاتف", type=["jpg", "jpeg", "png"], accept_multiple_files=True)
         if uploaded_files:
-            st.markdown("### 🔍 معاينة الصور المرفوعة:")
             for f in uploaded_files:
                 f_bytes = f.getvalue()
                 processed_bytes = add_watermark(f_bytes)
@@ -212,29 +220,22 @@ elif menu == "📸 استوديو التصوير والمعاينة":
                 
                 col_prev1, col_prev2 = st.columns(2)
                 with col_prev1:
-                    st.image(f_bytes, caption=f"الصورة الأصلية: {f.name}", use_container_width=True)
+                    st.image(f_bytes, caption=f"الأصلية: {f.name}", use_container_width=True)
                 with col_prev2:
-                    st.image(processed_bytes, caption=f"الصورة بعد تطبيق العلامة والمياه: {f.name}", use_container_width=True)
+                    st.image(processed_bytes, caption=f"بالعلامة المائية: {f.name}", use_container_width=True)
                 st.markdown("---")
 
-    with tab_cam:
-        camera_file = st.camera_input("التقط صورة ميدانية فورية")
-        if camera_file:
-            cam_bytes = camera_file.getvalue()
-            processed_cam_bytes = add_watermark(cam_bytes)
-            pub_cam_url = upload_image_to_supabase_storage(processed_cam_bytes, "camera_capture.jpg")
-            processed_items.append({"orig_name": "camera_capture.jpg", "bytes": processed_cam_bytes, "url": pub_cam_url})
-            
-            col_c1, col_c2 = st.columns(2)
-            with col_c1:
-                st.image(cam_bytes, caption="الصورة المتقطة مباشرة", use_container_width=True)
-            with col_c2:
-                st.image(processed_cam_bytes, caption="الصورة مع العلامة المائية لتساوت", use_container_width=True)
-
     if processed_items:
-        st.success(f"تمت معالجة ومعاينة {len(processed_items)} صورة بنجاح ورفعها سحابياً!")
+        st.success(f"تمت معالجة {len(processed_items)} صورة بنجاح وظهرت في الواجهة!")
         st.session_state["results_gallery"] = processed_items
-        st.download_button("📦 تحميل كافة الصور المعالجة ZIP", create_zip_file(processed_items), "tassaout_processed_images.zip", use_container_width=True)
+        # زر تحميل الـ ZIP الشامل
+        st.download_button(
+            "📦 تحميل كافة الصور المعالجة ملف ZIP", 
+            create_zip_file(processed_items), 
+            "tassaout_processed_images.zip", 
+            type="primary", 
+            use_container_width=True
+        )
 
     if "results_gallery" in st.session_state and st.session_state["results_gallery"]:
         st.markdown("---")
@@ -247,10 +248,8 @@ elif menu == "📸 استوديو التصوير والمعاينة":
             col_img, col_btn = st.columns([2, 1])
             with col_img:
                 st.image(item["bytes"], caption=f"صورة المعاينة رقم {idx+1}", use_container_width=True)
-                if item["url"]:
-                    st.code(item["url"], language="text")
             with col_btn:
-                if st.button(f"📲 إرسال الصورة {idx+1} للواتساب", key=f"wa_btn_{idx}NEW"):
+                if st.button(f"📲 إرسال الصورة {idx+1} للواتساب", key=f"wa_btn_{idx}"):
                     if item["url"]:
                         with st.spinner("جاري الإرسال عبر خوادم واتساب..."):
                             success, msg = send_whatsapp_media(item["url"], wa_caption, recipient_phone)
