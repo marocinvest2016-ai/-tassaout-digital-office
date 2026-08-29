@@ -67,23 +67,27 @@ MASTER_SYSTEM_PROMPT = """
 
 def run_super_agent(user_task: str):
     messages = [{"role": "system", "content": MASTER_SYSTEM_PROMPT}, {"role": "user", "content": user_task}]
-    try:
-        # المحاولة الأولى عبر الموديل الرئيسي المعتمد
-        response = groq_client.chat.completions.create(
-            model="llama-3.3-70b-versatile",
-            messages=messages, temperature=0.6, max_tokens=2000
-        )
-        return response.choices[0].message.content
-    except Exception as e:
-        # Fallback تلقائي في حال عدم توفر الموديل الأول
+    
+    models_to_try = [
+        "llama-3.3-70b-versatile", # 1. الأولوية للجودة
+        "gemma2-9b-it",            # 2. الاحتياط 1 - ممتاز للعربية
+        "llama3-70b-8192"          # 3. الاحتياط 2 - الاسم القديم
+    ]
+
+    for model in models_to_try:
         try:
             response = groq_client.chat.completions.create(
-                model="llama-3.1-8b-instant",
-                messages=messages, temperature=0.6, max_tokens=2000
+                model=model,
+                messages=messages,
+                temperature=0.6,
+                max_tokens=2000
             )
+            st.info(f"✅ الوكيل خدام بـ الموديل: {model}")
             return response.choices[0].message.content
-        except Exception as err:
-            return f"حدث خطأ في وكيل تساوت: {e} | Fallback Error: {err}"
+        except Exception:
+            continue # الانتقال للموديل الموالي تلقائياً
+
+    return "حدث خطأ: لا يوجد أي موديل متاح في حساب Groq. يرجى تفعيل أحد الموديلات من https://console.groq.com/models"
 
 def add_watermark(image_bytes):
     img = Image.open(io.BytesIO(image_bytes)).convert("RGBA")
@@ -142,13 +146,13 @@ def create_zip_file(images_list):
             zip_file.writestr(f"tassaout_poster_{i+1}_{item['orig_name']}", item['bytes'])
     zip_buffer.seek(0); return zip_buffer
 
-# ========== الواجهة التفاعلية v7.5.4 ==========
+# ========== الواجهة التفاعلية v7.5.5 ==========
 st.title("⚙️ وكالة تساوت للإنتاج الرقمي")
-st.caption("النظام المستقل المدمج بالأتمتة والواتساب - v7.5.4")
+st.caption("النظام المستقل المدمج بالأتمتة والواتساب - v7.5.5")
 menu = st.sidebar.radio("📌 القائمة الرئيسية", ["🧠 وكيل تساوت الرقمي", "🚀 توليد إعلان سريع", "📸 استوديو التصوير الميداني", "📊 الأرشيف السحابي"])
 
 if menu == "🧠 وكيل تساوت الرقمي":
-    st.subheader("🧠 وكيل تساوت للإنتاج الرقمي - v7.5.4")
+    st.subheader("🧠 وكيل تساوت للإنتاج الرقمي - v7.5.5")
     user_task = st.text_area("اطرح أي مهمة (عقار، مواد بناء، مقال فكري، تحليل، أو نص أدبي):", height=180, placeholder="مثال: حلل لي جدوى استثمار فيرمة سقوية بقلعة السراغنة...")
     if st.button("⚡ تنفيذ المهمة عبر الوكيل", type="primary", use_container_width=True):
         if user_task:
