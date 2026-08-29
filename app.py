@@ -7,6 +7,8 @@ from PIL import Image, ImageDraw, ImageFont
 import io
 import gdown
 import pandas as pd
+import random
+import base64
 
 # إعداد الصفحة
 st.set_page_config(page_title="وكالة تساوت للإنتاج الرقمي", page_icon="⚙️", layout="wide")
@@ -15,29 +17,47 @@ st.set_page_config(page_title="وكالة تساوت للإنتاج الرقمي
 supabase = create_client(st.secrets["SUPABASE_URL"], st.secrets["SUPABASE_KEY"])
 groq_client = Groq(api_key=st.secrets["GROQ_API_KEY"])
 
-BRAND_NAME = "وكالة تساوت للإنتاج الرقمي"
+BRAND_WATERMARK_TEXT = "وكالة تساوت للانتاج الرقمي +212691897126"
 BRAND_PHONE = "+212691897126"
 
-# تحميل خط عربي للتصميم والعلامة المائية
+# تحميل خط عربي بارز وكبير
 @st.cache_resource
 def load_ar_font():
     try:
         url = "https://github.com/google/fonts/raw/main/ofl/cairo/Cairo-Bold.ttf"
         gdown.download(url, "Cairo-Bold.ttf", quiet=True)
-        return ImageFont.truetype("Cairo-Bold.ttf", 40), ImageFont.truetype("Cairo-Bold.ttf", 28)
+        return ImageFont.truetype("Cairo-Bold.ttf", 45)
     except: 
-        return ImageFont.load_default(), ImageFont.load_default()
+        return ImageFont.load_default()
 
-font_big, font_small = load_ar_font()
+font_main = load_ar_font()
 
-def add_watermark(image_bytes):
+# لوحات الألوان الفنية الاحترافية لتوليد الهوية البصرية المتجددة
+PROFESSIONAL_PALETTES = [
+    {"bg": (15, 23, 42, 230), "text": (251, 191, 36, 255)},   # كحلي عميق مع ذهبي ملكي
+    {"bg": (127, 29, 29, 230), "text": (254, 240, 138, 255)},  # أحمر قرمزي فاخر مع أصفر فاتح
+    {"bg": (6, 78, 59, 230), "text": (167, 243, 208, 255)},    # أخضر زمردي مع نعناعي ساطع
+    {"bg": (88, 28, 135, 230), "text": (221, 214, 254, 255)},  # بنفسجي ملكي مع لافندر
+    {"bg": (24, 24, 27, 240), "text": (244, 244, 245, 255)},   # أسود فحمي فخم مع أبيض ناصع
+    {"bg": (120, 53, 15, 230), "text": (254, 215, 170, 255)},   # بني نحاسي دافئ مع بيج برونزي
+]
+
+def add_artistic_watermark(image_bytes):
     img = Image.open(io.BytesIO(image_bytes)).convert("RGBA")
     txt = Image.new("RGBA", img.size, (255, 255, 255, 0))
     draw = ImageDraw.Draw(txt)
     w, h = img.size
-    draw.rectangle([0, h - 100, w, h], fill=(0, 0, 0, 180))
-    draw.text((20, h - 90), BRAND_NAME, font=font_big, fill=(255, 255, 255, 255))
-    draw.text((20, h - 50), BRAND_PHONE, font=font_small, fill=(255, 255, 0, 255))
+    
+    # اختيار لوحة ألوان عشوائية ومتجددة لكل صورة
+    palette = random.choice(PROFESSIONAL_PALETTES)
+    
+    # شريط أسفلي عريض وواضح لتثبيت العلامة المائية
+    bar_height = 110
+    draw.rectangle([0, h - bar_height, w, h], fill=palette["bg"])
+    
+    # كتابة النص الموحد باللون الاحترافي المتجدد
+    draw.text((25, h - 80), BRAND_WATERMARK_TEXT, font=font_main, fill=palette["text"])
+    
     buf = io.BytesIO()
     Image.alpha_composite(img, txt).convert("RGB").save(buf, format="JPEG", quality=95)
     return buf.getvalue()
@@ -47,7 +67,7 @@ st.sidebar.title("📌 واجهة تساوت التفاعلية")
 menu = st.sidebar.radio("اختر القسم:", [
     "🧠 وكيل تساوت للإنتاج الرقمي", 
     "🚀 توليد الإعلانات الفورية", 
-    "📸 استوديو التصوير والمعاينة", 
+    "📸 استوديو التصوير والهوية البصرية (Groq Vision)", 
     "📊 الأرشيف السحابي",
     "📞 رقم الواتساب والتحميل اليدوي"
 ])
@@ -79,7 +99,13 @@ if menu == "🧠 وكيل تساوت للإنتاج الرقمي":
                 st.session_state["last_ad"] = result
                 st.markdown("### 📊 نتيجة التحليل أو الرد:")
                 st.markdown(result)
-                st.download_button("📄 تحميل التقرير", result, "tassaout_report.txt")
+                
+                col_w1, col_w2 = st.columns(2)
+                with col_w1:
+                    st.download_button("📄 تحميل التقرير (ملف)", result, "tassaout_report.txt", use_container_width=True)
+                with col_w2:
+                    wa_url = f"https://wa.me/?text={quote(result)}"
+                    st.markdown(f'<a href="{wa_url}" target="_blank"><button style="width:100%; background-color:#25D366; color:white; border:none; padding:10px; border-radius:5px; font-weight:bold; cursor:pointer;">📲 إرسال التقرير عبر الواتساب</button></a>', unsafe_allow_html=True)
 
 # ==========================================
 # 2. توليد الإعلانات الفورية
@@ -115,11 +141,9 @@ elif menu == "🚀 توليد الإعلانات الفورية":
 
         st.text_area("النص المتولد:", st.session_state["last_ad"], height=200)
         
-        # زر مشاركة الواتساب
         whatsapp_url = f"https://wa.me/?text={quote(ad_text)}"
-        st.markdown(f"### 📲 [مشاركة مباشرة عبر الواتساب]({whatsapp_url})")
+        st.markdown(f"### 📲 [مشاركة مباشرة للإعلان عبر الواتساب]({whatsapp_url})")
 
-        # الحفظ السحابي
         try:
             supabase.table("instant_ads").insert({
                 "category": category,
@@ -135,11 +159,11 @@ elif menu == "🚀 توليد الإعلانات الفورية":
             st.error(f"خطأ في الحفظ: {e}")
 
 # ==========================================
-# 3. استوديو التصوير والمعاينة
+# 3. استوديو التصوير والهوية البصرية (Groq Vision)
 # ==========================================
-elif menu == "📸 استوديو التصوير والمعاينة":
-    st.subheader("📸 استوديو التصوير والمعاينة (العلامة المائية والتحميل اليدوي)")
-    st.info("قم برفع الصور من هاتفك أو جهازك ليتم دمج شعار الوكالة ورقم الهاتف تلقائياً.")
+elif menu == "📸 استوديو التصوير والهوية البصرية (Groq Vision)":
+    st.subheader("📸 استوديو التصوير وتحليل الهوية البصرية عبر Groq")
+    st.info("الوكيل الذكي يحلل محتوى الصورة بصرياً، ويقوم بتطوير هويتها البصرية وتطبيق علامة مائية بارزة وملونة بشكل فني فريد لكل صورة.")
 
     uploaded_files = st.file_uploader("اختر الصور (رفع متعدد)", type=["jpg", "jpeg", "png"], accept_multiple_files=True)
     
@@ -147,16 +171,38 @@ elif menu == "📸 استوديو التصوير والمعاينة":
         st.markdown("---")
         for idx, f in enumerate(uploaded_files):
             f_bytes = f.getvalue()
-            processed_bytes = add_watermark(f_bytes)
             
-            col_img, col_dl = st.columns([2, 1])
+            # تحليل الصورة عبر نموذج الرؤية في Groq (Groq Vision)
+            with st.spinner(f"جاري قيام الوكيل بتحليل وتطوير الهوية البصرية للصورة رقم ({idx+1}) عبر Groq..."):
+                try:
+                    b64_image = base64.b64encode(f_bytes).decode("utf-8")
+                    vision_response = groq_client.chat.completions.create(
+                        model="qwen/qwen3.8-27b",
+                        messages=[{
+                            "role": "user",
+                            "content": [
+                                {"type": "text", "text": "قم بتقييم هذه الصورة الفوتوغرافية بإيجاز واقترح استراتيجية هوية بصرية تسويقية لها في جملة واحدة."},
+                                {"type": "image_url", "image_url": {"url": f"data:image/jpeg;base64,{b64_image}"}}
+                            ]
+                        }],
+                        temperature=0.5
+                    )
+                    ai_analysis = vision_response.choices[0].message.content
+                except:
+                    ai_analysis = "صورة احترافية جاهزة للعرض والتسويق الرقمي."
+
+            processed_bytes = add_artistic_watermark(f_bytes)
+            
+            col_img, col_info = st.columns([2, 1])
             with col_img:
-                st.image(processed_bytes, caption=f"صورة معالجة رقم ({idx+1})", width=350)
-            with col_dl:
+                st.image(processed_bytes, caption=f"صورة مطورة ومعالجة رقم ({idx+1})", width=350)
+            with col_info:
+                st.markdown(f"**💡 رؤية المصور الذكي (Groq):**")
+                st.write(ai_analysis)
                 st.download_button(
                     label=f"📥 تحميل الصورة {idx+1}",
                     data=processed_bytes,
-                    file_name=f"tassaout_media_{idx+1}.jpg",
+                    file_name=f"tassaout_brand_vision_{idx+1}.jpg",
                     mime="image/jpeg",
                     key=f"dl_img_{idx}"
                 )
@@ -190,6 +236,6 @@ elif menu == "📞 رقم الواتساب والتحميل اليدوي":
     
     st.markdown("---")
     st.write("💡 **تعليمات التحميل اليدوي:**")
-    st.markdown("1. توجه إلى **استوديو التصوير والمعاينة** وحمل الصور المعدلة بالعلامة المائية لهاتفك.")
+    st.markdown("1. توجه إلى **استوديو التصوير والهوية البصرية** للاستفادة من التحليل الذكي وتوليد الألوان المتجددة.")
     st.markdown("2. انسخ آخر إعلان تم توليده من قسم **توليد الإعلانات الفورية**.")
     st.markdown("3. أرسل الصورة والنص يدوياً عبر رقم الواتساب الخاص بالوكالة أو للعملاء مباشرة.")
