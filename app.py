@@ -11,16 +11,21 @@ import random
 import base64
 
 # إعداد الصفحة
-st.set_page_config(page_title="وكالة تساوت للإنتاج الرقمي والخدمات", page_icon="⚙️", layout="wide")
+st.set_page_config(page_title="وكالة تساوت للانتاج الرقمي والخدمات", page_icon="⚙️", layout="wide")
 
 # الاتصال بالخدمات عبر الأسرار
-supabase = create_client(st.secrets["SUPABASE_URL"], st.secrets["SUPABASE_KEY"])
-groq_client = Groq(api_key=st.secrets["GROQ_API_KEY"])
+try:
+    supabase = create_client(st.secrets["SUPABASE_URL"], st.secrets["SUPABASE_KEY"])
+    groq_client = Groq(api_key=st.secrets["GROQ_API_KEY"])
+except Exception:
+    supabase = None
+    groq_client = None
 
 BRAND_WATERMARK_TEXT = "وكالة تساوت للانتاج الرقمي +212691897126"
 BRAND_PHONE = "+212691897126"
+LOCAL_PHONE = "0691897126"
 
-# تحميل خط عربي بارز مع ضبط الحجم ليكون واضحاً وضخماً
+# تحميل خط عربي بارز للعلامة المائية
 @st.cache_resource
 def load_ar_font():
     try:
@@ -32,7 +37,7 @@ def load_ar_font():
 
 font_main = load_ar_font()
 
-# مصفوفة الألوان والأنماط الفنية المتجددة
+# مصفوفة الألوان والأنماط الفنية للعلامة المائية
 PROFESSIONAL_PALETTES = [
     {"bg": (15, 23, 42, 255), "glow": (59, 130, 246, 255), "text": (255, 255, 255, 255)},   # كحلي داكن
     {"bg": (127, 29, 29, 255), "glow": (254, 240, 138, 255), "text": (255, 255, 255, 255)}, # أحمر قرمزي فاخر
@@ -77,10 +82,11 @@ def add_artistic_watermark(image_bytes):
     final_img.convert("RGB").save(buf, format="JPEG", quality=95)
     return buf.getvalue()
 
-# واجهة القائمة الجانبية (شاملة أقسام موقع الخدمات وساتس تساوت)
-st.sidebar.title("📌 منصة تساوت المتكاملة")
+# واجهة القائمة الجانبية للتحكم والأقسام
+st.sidebar.title("📌 لوحة التحكم والخدمات")
 menu = st.sidebar.radio("اختر القسم:", [
-    "🌐 عرض موقع الخدمات المحلي (Sraghna Services)",
+    "🏠 الواجهة الرسمية (الرئيسية)",
+    "🌐 موقع الخدمات المحلي (Sraghna Services)",
     "🧠 وكيل تساوت للإنتاج الرقمي", 
     "🚀 توليد الإعلانات الفورية", 
     "📸 استوديو التصوير والهوية البصرية", 
@@ -92,11 +98,79 @@ if "last_ad" not in st.session_state: st.session_state["last_ad"] = ""
 if "last_title" not in st.session_state: st.session_state["last_title"] = ""
 
 # ==========================================
-# 1. عرض موقع الخدمات المحلي (مدمج من مستودع Sraghna-services-)
+# 1. الواجهة الرسمية (الرئيسية النظيفة)
 # ==========================================
-if menu == "🌐 عرض موقع الخدمات المحلي (Sraghna Services)":
+if menu == "🏠 الواجهة الرسمية (الرئيسية)":
+    st.markdown("""
+        <style>
+        @import url('https://fonts.googleapis.com/css2?family=Cairo:wght@700;900&display=swap');
+        
+        .main-container {
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            height: 70vh;
+            text-align: center;
+            font-family: 'Cairo', sans-serif;
+        }
+        
+        .agency-title {
+            font-size: 3.5rem;
+            font-weight: 900;
+            color: #1e293b;
+            margin-bottom: 25px;
+            line-height: 1.3;
+        }
+        
+        .phone-number {
+            font-size: 2.5rem;
+            font-weight: 700;
+            color: #25D366;
+            direction: ltr;
+            background: #f0fdf4;
+            padding: 10px 30px;
+            border-radius: 50px;
+            box-shadow: 0 4px 6px rgba(0,0,0,0.05);
+            display: inline-block;
+            margin-bottom: 30px;
+        }
+        
+        .whatsapp-link {
+            background-color: #25D366;
+            color: white !important;
+            padding: 12px 35px;
+            border-radius: 30px;
+            font-size: 1.3rem;
+            font-family: 'Cairo', sans-serif;
+            text-decoration: none;
+            font-weight: bold;
+            box-shadow: 0 4px 10px rgba(37, 211, 102, 0.3);
+            transition: 0.3s;
+        }
+        
+        .whatsapp-link:hover {
+            background-color: #22bf5b;
+        }
+        </style>
+        
+        <div class="main-container">
+            <div class="agency-title">وكالة تساوت للانتاج الرقمي</div>
+            <div>
+                <span class="phone-number">0691897126</span>
+            </div>
+            <div>
+                <a href="https://wa.me/212691897126" target="_blank" class="whatsapp-link">مراسلة عبر الواتساب</a>
+            </div>
+        </div>
+    """, unsafe_allow_html=True)
+
+# ==========================================
+# 2. عرض موقع الخدمات المحلي (Sraghna Services)
+# ==========================================
+elif menu == "🌐 موقع الخدمات المحلي (Sraghna Services)":
     st.subheader("🌐 منصة Sraghna Services - قلعة السراغنة ومراكش")
-    st.markdown("مرحباً بك في الواجهة المدمجة الخاصة بخدماتك الرقمية والعقارية ونقل البضائع. يمكنك معاينة الأقسام أدناه:")
+    st.markdown("مرحباً بك في الواجهة المدمجة الخاصة بخدماتك الرقمية والعقارية ونقل البضائع:")
     
     tab1, tab2, tab3 = st.tabs(["🏠 العقارات والاستثمار", "💻 الخدمات الرقمية", "🚚 النقل والسيارات"])
     
@@ -120,16 +194,16 @@ if menu == "🌐 عرض موقع الخدمات المحلي (Sraghna Services)"
     with tab3:
         st.markdown("### خدمات النقل اللوجستي وتأجير السيارات")
         st.markdown("- **Marrakech World Auto Services:** أسطول سيارات متاح للتأجير.")
-        st.markdown("- **Sraghna Media Trans:** خدمات نقل البضائع واللوجستيات بآمان وسرعة.")
+        st.markdown("- **Sraghna Media Trans:** خدمات نقل البضائع واللوجستيات بأمان وسرعة.")
 
 # ==========================================
-# 2. وكيل تساوت للإنتاج الرقمي
+# 3. وكيل تساوت للإنتاج الرقمي
 # ==========================================
 elif menu == "🧠 وكيل تساوت للإنتاج الرقمي":
     st.subheader("🧠 وكيل تساوت للإنتاج الرقمي")
     user_task = st.text_area("أدخل المهمة أو الاستشارة:", height=150)
     if st.button("⚡ تنفيذ المهمة", type="primary"):
-        if user_task:
+        if user_task and groq_client:
             with st.spinner("جاري المعالجة بواسطة الذكاء الاصطناعي..."):
                 try:
                     response = groq_client.chat.completions.create(
@@ -151,9 +225,11 @@ elif menu == "🧠 وكيل تساوت للإنتاج الرقمي":
                 with col_w2:
                     wa_url = f"https://wa.me/?text={quote(result)}"
                     st.markdown(f'<a href="{wa_url}" target="_blank"><button style="width:100%; background-color:#25D366; color:white; border:none; padding:10px; border-radius:5px; font-weight:bold; cursor:pointer;">📲 إرسال عبر الواتساب</button></a>', unsafe_allow_html=True)
+        else:
+            st.warning("الرجاء إدخال نص المهمة أو التأكد من إعدادات مفتاح Groq.")
 
 # ==========================================
-# 3. توليد الإعلانات الفورية
+# 4. توليد الإعلانات الفورية
 # ==========================================
 elif menu == "🚀 توليد الإعلانات الفورية":
     st.subheader("🚀 قسم توليد الإعلانات الفورية")
@@ -189,22 +265,23 @@ elif menu == "🚀 توليد الإعلانات الفورية":
         whatsapp_url = f"https://wa.me/?text={quote(ad_text)}"
         st.markdown(f"### 📲 [مشاركة مباشرة للإعلان عبر الواتساب]({whatsapp_url})")
 
-        try:
-            supabase.table("instant_ads").insert({
-                "category": category,
-                "city": city,
-                "content": title,
-                "message": ad_text,
-                "price": 0,
-                "source": "Sraghna-Services-Integrated",
-                "created_at": datetime.now(timezone.utc).isoformat()
-            }).execute()
-            st.success("✅ تم حفظ الإعلان سحابياً في جدول instant_ads!")
-        except Exception as e:
-            st.error(f"خطأ في الحفظ: {e}")
+        if supabase:
+            try:
+                supabase.table("instant_ads").insert({
+                    "category": category,
+                    "city": city,
+                    "content": title,
+                    "message": ad_text,
+                    "price": 0,
+                    "source": "Sraghna-Services-Integrated",
+                    "created_at": datetime.now(timezone.utc).isoformat()
+                }).execute()
+                st.success("✅ تم حفظ الإعلان سحابياً في جدول instant_ads!")
+            except Exception as e:
+                st.error(f"خطأ في الحفظ السحابي: {e}")
 
 # ==========================================
-# 4. استوديو التصوير والهوية البصرية
+# 5. استوديو التصوير والهوية البصرية
 # ==========================================
 elif menu == "📸 استوديو التصوير والهوية البصرية":
     st.subheader("📸 استوديو التصوير وتحليل الهوية البصرية عبر Groq")
@@ -252,28 +329,31 @@ elif menu == "📸 استوديو التصوير والهوية البصرية":
                 )
 
 # ==========================================
-# 5. الأرشيف السحابي
+# 6. الأرشيف السحابي
 # ==========================================
 elif menu == "📊 الأرشيف السحابي":
     st.subheader("📊 الأرشيف السحابي (قاعدة بيانات instant_ads)")
-    try:
-        ads_data = supabase.table("instant_ads").select("*").order("created_at", desc=True).limit(50).execute()
-        if ads_data.data:
-            st.dataframe(pd.DataFrame(ads_data.data), use_container_width=True)
-            st.metric("إجمالي السجلات والأرشيف", len(ads_data.data))
-        else:
-            st.info("لا توجد سجلات حالياً في الأرشيف.")
-    except Exception as e:
-        st.error(f"خطأ في جلب الأرشيف: {e}")
+    if supabase:
+        try:
+            ads_data = supabase.table("instant_ads").select("*").order("created_at", desc=True).limit(50).execute()
+            if ads_data.data:
+                st.dataframe(pd.DataFrame(ads_data.data), use_container_width=True)
+                st.metric("إجمالي السجلات والأرشيف", len(ads_data.data))
+            else:
+                st.info("لا توجد سجلات حالياً في الأرشيف.")
+        except Exception as e:
+            st.error(f"خطأ في جلب الأرشيف: {e}")
+    else:
+        st.warning("اتصال Supabase غير مهفر أو غير متوفر في الأسرار.")
 
 # ==========================================
-# 6. التواصل والاتصال المباشر
+# 7. التواصل والاتصال المباشر
 # ==========================================
 elif menu == "📞 التواصل والاتصال المباشر":
     st.subheader("📞 مركز الاتصال والخدمات")
-    st.metric("رقم الواتساب الرسمي للوكالة", BRAND_PHONE)
+    st.metric("رقم الواتساب الرسمي للوكالة", LOCAL_PHONE)
     
-    whatsapp_direct = f"https://wa.me/{BRAND_PHONE.replace('+', '')}"
+    whatsapp_direct = f"https://wa.me/212{LOCAL_PHONE[1:]}"
     st.markdown(f"### 🟢 [اضغط هنا لبدء محادثة واتساب فورية]({whatsapp_direct})")
     st.markdown("---")
     st.write("📍 **الموقع:** قلعة السراغنة ومراكش، المملكة المغربية.")
