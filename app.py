@@ -68,10 +68,9 @@ MASTER_SYSTEM_PROMPT = """
 def run_super_agent(user_task: str):
     messages = [{"role": "system", "content": MASTER_SYSTEM_PROMPT}, {"role": "user", "content": user_task}]
     
-    # النماذج المضمونة والمستقرة 100% على Free Tier لـ Groq
+    # الاعتماد الحصري والمباشر على نموذج Gemma 2 المتاح في لوحة التحكم
     models_to_try = [
-        "gemma2-9b-it",
-        "llama-3.1-8b-instant"
+        "gemma2-9b-it"
     ]
 
     last_error = ""
@@ -148,17 +147,17 @@ def create_zip_file(images_list):
             zip_file.writestr(f"tassaout_poster_{i+1}_{item['orig_name']}", item['bytes'])
     zip_buffer.seek(0); return zip_buffer
 
-# ========== الواجهة التفاعلية v8.7.1 الرسمية ==========
+# ========== الواجهة التفاعلية v8.7.2 النهائية ==========
 st.title("⚙️ وكالة تساوت للإنتاج الرقمي")
-st.caption("النظام المستقل المدمج بالأتمتة والواتساب - v8.7.1 الرسمية والمستقرة")
+st.caption("النظام المستقل المدمج بالأتمتة والواتساب - v8.7.2 (Gemma 2 Stable)")
 menu = st.sidebar.radio("📌 القائمة الرئيسية", ["🧠 وكيل تساوت الرقمي", "🚀 توليد إعلان سريع", "📸 استوديو التصوير والمعاينة", "📊 الأرشيف السحابي"])
 
 if menu == "🧠 وكيل تساوت الرقمي":
-    st.subheader("🧠 وكيل تساوت للإنتاج الرقمي - v8.7.1")
+    st.subheader("🧠 وكيل تساوت للإنتاج الرقمي - v8.7.2")
     user_task = st.text_area("اطرح أي مهمة (عقار، مواد بناء، مقال فكري، تحليل، أو نص أدبي):", height=180, placeholder="مثال: تحليل استراتيجي لفرص الاستثمار العقاري بقلعة السراغنة...")
     if st.button("⚡ تنفيذ المهمة عبر الوكيل", type="primary", use_container_width=True):
         if user_task:
-            with st.spinner("جاري معالجة البرومبت وتحليل البيانات عبر العقل الذكي..."):
+            with st.spinner("جاري معالجة البرومبت وتحليل البيانات عبر نموذج Gemma 2..."):
                 result = run_super_agent(user_task)
                 st.markdown("### 📊 تقرير ومخرجات وكيل تساوت:")
                 st.markdown(result)
