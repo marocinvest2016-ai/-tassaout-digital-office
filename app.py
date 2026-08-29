@@ -20,46 +20,62 @@ groq_client = Groq(api_key=st.secrets["GROQ_API_KEY"])
 BRAND_WATERMARK_TEXT = "وكالة تساوت للانتاج الرقمي +212691897126"
 BRAND_PHONE = "+212691897126"
 
-# تحميل خط عربي بارز وكبير
+# تحميل خط عربي بارز وكبير جداً لضمان الوضوح التام
 @st.cache_resource
 def load_ar_font():
     try:
         url = "https://github.com/google/fonts/raw/main/ofl/cairo/Cairo-Bold.ttf"
         gdown.download(url, "Cairo-Bold.ttf", quiet=True)
-        return ImageFont.truetype("Cairo-Bold.ttf", 45)
+        return ImageFont.truetype("Cairo-Bold.ttf", 52)
     except: 
         return ImageFont.load_default()
 
 font_main = load_ar_font()
 
-# لوحات الألوان الفنية الاحترافية لتوليد الهوية البصرية المتجددة
+# مصفوفة الألوان والأنماط الفنية المتجددة (تأثير الحفر والإضاءة الاحترافية)
 PROFESSIONAL_PALETTES = [
-    {"bg": (15, 23, 42, 230), "text": (251, 191, 36, 255)},   # كحلي عميق مع ذهبي ملكي
-    {"bg": (127, 29, 29, 230), "text": (254, 240, 138, 255)},  # أحمر قرمزي فاخر مع أصفر فاتح
-    {"bg": (6, 78, 59, 230), "text": (167, 243, 208, 255)},    # أخضر زمردي مع نعناعي ساطع
-    {"bg": (88, 28, 135, 230), "text": (221, 214, 254, 255)},  # بنفسجي ملكي مع لافندر
-    {"bg": (24, 24, 27, 240), "text": (244, 244, 245, 255)},   # أسود فحمي فخم مع أبيض ناصع
-    {"bg": (120, 53, 15, 230), "text": (254, 215, 170, 255)},   # بني نحاسي دافئ مع بيج برونزي
+    {"bg": (10, 15, 30, 245), "glow": (59, 130, 246, 255), "text": (255, 255, 255, 255)},   # كحلي عميق مع إضاءة نيون أزرق
+    {"bg": (30, 10, 10, 245), "glow": (239, 68, 68, 255), "text": (255, 243, 199, 255)},   # داكن مع إضاءة قرمزي مضيء
+    {"bg": (10, 30, 20, 245), "glow": (16, 185, 129, 255), "text": (209, 250, 229, 255)},  # داكن مع إضاءة زمردي مضيء
+    {"bg": (25, 10, 35, 245), "glow": (168, 85, 247, 255), "text": (243, 232, 255, 255)},  # داكن مع إضاءة لافندر ساطع
+    {"bg": (15, 15, 15, 250), "glow": (245, 158, 11, 255), "text": (255, 255, 255, 255)},   # أسود فاحم مع إضاءة ذهبية محفورة
 ]
 
 def add_artistic_watermark(image_bytes):
     img = Image.open(io.BytesIO(image_bytes)).convert("RGBA")
-    txt = Image.new("RGBA", img.size, (255, 255, 255, 0))
-    draw = ImageDraw.Draw(txt)
     w, h = img.size
     
-    # اختيار لوحة ألوان عشوائية ومتجددة لكل صورة
+    # اختيار مصفوفة ألوان عشوائية ومتجددة لكل صورة من القائمة الاحترافية
     palette = random.choice(PROFESSIONAL_PALETTES)
     
-    # شريط أسفلي عريض وواضح لتثبيت العلامة المائية
-    bar_height = 110
-    draw.rectangle([0, h - bar_height, w, h], fill=palette["bg"])
+    # شريط أسفل الصورة عريض ومرتفع (140 بكسل)
+    bar_height = 140
     
-    # كتابة النص الموحد باللون الاحترافي المتجدد
-    draw.text((25, h - 80), BRAND_WATERMARK_TEXT, font=font_main, fill=palette["text"])
+    # إنشاء طبقة الشريط الشفاف
+    bar_layer = Image.new("RGBA", img.size, (0, 0, 0, 0))
+    draw_bar = ImageDraw.Draw(bar_layer)
+    draw_bar.rectangle([0, h - bar_height, w, h], fill=palette["bg"])
+    
+    # إنشاء طبقة للنص المحفور والمضاء (تأثير ثلاثي الأبعاد محفور داخل الشريط)
+    text_layer = Image.new("RGBA", img.size, (255, 255, 255, 0))
+    draw_txt = ImageDraw.Draw(text_layer)
+    
+    x_pos, y_pos = 40, h - 98
+    
+    # 1. ظل الحفر (العمق الداخلي)
+    draw_txt.text((x_pos + 2, y_pos + 2), BRAND_WATERMARK_TEXT, font=font_main, fill=(0, 0, 0, 255))
+    # 2. الإضاءة المحيطة (Glow / Neon Effect)
+    draw_txt.text((x_pos - 1, y_pos), BRAND_WATERMARK_TEXT, font=font_main, fill=palette["glow"])
+    draw_txt.text((x_pos + 1, y_pos), BRAND_WATERMARK_TEXT, font=font_main, fill=palette["glow"])
+    # 3. النص الأساسي الساطع المحفور
+    draw_txt.text((x_pos, y_pos), BRAND_WATERMARK_TEXT, font=font_main, fill=palette["text"])
+    
+    # دمج الطبقات باحترافية تامة
+    combined = Image.alpha_composite(img, bar_layer)
+    final_img = Image.alpha_composite(combined, text_layer)
     
     buf = io.BytesIO()
-    Image.alpha_composite(img, txt).convert("RGB").save(buf, format="JPEG", quality=95)
+    final_img.convert("RGB").save(buf, format="JPEG", quality=95)
     return buf.getvalue()
 
 # واجهة القائمة الجانبية (الأزرار الرئيسية)
@@ -163,7 +179,7 @@ elif menu == "🚀 توليد الإعلانات الفورية":
 # ==========================================
 elif menu == "📸 استوديو التصوير والهوية البصرية (Groq Vision)":
     st.subheader("📸 استوديو التصوير وتحليل الهوية البصرية عبر Groq")
-    st.info("الوكيل الذكي يحلل محتوى الصورة بصرياً، ويقوم بتطوير هويتها البصرية وتطبيق علامة مائية بارزة وملونة بشكل فني فريد لكل صورة.")
+    st.info("الوكيل الذكي يحلل محتوى الصورة بصرياً، ويقوم بتطوير هويتها البصرية وتطبيق علامة مائية محفورة ومضاءة بأسلوب فني فريد لكل صورة.")
 
     uploaded_files = st.file_uploader("اختر الصور (رفع متعدد)", type=["jpg", "jpeg", "png"], accept_multiple_files=True)
     
@@ -172,7 +188,6 @@ elif menu == "📸 استوديو التصوير والهوية البصرية (
         for idx, f in enumerate(uploaded_files):
             f_bytes = f.getvalue()
             
-            # تحليل الصورة عبر نموذج الرؤية في Groq (Groq Vision)
             with st.spinner(f"جاري قيام الوكيل بتحليل وتطوير الهوية البصرية للصورة رقم ({idx+1}) عبر Groq..."):
                 try:
                     b64_image = base64.b64encode(f_bytes).decode("utf-8")
@@ -195,14 +210,14 @@ elif menu == "📸 استوديو التصوير والهوية البصرية (
             
             col_img, col_info = st.columns([2, 1])
             with col_img:
-                st.image(processed_bytes, caption=f"صورة مطورة ومعالجة رقم ({idx+1})", width=350)
+                st.image(processed_bytes, caption=f"صورة محفورة ومضاءة رقم ({idx+1})", width=350)
             with col_info:
                 st.markdown(f"**💡 رؤية المصور الذكي (Groq):**")
                 st.write(ai_analysis)
                 st.download_button(
                     label=f"📥 تحميل الصورة {idx+1}",
                     data=processed_bytes,
-                    file_name=f"tassaout_brand_vision_{idx+1}.jpg",
+                    file_name=f"tassaout_engraved_{idx+1}.jpg",
                     mime="image/jpeg",
                     key=f"dl_img_{idx}"
                 )
@@ -236,6 +251,6 @@ elif menu == "📞 رقم الواتساب والتحميل اليدوي":
     
     st.markdown("---")
     st.write("💡 **تعليمات التحميل اليدوي:**")
-    st.markdown("1. توجه إلى **استوديو التصوير والهوية البصرية** للاستفادة من التحليل الذكي وتوليد الألوان المتجددة.")
+    st.markdown("1. توجه إلى **استوديو التصوير والهوية البصرية** لتحميل الصور بتأثير الحفر والإضاءة الفنية المتجددة.")
     st.markdown("2. انسخ آخر إعلان تم توليده من قسم **توليد الإعلانات الفورية**.")
     st.markdown("3. أرسل الصورة والنص يدوياً عبر رقم الواتساب الخاص بالوكالة أو للعملاء مباشرة.")
