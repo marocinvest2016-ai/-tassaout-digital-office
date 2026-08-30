@@ -151,7 +151,7 @@ if submit_btn and (prompt or uploaded_files):
         try:
             if groq_client:
                 resp = groq_client.chat.completions.create(
-                    model="llama-3.3-70b-versatile",
+                    model="llama-3.1-8b-instant",
                     messages=[
                         {"role": "system", "content": system_prompt},
                         {"role": "user", "content": (prompt if prompt else "") + " " + context}
