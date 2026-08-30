@@ -22,12 +22,25 @@ except ImportError:
     replicate = None
 
 # إعداد الصفحة
-st.set_page_config(page_title="مكتب تساوت الرقمي", page_icon="💻", layout="centered")
+st.set_page_config(page_title="خدمات تساوت الرقمية", page_icon="💻", layout="centered")
 
 st.markdown("""
 <style>
-.main-header {text-align: center; color: #1e3a8a; font-weight: 800; font-size: 1.7rem; font-family: 'Cairo'; margin-bottom: 15px;}
-.stChatMessage {background-color: #f8fafc; border-radius: 16px; padding: 1rem; margin-bottom: 10px;}
+.main-header {
+    text-align: center; 
+    color: #1e3a8a; 
+    font-weight: 800; 
+    font-size: 1.5rem; 
+    font-family: 'Cairo', sans-serif; 
+    margin-bottom: 20px;
+    margin-top: 10px;
+}
+.stChatMessage {
+    background-color: #f8fafc; 
+    border-radius: 16px; 
+    padding: 1rem; 
+    margin-bottom: 10px;
+}
 </style>
 """, unsafe_allow_html=True)
 
@@ -43,12 +56,10 @@ except Exception:
 
 BRAND_PHONE = "+212691897126"
 LOCAL_PHONE = "0691897126"
-FOUNDER_SIGNATURE = "عامر وسيط خدمات بقلعة السراغنة ومؤسس الذكاء المنطقي السحابي"
+FOUNDER_SIGNATURE = "انتاج السيد عامر مؤسس الذكاء المنطقي السحابي المركب<br>جهة مراكش اسفي<br>كل الحقوق محفوظة 2026"
 
 if "messages" not in st.session_state:
-    st.session_state["messages"] = [
-        {"role": "assistant", "content": "مرحباً بك يا سيد الرئيس 👋\nأنا وكيلك الذكي في مكتب تساوت الرقمي. استخدم الشاشة التفاعلية الكبيرة أدناه لرفع الملفات وكتابة طلبك."}
-    ]
+    st.session_state["messages"] = []
 
 def generate_ad_image(text):
     img = Image.new('RGB', (1080, 1080), color='#1e3a8a')
@@ -65,10 +76,10 @@ def generate_ad_image(text):
     img.save(buf, format="PNG")
     return buf.getvalue()
 
-# العنوان فقط فوق الشاشة
-st.markdown("<h1 class='main-header'>مكتب تساوت الرقمي | العقار والأعمال بقلعة السراغنة</h1>", unsafe_allow_html=True)
+# العنوان المطلوب فقط فوق الشاشة
+st.markdown("<h1 class='main-header'>خدمات تساوت الرقمية للعقار والاعمال بقلعة السراغنة</h1>", unsafe_allow_html=True)
 
-# عرض سجل المحادثات
+# عرض سجل المحادثات إن وجدت
 for i, msg in enumerate(st.session_state["messages"]):
     with st.chat_message(msg["role"]):
         st.write(msg["content"])
@@ -84,26 +95,22 @@ for i, msg in enumerate(st.session_state["messages"]):
             for img_bytes in msg["images"]:
                 st.image(img_bytes, use_container_width=True)
         if "zip" in msg:
-            st.download_button("📥 تحميل الحزمة (ZIP)", msg["zip"], f"tassaout_package_{i}.zip", key=f"zip_btn_{i}")
+            st.download_button("📥 تحميل حزمة الإعلانات والملفات (ZIP)", msg["zip"], f"tassaout_package_{i}.zip", key=f"zip_btn_{i}")
 
-st.divider()
-
-# الشاشة التفاعلية الكبيرة (تحتوي الزر ومساحة الكتابة بداخلها)
+# الشاشة التفاعلية الكبيرة
 with st.container(border=True):
-    st.markdown("### 🎛️ الشاشة التفاعلية للتشغيل والتحكم")
-    
     uploaded_files = st.file_uploader(
-        "➕ اختر أو اسحب الصور، الفيديوهات أو المستندات هنا",
+        "📁 اختر أو اسحب الملفات، الصور، أو الفيديوهات للرفع",
         type=["png", "jpg", "jpeg", "mp4", "pdf", "docx"],
         accept_multiple_files=True,
-        key="inside_uploader"
+        key="large_box_uploader"
     )
     
     prompt = st.text_area(
         "اكتب طلبك أو كبسولة المعلوميات هنا...",
-        placeholder="اكتب هنا تفاصيل الإعلان أو الطلب المراد تنفيذه...",
-        height=130,
-        key="inside_prompt"
+        placeholder="اكتب تفاصيل الإعلان العقاري، الاستشارة، أو الطلب المراد تنفيذه...",
+        height=140,
+        key="large_box_prompt"
     )
     
     submit_btn = st.button("🚀 تنفيذ الطلب وإرسال", use_container_width=True, type="primary")
@@ -123,11 +130,11 @@ if submit_btn and (prompt or uploaded_files):
     user_msg = {"role": "user", "content": prompt if prompt else "تم رفع ملفات للتحليل", "attachments": attachments}
     st.session_state["messages"].append(user_msg)
 
-    with st.spinner("جاري المعالجة وتوليد الحزمة الرقمية..."):
+    with st.spinner("جاري المعالجة وهندسة المحتوى الرقمي..."):
         context = "المستخدم رفع ملفات: " + ", ".join([a['name'] for a in attachments]) if attachments else ""
         system_prompt = f"""
-        أنت الوكيل الذكي والمساعد الحصري لـ ({FOUNDER_SIGNATURE}) في مكتب تساوت الرقمي للخدمات والاستشارات بقلعة السراغنة ومراكش.
-        قم بصياغة النصوص الإعلانية والتسويقية باحترافية. اختم دائماً برقم التواصل الرسمي: {BRAND_PHONE}
+        أنت الوكيل الذكي والمساعد الحصري في خدمات تساوت الرقمية للعقار والأعمال بقلعة السراغنة، جهة مراكش آسفي.
+        قم بصياغة النصوص الإعلانية والتسويقية العقارية باحترافية تامة. اختم دائماً برقم التواصل الرسمي: {BRAND_PHONE}
         """
 
         try:
@@ -142,14 +149,14 @@ if submit_btn and (prompt or uploaded_files):
                 )
                 answer = resp.choices[0].message.content
             else:
-                answer = "عذراً، عميل الذكاء الاصطناعي (Groq) غير متصل حالياً."
+                answer = "عذراً، عميل الذكاء الاصطناعي غير متصل حالياً."
         except Exception as e:
             answer = f"حدث خطأ في المعالجة: {e}"
 
         images = []
         zip_buffer = None
 
-        if any(k in (prompt or "") for k in ["إعلان", "إعلانات", "ولد", "صايب", "تصميم"]) or attachments:
+        if any(k in (prompt or "") for k in ["إعلان", "عقار", "شقة", "بقعة", "منزل", "ولد", "صايب", "تصميم"]) or attachments:
             img_bytes = generate_ad_image(answer)
             images.append(img_bytes)
 
@@ -167,16 +174,17 @@ if submit_btn and (prompt or uploaded_files):
     st.session_state["messages"].append(agent_msg)
     st.rerun()
 
-# التذييل وزر الواتساب السفلي
+# التذييل في أسفل الموقع حسب الطلب تماماً
 whatsapp_url = f"https://wa.me/{LOCAL_PHONE.replace('0', '+212', 1)}"
 st.markdown(f"""
-    <div style="text-align: center; padding: 15px 0; font-family: 'Cairo', sans-serif; color: #1e3a8a;">
+    <div style="text-align: center; padding: 20px 0; font-family: 'Cairo', sans-serif; color: #1e3a8a;">
         <div style="margin-bottom: 12px;">
             <a href="{whatsapp_url}" target="_blank" style="background-color: #25D366; color: white; padding: 10px 24px; border-radius: 20px; text-decoration: none; font-weight: bold; display: inline-block;">
                 💬 تواصل عبر الواتساب ({LOCAL_PHONE})
             </a>
         </div>
-        <p style="font-size: 0.9rem; color: #2563eb; font-weight: 600;">إنتاج: {FOUNDER_SIGNATURE}</p>
-        <p style="font-size: 0.85rem; color: #64748b;">كل الحقوق محفوظة 2026</p>
+        <p style="font-size: 0.95rem; color: #2563eb; font-weight: 700; line-height: 1.8;">
+            {FOUNDER_SIGNATURE}
+        </p>
     </div>
 """, unsafe_allow_html=True)
