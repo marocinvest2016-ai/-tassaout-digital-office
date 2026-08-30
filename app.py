@@ -37,7 +37,7 @@ textarea, input, .stTextArea textarea {
 </style>
 """, unsafe_allow_html=True)
 
-# تفعيل واستيراد الوكيل الذكي والخدمات بلغة برمجية آمنة
+# تفعيل واستيراد الوكيل الذكي والخدمات
 groq_client = None
 try:
     from groq import Groq
@@ -105,7 +105,7 @@ for i, msg in enumerate(st.session_state["messages"]):
         if "zip" in msg:
             st.download_button("📥 تحميل حزمة الإعلانات والملفات (ZIP)", msg["zip"], f"tassaout_package_{i}.zip", key=f"zip_btn_{i}")
 
-# الشاشة التفاعلية الكبيرة الموحدة (إدخال النص والملفات وزر الإرسال في هيكل واحد)
+# الشاشة التفاعلية الكبيرة الموحدة
 with st.container(border=True):
     prompt = st.text_area(
         "حقل إدخال النص",
@@ -151,7 +151,7 @@ if submit_btn and (prompt or uploaded_files):
         try:
             if groq_client:
                 resp = groq_client.chat.completions.create(
-                    model="llama3-70b-8192",
+                    model="llama-3.3-70b-versatile",
                     messages=[
                         {"role": "system", "content": system_prompt},
                         {"role": "user", "content": (prompt if prompt else "") + " " + context}
