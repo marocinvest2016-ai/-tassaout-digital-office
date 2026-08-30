@@ -35,7 +35,6 @@ st.markdown("""
     margin-bottom: 5px;
     margin-top: 5px;
 }
-/* زيادة حجم الحروف والخطوط لتكون واضحة ومضاعفة */
 textarea, input, .stTextArea textarea {
     font-size: 1.3rem !important;
     font-weight: 600 !important;
@@ -86,10 +85,10 @@ def generate_ad_image(text):
     img.save(buf, format="PNG")
     return buf.getvalue()
 
-# العنوان المطلوب فقط فوق الشاشة
+# العنوان الرئيسي
 st.markdown("<h1 class='main-header'>خدمات تساوت الرقمية للعقار والاعمال بقلعة السراغنة</h1>", unsafe_allow_html=True)
 
-# عرض سجل المحادثات إن وجدت
+# عرض سجل المحادثات
 for i, msg in enumerate(st.session_state["messages"]):
     with st.chat_message(msg["role"]):
         st.write(msg["content"])
@@ -107,10 +106,10 @@ for i, msg in enumerate(st.session_state["messages"]):
         if "zip" in msg:
             st.download_button("📥 تحميل حزمة الإعلانات والملفات (ZIP)", msg["zip"], f"tassaout_package_{i}.zip", key=f"zip_btn_{i}")
 
-# الشاشة التفاعلية الكبيرة (نصف شاشة الهاتف) وبداخلها حصرياً خانة الكتابة وزر الرفع وزر الإرسال
+# الشاشة التفاعلية الكبيرة الموحدة (تحتوي خانة النص وأداة الرفع وزر التنفيذ حصرياً بداخله)
 with st.container(border=True):
     prompt = st.text_area(
-        "",
+        "حقل إدخال النص",
         placeholder="اكتب طلبك، تفاصيل الإعلان العقاري، أو كبسولة المعلوميات هنا...",
         height=220,
         key="unified_prompt_box",
@@ -118,7 +117,7 @@ with st.container(border=True):
     )
     
     uploaded_files = st.file_uploader(
-        "",
+        "أداة رفع الملفات والصور",
         type=["png", "jpg", "jpeg", "mp4", "pdf", "docx"],
         accept_multiple_files=True,
         key="unified_file_uploader",
@@ -186,7 +185,7 @@ if submit_btn and (prompt or uploaded_files):
     st.session_state["messages"].append(agent_msg)
     st.rerun()
 
-# التذييل في أسفل الموقع حسب الطلب تماماً
+# التذييل الرسمي
 whatsapp_url = f"https://wa.me/{LOCAL_PHONE.replace('0', '+212', 1)}"
 st.markdown(f"""
     <div style="text-align: center; padding: 20px 0; font-family: 'Cairo', sans-serif; color: #1e3a8a;">
