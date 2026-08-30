@@ -8,3 +8,4 @@ python-bidi>=0.6.0
 arabic-reshaper>=3.0.0
 gdown>=5.0.0
 pyperclip>=1.8.2
+replicate>=0.25.0
