@@ -30,16 +30,26 @@ st.markdown("""
     text-align: center; 
     color: #1e3a8a; 
     font-weight: 800; 
-    font-size: 1.4rem; 
+    font-size: 1.6rem; 
     font-family: 'Cairo', sans-serif; 
-    margin-bottom: 15px;
+    margin-bottom: 10px;
     margin-top: 5px;
+}
+/* زيادة حجم الحروف والخطوط داخل خانة الكتابة والعناصر لتكون كباراً مرتين */
+textarea, input, .stTextArea textarea {
+    font-size: 1.3rem !important;
+    font-weight: 600 !important;
+}
+.stButton button {
+    font-size: 1.2rem !important;
+    font-weight: bold !important;
 }
 .stChatMessage {
     background-color: #f8fafc; 
     border-radius: 16px; 
     padding: 1rem; 
     margin-bottom: 10px;
+    font-size: 1.1rem !important;
 }
 </style>
 """, unsafe_allow_html=True)
@@ -97,21 +107,21 @@ for i, msg in enumerate(st.session_state["messages"]):
         if "zip" in msg:
             st.download_button("📥 تحميل حزمة الإعلانات والملفات (ZIP)", msg["zip"], f"tassaout_package_{i}.zip", key=f"zip_btn_{i}")
 
-# الشاشة التفاعلية الكبيرة (نصف شاشة الهاتف وبداخلها الكتابة وزر التحميل والإرسال)
+# الشاشة التفاعلية الكبيرة جداً مع حروف كبيرة ومضاعفة
 with st.container(border=True):
     prompt = st.text_area(
         "",
-        placeholder="اكتب طلبك أو تفاصيل الإعلان العقاري هنا...",
-        height=130,
-        key="large_box_prompt",
+        placeholder="اكتب طلبك، تفاصيل الإعلان العقاري، أو كبسولة المعلوميات هنا...",
+        height=240,
+        key="massive_box_prompt",
         label_visibility="collapsed"
     )
     
     uploaded_files = st.file_uploader(
-        "📎 رفع الملفات أو الصور (اختياري)",
+        "📎 رفع الملفات، الصور، أو الفيديوهات (اختياري)",
         type=["png", "jpg", "jpeg", "mp4", "pdf", "docx"],
         accept_multiple_files=True,
-        key="large_box_uploader"
+        key="massive_box_uploader"
     )
     
     submit_btn = st.button("🚀 تنفيذ الطلب وإرسال", use_container_width=True, type="primary")
@@ -180,11 +190,11 @@ whatsapp_url = f"https://wa.me/{LOCAL_PHONE.replace('0', '+212', 1)}"
 st.markdown(f"""
     <div style="text-align: center; padding: 20px 0; font-family: 'Cairo', sans-serif; color: #1e3a8a;">
         <div style="margin-bottom: 12px;">
-            <a href="{whatsapp_url}" target="_blank" style="background-color: #25D366; color: white; padding: 10px 24px; border-radius: 20px; text-decoration: none; font-weight: bold; display: inline-block;">
+            <a href="{whatsapp_url}" target="_blank" style="background-color: #25D366; color: white; padding: 12px 28px; border-radius: 20px; text-decoration: none; font-weight: bold; font-size: 1.1rem; display: inline-block;">
                 💬 تواصل عبر الواتساب ({LOCAL_PHONE})
             </a>
         </div>
-        <p style="font-size: 0.9rem; color: #2563eb; font-weight: 700; line-height: 1.8;">
+        <p style="font-size: 1rem; color: #2563eb; font-weight: 700; line-height: 1.8;">
             {FOUNDER_SIGNATURE}
         </p>
     </div>
