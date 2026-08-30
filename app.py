@@ -10,7 +10,7 @@ import requests
 import zipfile
 
 # إعداد الصفحة وتطبيق التصميم المخصص لشريط الإدخال المدمج
-data_page_config = st.set_page_config(page_title="مكتب تساوت الرقمي للخدمات والاستشارات", page_icon="💻", layout="centered")
+st.set_page_config(page_title="مكتب تساوت الرقمي للخدمات والاستشارات", page_icon="💻", layout="centered")
 
 st.markdown("""
 <style>
