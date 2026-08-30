@@ -30,10 +30,10 @@ st.markdown("""
     text-align: center; 
     color: #1e3a8a; 
     font-weight: 800; 
-    font-size: 1.5rem; 
+    font-size: 1.4rem; 
     font-family: 'Cairo', sans-serif; 
-    margin-bottom: 20px;
-    margin-top: 10px;
+    margin-bottom: 15px;
+    margin-top: 5px;
 }
 .stChatMessage {
     background-color: #f8fafc; 
@@ -97,20 +97,21 @@ for i, msg in enumerate(st.session_state["messages"]):
         if "zip" in msg:
             st.download_button("📥 تحميل حزمة الإعلانات والملفات (ZIP)", msg["zip"], f"tassaout_package_{i}.zip", key=f"zip_btn_{i}")
 
-# الشاشة التفاعلية الكبيرة
+# الشاشة التفاعلية الكبيرة (نصف شاشة الهاتف وبداخلها الكتابة وزر التحميل والإرسال)
 with st.container(border=True):
+    prompt = st.text_area(
+        "",
+        placeholder="اكتب طلبك أو تفاصيل الإعلان العقاري هنا...",
+        height=130,
+        key="large_box_prompt",
+        label_visibility="collapsed"
+    )
+    
     uploaded_files = st.file_uploader(
-        "📁 اختر أو اسحب الملفات، الصور، أو الفيديوهات للرفع",
+        "📎 رفع الملفات أو الصور (اختياري)",
         type=["png", "jpg", "jpeg", "mp4", "pdf", "docx"],
         accept_multiple_files=True,
         key="large_box_uploader"
-    )
-    
-    prompt = st.text_area(
-        "اكتب طلبك أو كبسولة المعلوميات هنا...",
-        placeholder="اكتب تفاصيل الإعلان العقاري، الاستشارة، أو الطلب المراد تنفيذه...",
-        height=140,
-        key="large_box_prompt"
     )
     
     submit_btn = st.button("🚀 تنفيذ الطلب وإرسال", use_container_width=True, type="primary")
@@ -183,7 +184,7 @@ st.markdown(f"""
                 💬 تواصل عبر الواتساب ({LOCAL_PHONE})
             </a>
         </div>
-        <p style="font-size: 0.95rem; color: #2563eb; font-weight: 700; line-height: 1.8;">
+        <p style="font-size: 0.9rem; color: #2563eb; font-weight: 700; line-height: 1.8;">
             {FOUNDER_SIGNATURE}
         </p>
     </div>
