@@ -4,8 +4,35 @@ from supabase import create_client
 from datetime import datetime, timezone
 import base64
 
-# إعداد الصفحة
-st.set_page_config(page_title="وكالة تساوت للانتاج الرقمي والخدمات", page_icon="⚙️", layout="centered")
+# إعداد الصفحة وتطبيق الثيم الأزرق والهندسة النظيفة
+st.set_page_config(page_title="مكتب تساوت الرقمي للخدمات والاستشارات", page_icon="💻", layout="centered")
+
+# تخصيص التصميم بالألوان الزرقاء الاحترافية
+st.markdown("""
+    <style>
+    .main-header {
+        text-align: center;
+        color: #1e3a8a;
+        font-family: 'Cairo', sans-serif;
+        font-weight: 800;
+        margin-bottom: 0px;
+    }
+    .sub-header {
+        text-align: center;
+        color: #2563eb;
+        font-family: 'Cairo', sans-serif;
+        font-weight: 600;
+        margin-top: 5px;
+    }
+    .phone-text {
+        text-align: center;
+        color: #0284c7;
+        direction: ltr;
+        font-weight: bold;
+        font-size: 1.2rem;
+    }
+    </style>
+""", unsafe_allow_html=True)
 
 # الاتصال بالخدمات عبر الأسرار
 try:
@@ -17,12 +44,12 @@ except Exception:
 
 BRAND_PHONE = "+212691897126"
 LOCAL_PHONE = "0691897126"
-FOUNDER_NAME = "السيد الرئيس عامر (Mr. Ameur)"
+FOUNDER_SIGNATURE = "عامر وسيط خدمات بقلعة السراغنة ومؤسس الذكاء المنطقي السحابي"
 
 # تهيئة الذاكرة المؤقتة للمحادثة
 if "messages" not in st.session_state:
     st.session_state["messages"] = [
-        {"role": "assistant", "content": f"مرحباً بك يا {FOUNDER_NAME}. أنا وكيلك الذكي في وكالة تساوت للإنتاج الرقمي والخدمات والمكتبة الرقمية السحابية الجامعة. تم تأسيس هذا النظام المنطقي وفلسفته برؤيتك. تفضل بطرح كبسولة المعلوميات والذكاء الاصطناعي أو طلبك لنقوم بهندسته وتنظيمه فوراً."}
+        {"role": "assistant", "content": "مرحباً بك. أنا وكيلك الذكي في مكتب تساوت الرقمي للخدمات والاستشارات. تفضل بطرح كبسولة المعلوميات والذكاء الاصطناعي أو طلبك الاستشاري لنقوم بهندسته وتخزينه فوراً."}
     ]
 
 # دالة استرجاع المعلومات من المكتبة الرقمية السحابية الجامعة لتغذية عقل الوكيل
@@ -34,17 +61,16 @@ def fetch_digital_library_context():
         data = response.data
         if not data:
             return "المكتبة السحابية فارغة حالياً."
-        library_text = f"أرشيف المكتبة الرقمية السحابية الجامعة (المؤسس: {FOUNDER_NAME}):\n"
+        library_text = f"أرشيف المكتبة الرقمية السحابية الجامعة:\n"
         for item in data:
             library_text += f"- المحتوى/الكبسولة: {item.get('content')} | التنظيم: {item.get('message')[:120]}...\n"
         return library_text
     except Exception as e:
         return f"تعذر استرجاع البيانات من المكتبة السحابية: {e}"
 
-# العنوان الرئيسي
-st.markdown(f"<h1 style='text-align: center; color: #1e293b;'>وكالة تساوت للانتاج الرقمي والخدمات</h1>", unsafe_allow_html=True)
-st.markdown(f"<h4 style='text-align: center; color: #475569;'>المؤسس ورئيس النظام المنطقي: {FOUNDER_NAME}</h4>", unsafe_allow_html=True)
-st.markdown(f"<h3 style='text-align: center; color: #25D366; direction: ltr;'>{LOCAL_PHONE}</h3>", unsafe_allow_html=True)
+# العنوان الرئيسي باللون الأزرق
+st.markdown("<h1 class='main-header'>مكتب تساوت الرقمي للخدمات والاستشارات</h1>", unsafe_allow_html=True)
+st.markdown(f"<h3 class='phone-text'>{LOCAL_PHONE}</h3>", unsafe_allow_html=True)
 st.markdown("---")
 
 # عرض رسائل المحادثة السابقة
@@ -55,19 +81,14 @@ for message in st.session_state["messages"]:
             st.image(message["image"], caption="الصورة المرفوعة", use_container_width=True)
 
 # ---------------------------------------------------------
-# الواجهة التفاعلية النظيفة (حقل الدردشة + زر رفع الصور الداخلي)
+# الواجهة التفاعلية النظيفة (زر الرفع + حقل الكتابة)
 # ---------------------------------------------------------
-col_upload, col_input = st.columns([1, 10])
-
-with col_upload:
-    uploaded_file = st.file_uploader("➕", type=["jpg", "jpeg", "png"], label_visibility="collapsed", key="gemini_style_upload")
-
-with col_input:
-    user_prompt = st.chat_input("اكتب كبسولة المعلوميات والذكاء الاصطناعي أو طلبك ليتم حقنه وتنظيمه فوراً...")
+uploaded_file = st.file_uploader("➕ رفع صورة أو مستند للتحليل والدمج", type=["jpg", "jpeg", "png"], label_visibility="collapsed")
+user_prompt = st.chat_input("اكتب كبسولة المعلوميات والذكاء الاصطناعي أو طلبك الاستشاري هنا...")
 
 # معالجة المدخلات عند الإرسال أو رفع الصورة
 if user_prompt or uploaded_file:
-    current_user_msg = user_prompt if user_prompt else "قم بتحليل هذه الصورة واقترح رؤية تقنية تسويقية لها بناءً على النظام المنطقي للوكالة."
+    current_user_msg = user_prompt if user_prompt else "قم بتحليل هذه الصورة واقترح رؤية تقنية استشارية لها بناءً على النظام المنطقي للمكتب."
     
     img_bytes = None
     if uploaded_file:
@@ -83,19 +104,18 @@ if user_prompt or uploaded_file:
 
     # معالجة الرد عبر عقل الوكيل الذكي الأكثر ذكاءً وتنظيماً
     with st.chat_message("assistant"):
-        with st.spinner("جاري التفاعل وتحليل الكبسولة ودمجها في المكتبة السحابية الجامعة..."):
+        with st.spinner("جاري التفاعل وتحليل الكبسولة وهندستها داخل المكتبة الرقمية السحابية..."):
             ai_reply = ""
             
             try:
                 cloud_library_data = fetch_digital_library_context()
                 
-                # طبقة منطق معززة تنسب الفضل والمقرر للمؤسس السيد الرئيس عامر
                 system_instructions = (
-                    f"أنت الوكيل الذكي الفائق والمساعد الحصري لـ {FOUNDER_NAME} (السيد الرئيس عامر)، المؤسس والمبتكر للنظام المنطقي والهندسي في 'وكالة تساوت للانتاج الرقمي والخدمات' بقلعة السراغنة ومراكش.\n"
-                    f"مهمتك الأساسية هي التفاعل الذكي الفائق، وعندما يزودك المؤسس بـ 'كبسولة المعلوميات والذكاء الاصطناعي' أو أي نصوص أو أفكار، يجب عليك:\n"
+                    f"أنت الوكيل الذكي الفائق والمساعد الحصري لـ ({FOUNDER_SIGNATURE})، المبتكر والمؤسس للنظام المنطقي والهندسي في 'مكتب تساوت الرقمي للخدمات والاستشارات' بقلعة السراغنة ومراكش.\n"
+                    f"مهمتك الأساسية هي التفاعل الذكي الفائق، وعندما يزودك المؤسس بـ 'كبسولة المعلوميات والذكاء الاصطناعي' أو أي استشارات، يجب عليك:\n"
                     f"1. تنظيمها وهندستها بأسلوب احترافي متقدم (عناوين رئيسية وفرعية، نقاط منطقية، وتحليل دقيق يعكس فلسفة المؤسس).\n"
-                    f"2. حقنها وتخزينها ذهنياً وسحابياً لتكون مرجعاً للوكالة.\n"
-                    f"3. الحفاظ على نبرة الاحترام والتقدير للمؤسس {FOUNDER_NAME}.\n\n"
+                    f"2. حقنها وتخزينها ذهنياً وسحابياً لتكون مرجعاً للمكتب.\n"
+                    f"3. الحفاظ على نبرة الاحترام والتقدير للمؤسس.\n\n"
                     f"--- أرشيف المكتبة الرقمية السحابية الجامعة ---\n{cloud_library_data}\n----------------------------------------------------\n"
                     f"قدم استجابة فائقة الذكاء والهندسة، واختم الرد دائماً برقم الواتساب الرسمي: {BRAND_PHONE}."
                 )
@@ -109,7 +129,7 @@ if user_prompt or uploaded_file:
                             {
                                 "role": "user",
                                 "content": [
-                                    {"type": "text", "text": f"بأوامر من المؤسس {FOUNDER_NAME}، قم بتحليل الصورة والكبسولة وتنظيمها: {current_user_msg}"},
+                                    {"type": "text", "text": f"بأوامر من المؤسس ({FOUNDER_SIGNATURE})، قم بتحليل الصورة والكبسولة وتنظيمها: {current_user_msg}"},
                                     {"type": "image_url", "image_url": {"url": f"data:image/jpeg;base64,{b64_image}"}}
                                 ]
                             }
@@ -132,11 +152,11 @@ if user_prompt or uploaded_file:
 
             st.markdown(ai_reply)
             
-            # تخزين الكبسولة والرد المنظم في المكتبة الرقمية السحابية الجامعة (Supabase) تلقائياً باسم المؤسس
+            # تخزين الكبسولة والرد المنظم في المكتبة الرقمية السحابية الجامعة تلقائياً
             if supabase:
                 try:
                     supabase.table("instant_ads").insert({
-                        "category": f"كبسولات {FOUNDER_NAME}",
+                        "category": f"كبسولات الذكاء المنطقي",
                         "city": "قلعة السراغنة ومراكش",
                         "content": current_user_msg[:100],
                         "message": ai_reply,
@@ -156,20 +176,25 @@ if user_prompt or uploaded_file:
     st.rerun()
 
 # ==========================================
-# تذييل الصفحة (Footer) مع زر الواتساب الرسمي ونسبة التأسيس
+# تذييل الموقع (Footer) - حفظ الحقوق والإنتاج في الأسفل تماماً
 # ==========================================
 st.markdown("---")
 whatsapp_url = f"https://wa.me/{LOCAL_PHONE.replace('0', '+212', 1)}"
 
 st.markdown(f"""
-    <div style="text-align: center; padding: 10px 0; font-family: 'Cairo', sans-serif; color: #64748b;">
-        <p style="font-size: 1.1rem; font-weight: bold; color: #1e293b; margin-bottom: 3px;">وكالة تساوت للانتاج الرقمي والخدمات</p>
-        <p style="font-size: 1rem; color: #3b82f6; margin-bottom: 5px;">المؤسس ورئيس النظام المنطقي: {FOUNDER_NAME}</p>
-        <div style="margin-bottom: 10px;">
+    <div style="text-align: center; padding: 15px 0; font-family: 'Cairo', sans-serif; color: #1e3a8a;">
+        <p style="font-size: 1.1rem; font-weight: bold; margin-bottom: 5px;">مكتب تساوت الرقمي للخدمات والاستشارات</p>
+        <div style="margin-bottom: 12px;">
             <a href="{whatsapp_url}" target="_blank" style="background-color: #25D366; color: white; padding: 8px 20px; border-radius: 20px; text-decoration: none; font-weight: bold; display: inline-block;">
                 💬 تواصل عبر الواتساب ({LOCAL_PHONE})
             </a>
         </div>
-        <p style="font-size: 0.9rem;">جميع الحقوق محفوظة © 2026</p>
+        <hr style="border: none; border-top: 1px solid #cbd5e1; width: 50%; margin: 10px auto;">
+        <p style="font-size: 0.95rem; color: #2563eb; font-weight: 600; margin-bottom: 5px;">
+            إنتاج: {FOUNDER_SIGNATURE}
+        </p>
+        <p style="font-size: 0.9rem; color: #64748b; font-weight: bold;">
+            كل الحقوق محفوظة 2026
+        </p>
     </div>
 """, unsafe_allow_html=True)
