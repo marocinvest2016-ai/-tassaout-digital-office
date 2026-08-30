@@ -5,22 +5,6 @@ from PIL import Image, ImageDraw
 import textwrap
 import zipfile
 
-# محاولة استيراد المكتبات الأساسية
-try:
-    from groq import Groq
-except ImportError:
-    Groq = None
-
-try:
-    from supabase import create_client
-except ImportError:
-    create_client = None
-
-try:
-    import replicate
-except ImportError:
-    replicate = None
-
 # إعداد الصفحة
 st.set_page_config(page_title="خدمات تساوت الرقمية", page_icon="💻", layout="centered")
 
@@ -53,15 +37,30 @@ textarea, input, .stTextArea textarea {
 </style>
 """, unsafe_allow_html=True)
 
-# الاتصال بالخدمات
+# تفعيل واستيراد الوكيل الذكي والخدمات بلغة برمجية آمنة
+groq_client = None
 try:
-    supabase = create_client(st.secrets["SUPABASE_URL"], st.secrets["SUPABASE_KEY"]) if create_client else None
-    groq_client = Groq(api_key=st.secrets["GROQ_API_KEY"]) if Groq else None
-    if replicate:
+    from groq import Groq
+    if "GROQ_API_KEY" in st.secrets:
+        groq_client = Groq(api_key=st.secrets["GROQ_API_KEY"])
+except Exception:
+    pass
+
+supabase = None
+try:
+    from supabase import create_client
+    if "SUPABASE_URL" in st.secrets and "SUPABASE_KEY" in st.secrets:
+        supabase = create_client(st.secrets["SUPABASE_URL"], st.secrets["SUPABASE_KEY"])
+except Exception:
+    pass
+
+replicate = None
+try:
+    import replicate
+    if "REPLICATE_API_TOKEN" in st.secrets:
         replicate.api_token = st.secrets["REPLICATE_API_TOKEN"]
 except Exception:
-    supabase = None
-    groq_client = None
+    pass
 
 BRAND_PHONE = "+212691897126"
 LOCAL_PHONE = "0691897126"
@@ -88,7 +87,7 @@ def generate_ad_image(text):
 # العنوان الرئيسي
 st.markdown("<h1 class='main-header'>خدمات تساوت الرقمية للعقار والاعمال بقلعة السراغنة</h1>", unsafe_allow_html=True)
 
-# عرض سجل المحادثات (مع التحديث البرمجي width="stretch")
+# عرض سجل المحادثات
 for i, msg in enumerate(st.session_state["messages"]):
     with st.chat_message(msg["role"]):
         st.write(msg["content"])
@@ -106,7 +105,7 @@ for i, msg in enumerate(st.session_state["messages"]):
         if "zip" in msg:
             st.download_button("📥 تحميل حزمة الإعلانات والملفات (ZIP)", msg["zip"], f"tassaout_package_{i}.zip", key=f"zip_btn_{i}")
 
-# الشاشة التفاعلية الكبيرة الموحدة
+# الشاشة التفاعلية الكبيرة الموحدة (إدخال النص والملفات وزر الإرسال في هيكل واحد)
 with st.container(border=True):
     prompt = st.text_area(
         "حقل إدخال النص",
@@ -148,10 +147,11 @@ if submit_btn and (prompt or uploaded_files):
         قم بصياغة النصوص الإعلانية والتسويقية العقارية باحترافية تامة. اختم دائماً برقم التواصل الرسمي: {BRAND_PHONE}
         """
 
+        answer = ""
         try:
             if groq_client:
                 resp = groq_client.chat.completions.create(
-                    model="qwen/qwen3.8-27b",
+                    model="llama3-70b-8192",
                     messages=[
                         {"role": "system", "content": system_prompt},
                         {"role": "user", "content": (prompt if prompt else "") + " " + context}
@@ -160,9 +160,9 @@ if submit_btn and (prompt or uploaded_files):
                 )
                 answer = resp.choices[0].message.content
             else:
-                answer = "عذراً، عميل الذكاء الاصطناعي غير متصل حالياً."
+                answer = "عذراً، مفتاح الوكيل الذكي (Groq API Key) غير متصل بالخوادم حالياً."
         except Exception as e:
-            answer = f"حدث خطأ في المعالجة: {e}"
+            answer = f"حدث خطأ أثناء الاتصال بالوكيل الذكي: {e}"
 
         images = []
         zip_buffer = None
