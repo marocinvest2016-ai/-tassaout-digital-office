@@ -1,37 +1,42 @@
 import streamlit as st
-from groq import Groq
-from supabase import create_client
-from datetime import datetime, timezone
+from datetime import datetime
 from io import BytesIO
 from PIL import Image, ImageDraw
 import textwrap
-import replicate
-import requests
 import zipfile
 
-# إعداد الصفحة وتطبيق التصميم المخصص لشريط الإدخال المدمج
-st.set_page_config(page_title="مكتب تساوت الرقمي للخدمات والاستشارات", page_icon="💻", layout="centered")
+# محاولة استيراد المكتبات الأساسية
+try:
+    from groq import Groq
+except ImportError:
+    Groq = None
+
+try:
+    from supabase import create_client
+except ImportError:
+    create_client = None
+
+try:
+    import replicate
+except ImportError:
+    replicate = None
+
+# إعداد الصفحة
+st.set_page_config(page_title="مكتب تساوت الرقمي", page_icon="💻", layout="centered")
 
 st.markdown("""
 <style>
-.main-header {text-align: center; color: #1e3a8a; font-weight: 800; font-size: 1.8rem; font-family: 'Cairo';}
-.phone-text {text-align: center; color: #0284c7; direction: ltr; font-weight: bold; font-size: 1.2rem;}
-.stChatMessage {background-color: #f8fafc; border-radius: 16px; padding: 1rem;}
-
-/* تخصيص مظهر شريط الإدخال ليشبه Gemini تماماً */
-[data-testid="stChatInput"] {
-    border-radius: 30px !important;
-    border: 2px solid #3b82f6 !important;
-    background-color: #ffffff !important;
-}
+.main-header {text-align: center; color: #1e3a8a; font-weight: 800; font-size: 1.7rem; font-family: 'Cairo'; margin-bottom: 15px;}
+.stChatMessage {background-color: #f8fafc; border-radius: 16px; padding: 1rem; margin-bottom: 10px;}
 </style>
 """, unsafe_allow_html=True)
 
-# الاتصال بالخدمات عبر الأسرار
+# الاتصال بالخدمات
 try:
-    supabase = create_client(st.secrets["SUPABASE_URL"], st.secrets["SUPABASE_KEY"])
-    groq_client = Groq(api_key=st.secrets["GROQ_API_KEY"])
-    replicate.api_token = st.secrets["REPLICATE_API_TOKEN"]
+    supabase = create_client(st.secrets["SUPABASE_URL"], st.secrets["SUPABASE_KEY"]) if create_client else None
+    groq_client = Groq(api_key=st.secrets["GROQ_API_KEY"]) if Groq else None
+    if replicate:
+        replicate.api_token = st.secrets["REPLICATE_API_TOKEN"]
 except Exception:
     supabase = None
     groq_client = None
@@ -40,13 +45,11 @@ BRAND_PHONE = "+212691897126"
 LOCAL_PHONE = "0691897126"
 FOUNDER_SIGNATURE = "عامر وسيط خدمات بقلعة السراغنة ومؤسس الذكاء المنطقي السحابي"
 
-# تهيئة الذاكرة المؤقتة للمحادثة
 if "messages" not in st.session_state:
     st.session_state["messages"] = [
-        {"role": "assistant", "content": "مرحباً بك يا سيد الرئيس 👋\nأنا وكيلك الذكي في مكتب تساوت الرقمي للخدمات والاستشارات.\nاستخدم زر الإضافة (+) أدناه لرفع الصور أو الملفات، واكتب طلبك لنقوم بهندسته فوراً."}
+        {"role": "assistant", "content": "مرحباً بك يا سيد الرئيس 👋\nأنا وكيلك الذكي في مكتب تساوت الرقمي. استخدم الشاشة التفاعلية الكبيرة أدناه لرفع الملفات وكتابة طلبك."}
     ]
 
-# دالة توليد صورة الإعلان الهندسية الاحترافية
 def generate_ad_image(text):
     img = Image.new('RGB', (1080, 1080), color='#1e3a8a')
     draw = ImageDraw.Draw(img)
@@ -62,16 +65,13 @@ def generate_ad_image(text):
     img.save(buf, format="PNG")
     return buf.getvalue()
 
-# رأس الصفحة والهوية
-st.markdown("<h1 class='main-header'>مكتب تساوت الرقمي للخدمات والاستشارات</h1>", unsafe_allow_html=True)
-st.markdown(f"<p class='phone-text'>{LOCAL_PHONE}</p>", unsafe_allow_html=True)
-st.divider()
+# العنوان فقط فوق الشاشة
+st.markdown("<h1 class='main-header'>مكتب تساوت الرقمي | العقار والأعمال بقلعة السراغنة</h1>", unsafe_allow_html=True)
 
-# عرض رسائل المحادثة والمرفقات والأزرار السابقة
+# عرض سجل المحادثات
 for i, msg in enumerate(st.session_state["messages"]):
     with st.chat_message(msg["role"]):
         st.write(msg["content"])
-
         if "attachments" in msg:
             for att in msg["attachments"]:
                 if att["type"] == "image":
@@ -80,36 +80,36 @@ for i, msg in enumerate(st.session_state["messages"]):
                     st.video(att["data"])
                 elif att["type"] == "file":
                     st.download_button(f"📎 {att['name']}", att["data"], att["name"], key=f"hist_file_{i}_{att['name']}")
-
         if "images" in msg:
             for img_bytes in msg["images"]:
                 st.image(img_bytes, use_container_width=True)
-
         if "zip" in msg:
-            st.download_button("📥 تحميل حزمة الإعلانات والملفات (ZIP)", msg["zip"], f"tassaout_package_{i}.zip", key=f"zip_btn_{i}")
+            st.download_button("📥 تحميل الحزمة (ZIP)", msg["zip"], f"tassaout_package_{i}.zip", key=f"zip_btn_{i}")
 
-# =====================================================================
-# شريط إدخال متفاعل يجمع زر (+) وحقل الكتابة في نفس السطر السفلي (مثل Gemini)
-# =====================================================================
-col_plus, col_input = st.columns([1, 10])
+st.divider()
 
-with col_plus:
-    # زر (+) المدمج في نفس سطر الإدخال السفلي
+# الشاشة التفاعلية الكبيرة (تحتوي الزر ومساحة الكتابة بداخلها)
+with st.container(border=True):
+    st.markdown("### 🎛️ الشاشة التفاعلية للتشغيل والتحكم")
+    
     uploaded_files = st.file_uploader(
-        "➕",
+        "➕ اختر أو اسحب الصور، الفيديوهات أو المستندات هنا",
         type=["png", "jpg", "jpeg", "mp4", "pdf", "docx"],
         accept_multiple_files=True,
-        label_visibility="collapsed",
-        key="gemini_plus_uploader"
+        key="inside_uploader"
     )
+    
+    prompt = st.text_area(
+        "اكتب طلبك أو كبسولة المعلوميات هنا...",
+        placeholder="اكتب هنا تفاصيل الإعلان أو الطلب المراد تنفيذه...",
+        height=130,
+        key="inside_prompt"
+    )
+    
+    submit_btn = st.button("🚀 تنفيذ الطلب وإرسال", use_container_width=True, type="primary")
 
-with col_input:
-    prompt = st.chat_input("اكتب طلبك أو كبسولة المعلوميات هنا...")
-
-# معالجة المدخلات والطلبات عند الكتابة أو الرفع
-if prompt or uploaded_files:
+if submit_btn and (prompt or uploaded_files):
     attachments = []
-
     if uploaded_files:
         for file in uploaded_files:
             file_bytes = file.read()
@@ -120,32 +120,18 @@ if prompt or uploaded_files:
             else:
                 attachments.append({"type": "file", "data": file_bytes, "name": file.name})
 
-    user_msg = {"role": "user", "content": prompt if prompt else "تم رفع ملفات للتحليل", "attachments": attachments, "id": datetime.now().timestamp()}
+    user_msg = {"role": "user", "content": prompt if prompt else "تم رفع ملفات للتحليل", "attachments": attachments}
     st.session_state["messages"].append(user_msg)
 
-    with st.chat_message("user"):
-        st.write(user_msg["content"])
-        for att in attachments:
-            if att["type"] == "image":
-                st.image(att["data"], caption=att["name"])
-            elif att["type"] == "video":
-                st.video(att["data"])
-            else:
-                st.write(f"📎 {att['name']}")
+    with st.spinner("جاري المعالجة وتوليد الحزمة الرقمية..."):
+        context = "المستخدم رفع ملفات: " + ", ".join([a['name'] for a in attachments]) if attachments else ""
+        system_prompt = f"""
+        أنت الوكيل الذكي والمساعد الحصري لـ ({FOUNDER_SIGNATURE}) في مكتب تساوت الرقمي للخدمات والاستشارات بقلعة السراغنة ومراكش.
+        قم بصياغة النصوص الإعلانية والتسويقية باحترافية. اختم دائماً برقم التواصل الرسمي: {BRAND_PHONE}
+        """
 
-    # معالجة رد الوكيل والذكاء الاصطناعي
-    with st.chat_message("assistant"):
-        with st.spinner("جاري التفاعل وتحليل المرفقات وتوليد الحزم الرقمية..."):
-
-            context = "المستخدم رفع ملفات: " + ", ".join([a['name'] for a in attachments]) if attachments else ""
-
-            system_prompt = f"""
-            أنت الوكيل الذكي والمساعد الحصري لـ ({FOUNDER_SIGNATURE}) في مكتب تساوت الرقمي للخدمات والاستشارات بقلعة السراغنة ومراكش.
-            قم بصياغة النصوص الإعلانية والتسويقية باحترافية تامة تعكس فلسفة المؤسس.
-            اختم دائماً الرد برقم التواصل الرسمي: {BRAND_PHONE}
-            """
-
-            try:
+        try:
+            if groq_client:
                 resp = groq_client.chat.completions.create(
                     model="qwen/qwen3.8-27b",
                     messages=[
@@ -155,52 +141,42 @@ if prompt or uploaded_files:
                     temperature=0.6
                 )
                 answer = resp.choices[0].message.content
-            except Exception as e:
-                answer = f"عذراً يا سيد الرئيس، حدث خطأ في معالجة الطلب: {e}"
+            else:
+                answer = "عذراً، عميل الذكاء الاصطناعي (Groq) غير متصل حالياً."
+        except Exception as e:
+            answer = f"حدث خطأ في المعالجة: {e}"
 
-            st.write(answer)
+        images = []
+        zip_buffer = None
 
-            images = []
-            zip_buffer = None
+        if any(k in (prompt or "") for k in ["إعلان", "إعلانات", "ولد", "صايب", "تصميم"]) or attachments:
+            img_bytes = generate_ad_image(answer)
+            images.append(img_bytes)
 
-            if any(k in (prompt or "") for k in ["إعلان", "إعلانات", "ولد", "صايب", "تصميم"]) or attachments:
-                num_images = 3 if "3" in (prompt or "") else 1
-                for _ in range(num_images):
-                    img_bytes = generate_ad_image(answer)
-                    images.append(img_bytes)
-                    st.image(img_bytes, use_container_width=True)
+            zip_buffer = BytesIO()
+            with zipfile.ZipFile(zip_buffer, "w") as z:
+                z.writestr("ad_image_1.png", img_bytes)
+                z.writestr("ad_text.txt", answer)
 
-                zip_buffer = BytesIO()
-                with zipfile.ZipFile(zip_buffer, "w") as z:
-                    for idx, img_data in enumerate(images):
-                        z.writestr(f"ad_image_{idx+1}.png", img_data)
-                    z.writestr("ad_text.txt", answer)
-                
-                st.download_button("📥 تحميل حزمة الإعلانات والملفات (ZIP)", zip_buffer.getvalue(), "tassaout_package.zip", key="zip_download_new")
-
-    agent_msg = {"role": "assistant", "content": answer, "images": images if images else None, "zip": zip_buffer.getvalue() if zip_buffer else None, "id": datetime.now().timestamp()}
+    agent_msg = {
+        "role": "assistant",
+        "content": answer,
+        "images": images if images else None,
+        "zip": zip_buffer.getvalue() if zip_buffer else None
+    }
     st.session_state["messages"].append(agent_msg)
-    
     st.rerun()
 
-# ==================== تذييل الموقع (Footer) الرسمي ====================
-st.markdown("---")
+# التذييل وزر الواتساب السفلي
 whatsapp_url = f"https://wa.me/{LOCAL_PHONE.replace('0', '+212', 1)}"
-
 st.markdown(f"""
     <div style="text-align: center; padding: 15px 0; font-family: 'Cairo', sans-serif; color: #1e3a8a;">
-        <p style="font-size: 1.1rem; font-weight: bold; margin-bottom: 5px;">مكتب تساوت الرقمي للخدمات والاستشارات</p>
         <div style="margin-bottom: 12px;">
-            <a href="{whatsapp_url}" target="_blank" style="background-color: #25D366; color: white; padding: 8px 20px; border-radius: 20px; text-decoration: none; font-weight: bold; display: inline-block;">
+            <a href="{whatsapp_url}" target="_blank" style="background-color: #25D366; color: white; padding: 10px 24px; border-radius: 20px; text-decoration: none; font-weight: bold; display: inline-block;">
                 💬 تواصل عبر الواتساب ({LOCAL_PHONE})
             </a>
         </div>
-        <hr style="border: none; border-top: 1px solid #cbd5e1; width: 50%; margin: 10px auto;">
-        <p style="font-size: 0.95rem; color: #2563eb; font-weight: 600; margin-bottom: 5px;">
-            إنتاج: {FOUNDER_SIGNATURE}
-        </p>
-        <p style="font-size: 0.9rem; color: #64748b; font-weight: bold;">
-            كل الحقوق محفوظة 2026
-        </p>
+        <p style="font-size: 0.9rem; color: #2563eb; font-weight: 600;">إنتاج: {FOUNDER_SIGNATURE}</p>
+        <p style="font-size: 0.85rem; color: #64748b;">كل الحقوق محفوظة 2026</p>
     </div>
 """, unsafe_allow_html=True)
