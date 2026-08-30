@@ -88,25 +88,25 @@ def generate_ad_image(text):
 # العنوان الرئيسي
 st.markdown("<h1 class='main-header'>خدمات تساوت الرقمية للعقار والاعمال بقلعة السراغنة</h1>", unsafe_allow_html=True)
 
-# عرض سجل المحادثات
+# عرض سجل المحادثات (مع التحديث البرمجي width="stretch")
 for i, msg in enumerate(st.session_state["messages"]):
     with st.chat_message(msg["role"]):
         st.write(msg["content"])
         if "attachments" in msg:
             for att in msg["attachments"]:
                 if att["type"] == "image":
-                    st.image(att["data"], use_container_width=True)
+                    st.image(att["data"], width="stretch")
                 elif att["type"] == "video":
                     st.video(att["data"])
                 elif att["type"] == "file":
                     st.download_button(f"📎 {att['name']}", att["data"], att["name"], key=f"hist_file_{i}_{att['name']}")
         if "images" in msg:
             for img_bytes in msg["images"]:
-                st.image(img_bytes, use_container_width=True)
+                st.image(img_bytes, width="stretch")
         if "zip" in msg:
             st.download_button("📥 تحميل حزمة الإعلانات والملفات (ZIP)", msg["zip"], f"tassaout_package_{i}.zip", key=f"zip_btn_{i}")
 
-# الشاشة التفاعلية الكبيرة الموحدة (تحتوي خانة النص وأداة الرفع وزر التنفيذ حصرياً بداخله)
+# الشاشة التفاعلية الكبيرة الموحدة
 with st.container(border=True):
     prompt = st.text_area(
         "حقل إدخال النص",
