@@ -1,3 +1,4 @@
+                
 import streamlit as st
 from datetime import datetime
 from io import BytesIO
@@ -30,12 +31,12 @@ st.markdown("""
     text-align: center; 
     color: #1e3a8a; 
     font-weight: 800; 
-    font-size: 1.6rem; 
+    font-size: 1.5rem; 
     font-family: 'Cairo', sans-serif; 
-    margin-bottom: 10px;
+    margin-bottom: 5px;
     margin-top: 5px;
 }
-/* زيادة حجم الحروف والخطوط داخل خانة الكتابة والعناصر لتكون كباراً مرتين */
+/* زيادة حجم الحروف والخطوط لتكون كباراً مرتين وواضحة جداً */
 textarea, input, .stTextArea textarea {
     font-size: 1.3rem !important;
     font-weight: 600 !important;
@@ -107,21 +108,22 @@ for i, msg in enumerate(st.session_state["messages"]):
         if "zip" in msg:
             st.download_button("📥 تحميل حزمة الإعلانات والملفات (ZIP)", msg["zip"], f"tassaout_package_{i}.zip", key=f"zip_btn_{i}")
 
-# الشاشة التفاعلية الكبيرة جداً مع حروف كبيرة ومضاعفة
+# الشاشة التفاعلية الكبيرة جداً (تستغرق نصف شاشة الهاتف أو أكثر) وكل محتوياتها داخلية حصرياً
 with st.container(border=True):
     prompt = st.text_area(
         "",
         placeholder="اكتب طلبك، تفاصيل الإعلان العقاري، أو كبسولة المعلوميات هنا...",
-        height=240,
-        key="massive_box_prompt",
+        height=220,
+        key="inner_box_prompt",
         label_visibility="collapsed"
     )
     
     uploaded_files = st.file_uploader(
-        "📎 رفع الملفات، الصور، أو الفيديوهات (اختياري)",
+        "📎 رفع الملفات، الصور، أو الفيديوهات داخلياً",
         type=["png", "jpg", "jpeg", "mp4", "pdf", "docx"],
         accept_multiple_files=True,
-        key="massive_box_uploader"
+        key="inner_box_uploader",
+        label_visibility="collapsed"
     )
     
     submit_btn = st.button("🚀 تنفيذ الطلب وإرسال", use_container_width=True, type="primary")
@@ -190,11 +192,11 @@ whatsapp_url = f"https://wa.me/{LOCAL_PHONE.replace('0', '+212', 1)}"
 st.markdown(f"""
     <div style="text-align: center; padding: 20px 0; font-family: 'Cairo', sans-serif; color: #1e3a8a;">
         <div style="margin-bottom: 12px;">
-            <a href="{whatsapp_url}" target="_blank" style="background-color: #25D366; color: white; padding: 12px 28px; border-radius: 20px; text-decoration: none; font-weight: bold; font-size: 1.1rem; display: inline-block;">
+            <a href="{whatsapp_url}" target="_blank" style="background-color: #25D366; color: white; padding: 10px 24px; border-radius: 20px; text-decoration: none; font-weight: bold; display: inline-block;">
                 💬 تواصل عبر الواتساب ({LOCAL_PHONE})
             </a>
         </div>
-        <p style="font-size: 1rem; color: #2563eb; font-weight: 700; line-height: 1.8;">
+        <p style="font-size: 0.9rem; color: #2563eb; font-weight: 700; line-height: 1.8;">
             {FOUNDER_SIGNATURE}
         </p>
     </div>
