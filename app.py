@@ -1,4 +1,3 @@
-                
 import streamlit as st
 from datetime import datetime
 from io import BytesIO
@@ -36,7 +35,7 @@ st.markdown("""
     margin-bottom: 5px;
     margin-top: 5px;
 }
-/* زيادة حجم الحروف والخطوط لتكون كباراً مرتين وواضحة جداً */
+/* زيادة حجم الحروف والخطوط لتكون واضحة ومضاعفة */
 textarea, input, .stTextArea textarea {
     font-size: 1.3rem !important;
     font-weight: 600 !important;
@@ -108,21 +107,21 @@ for i, msg in enumerate(st.session_state["messages"]):
         if "zip" in msg:
             st.download_button("📥 تحميل حزمة الإعلانات والملفات (ZIP)", msg["zip"], f"tassaout_package_{i}.zip", key=f"zip_btn_{i}")
 
-# الشاشة التفاعلية الكبيرة جداً (تستغرق نصف شاشة الهاتف أو أكثر) وكل محتوياتها داخلية حصرياً
+# الشاشة التفاعلية الكبيرة (نصف شاشة الهاتف) وبداخلها حصرياً خانة الكتابة وزر الرفع وزر الإرسال
 with st.container(border=True):
     prompt = st.text_area(
         "",
         placeholder="اكتب طلبك، تفاصيل الإعلان العقاري، أو كبسولة المعلوميات هنا...",
         height=220,
-        key="inner_box_prompt",
+        key="unified_prompt_box",
         label_visibility="collapsed"
     )
     
     uploaded_files = st.file_uploader(
-        "📎 رفع الملفات، الصور، أو الفيديوهات داخلياً",
+        "",
         type=["png", "jpg", "jpeg", "mp4", "pdf", "docx"],
         accept_multiple_files=True,
-        key="inner_box_uploader",
+        key="unified_file_uploader",
         label_visibility="collapsed"
     )
     
