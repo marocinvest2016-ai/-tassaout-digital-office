@@ -5,25 +5,34 @@ from datetime import datetime, timezone
 from io import BytesIO
 from PIL import Image, ImageDraw
 import textwrap
-import base64
+import replicate
+import requests
+import zipfile
 
-st.set_page_config(page_title="مكتب تساوت الرقمي للخدمات والاستشارات", page_icon="💻", layout="centered")
+# إعداد الصفحة وتطبيق التصميم المخصص لشريط الإدخال المدمج
+data_page_config = st.set_page_config(page_title="مكتب تساوت الرقمي للخدمات والاستشارات", page_icon="💻", layout="centered")
 
-# الثيم الأزرق النظيف والاحترافي
 st.markdown("""
 <style>
 .main-header {text-align: center; color: #1e3a8a; font-weight: 800; font-size: 1.8rem; font-family: 'Cairo';}
-.phone-text {text-align: center; color: #0284c7; direction: ltr; font-weight: bold;}
+.phone-text {text-align: center; color: #0284c7; direction: ltr; font-weight: bold; font-size: 1.2rem;}
 .stChatMessage {background-color: #f8fafc; border-radius: 16px; padding: 1rem;}
-.upload-box {display: flex; gap: 10px; align-items: center;}
+
+/* تخصيص مظهر شريط الإدخال ليشبه Gemini تماماً */
+[data-testid="stChatInput"] {
+    border-radius: 30px !important;
+    border: 2px solid #3b82f6 !important;
+    background-color: #ffffff !important;
+}
 </style>
 """, unsafe_allow_html=True)
 
-# الاتصال بالخدمات
+# الاتصال بالخدمات عبر الأسرار
 try:
     supabase = create_client(st.secrets["SUPABASE_URL"], st.secrets["SUPABASE_KEY"])
     groq_client = Groq(api_key=st.secrets["GROQ_API_KEY"])
-except:
+    replicate.api_token = st.secrets["REPLICATE_API_TOKEN"]
+except Exception:
     supabase = None
     groq_client = None
 
@@ -34,10 +43,10 @@ FOUNDER_SIGNATURE = "عامر وسيط خدمات بقلعة السراغنة و
 # تهيئة الذاكرة المؤقتة للمحادثة
 if "messages" not in st.session_state:
     st.session_state["messages"] = [
-        {"role": "assistant", "content": "مرحباً بك يا سيد الرئيس 👋\nأنا وكيلك الذكي في مكتب تساوت الرقمي للخدمات والاستشارات.\nاضغط على زر (+) باش ترفع صورة عقار، فيديو، ولا ملف وسأقوم بتحليله وتوليد الإعلان فوراً."}
+        {"role": "assistant", "content": "مرحباً بك يا سيد الرئيس 👋\nأنا وكيلك الذكي في مكتب تساوت الرقمي للخدمات والاستشارات.\nاستخدم زر الإضافة (+) أدناه لرفع الصور أو الملفات، واكتب طلبك لنقوم بهندسته فوراً."}
     ]
 
-# دالة توليد صورة الإعلان الاحترافية
+# دالة توليد صورة الإعلان الهندسية الاحترافية
 def generate_ad_image(text):
     img = Image.new('RGB', (1080, 1080), color='#1e3a8a')
     draw = ImageDraw.Draw(img)
@@ -53,12 +62,12 @@ def generate_ad_image(text):
     img.save(buf, format="PNG")
     return buf.getvalue()
 
-# عنوان الهيدر الرئيسي
+# رأس الصفحة والهوية
 st.markdown("<h1 class='main-header'>مكتب تساوت الرقمي للخدمات والاستشارات</h1>", unsafe_allow_html=True)
 st.markdown(f"<p class='phone-text'>{LOCAL_PHONE}</p>", unsafe_allow_html=True)
 st.divider()
 
-# عرض رسائل المحادثة والمرفقات السابقة
+# عرض رسائل المحادثة والمرفقات والأزرار السابقة
 for i, msg in enumerate(st.session_state["messages"]):
     with st.chat_message(msg["role"]):
         st.write(msg["content"])
@@ -70,32 +79,34 @@ for i, msg in enumerate(st.session_state["messages"]):
                 elif att["type"] == "video":
                     st.video(att["data"])
                 elif att["type"] == "file":
-                    st.download_button(f"📎 {att['name']}", att["data"], att["name"], key=f"history_file_{i}_{att['name']}")
+                    st.download_button(f"📎 {att['name']}", att["data"], att["name"], key=f"hist_file_{i}_{att['name']}")
 
-        if "generated_image" in msg:
-            st.image(msg["generated_image"], use_container_width=True)
-            col1, col2 = st.columns(2)
-            with col1:
-                st.download_button("📥 تحميل الصورة", msg["generated_image"], "ad_tassaout.png", "image/png", key=f"img_{i}")
-            with col2:
-                st.download_button("📄 تحميل النص", msg["content"], "ad.txt", key=f"txt_{i}")
+        if "images" in msg:
+            for img_bytes in msg["images"]:
+                st.image(img_bytes, use_container_width=True)
 
-# ==================== شريط الإدخال المدمج مع زر + ====================
-col_input, col_btn = st.columns([8, 1])
+        if "zip" in msg:
+            st.download_button("📥 تحميل حزمة الإعلانات والملفات (ZIP)", msg["zip"], f"tassaout_package_{i}.zip", key=f"zip_btn_{i}")
 
-with col_btn:
+# =====================================================================
+# شريط إدخال متفاعل يجمع زر (+) وحقل الكتابة في نفس السطر السفلي (مثل Gemini)
+# =====================================================================
+col_plus, col_input = st.columns([1, 10])
+
+with col_plus:
+    # زر (+) المدمج في نفس سطر الإدخال السفلي
     uploaded_files = st.file_uploader(
         "➕",
         type=["png", "jpg", "jpeg", "mp4", "pdf", "docx"],
         accept_multiple_files=True,
         label_visibility="collapsed",
-        key="uploader"
+        key="gemini_plus_uploader"
     )
 
 with col_input:
-    prompt = st.chat_input("اكتب طلبك هنا... أو اضغط على + لرفع ملف أو صورة")
+    prompt = st.chat_input("اكتب طلبك أو كبسولة المعلوميات هنا...")
 
-# معالجة المدخلات عند الإرسال أو رفع الملفات
+# معالجة المدخلات والطلبات عند الكتابة أو الرفع
 if prompt or uploaded_files:
     attachments = []
 
@@ -109,7 +120,7 @@ if prompt or uploaded_files:
             else:
                 attachments.append({"type": "file", "data": file_bytes, "name": file.name})
 
-    user_msg = {"role": "user", "content": prompt if prompt else "تم رفع مرفقات للتحليل", "attachments": attachments, "id": datetime.now().timestamp()}
+    user_msg = {"role": "user", "content": prompt if prompt else "تم رفع ملفات للتحليل", "attachments": attachments, "id": datetime.now().timestamp()}
     st.session_state["messages"].append(user_msg)
 
     with st.chat_message("user"):
@@ -122,17 +133,16 @@ if prompt or uploaded_files:
             else:
                 st.write(f"📎 {att['name']}")
 
-    # معالجة رد الوكيل عبر الذكاء الاصطناعي
+    # معالجة رد الوكيل والذكاء الاصطناعي
     with st.chat_message("assistant"):
-        with st.spinner("جاري التحليل وتوليد الإعلان هندسياً..."):
+        with st.spinner("جاري التفاعل وتحليل المرفقات وتوليد الحزم الرقمية..."):
 
             context = "المستخدم رفع ملفات: " + ", ".join([a['name'] for a in attachments]) if attachments else ""
 
             system_prompt = f"""
             أنت الوكيل الذكي والمساعد الحصري لـ ({FOUNDER_SIGNATURE}) في مكتب تساوت الرقمي للخدمات والاستشارات بقلعة السراغنة ومراكش.
-            إذا رفع المستخدم صورة عقار أو مرفق، قم بتحليله وتقديم رؤية هندسية وتسويقية احترافية.
-            إذا طلب إعلان، قم بتنظيم وصياغة النص بشكل راقي وجذاب.
-            اختم دائماً برقم التواصل الرسمي: {BRAND_PHONE}
+            قم بصياغة النصوص الإعلانية والتسويقية باحترافية تامة تعكس فلسفة المؤسس.
+            اختم دائماً الرد برقم التواصل الرسمي: {BRAND_PHONE}
             """
 
             try:
@@ -150,19 +160,25 @@ if prompt or uploaded_files:
 
             st.write(answer)
 
-            generated_image = None
-            if any(k in (prompt or "") for k in ["إعلان", "ولد", "صايب", "تصميم"]) or attachments:
-                generated_image = generate_ad_image(answer)
-                st.image(generated_image, use_container_width=True)
-                col1, col2 = st.columns(2)
-                with col1:
-                    st.download_button("📥 تحميل الصورة", generated_image, "ad_tassaout.png", key="new_img_dl")
-                with col2:
-                    st.download_button("📄 تحميل النص", answer, "ad.txt", key="new_txt_dl")
+            images = []
+            zip_buffer = None
 
-    agent_msg = {"role": "assistant", "content": answer, "id": datetime.now().timestamp()}
-    if generated_image:
-        agent_msg["generated_image"] = generated_image
+            if any(k in (prompt or "") for k in ["إعلان", "إعلانات", "ولد", "صايب", "تصميم"]) or attachments:
+                num_images = 3 if "3" in (prompt or "") else 1
+                for _ in range(num_images):
+                    img_bytes = generate_ad_image(answer)
+                    images.append(img_bytes)
+                    st.image(img_bytes, use_container_width=True)
+
+                zip_buffer = BytesIO()
+                with zipfile.ZipFile(zip_buffer, "w") as z:
+                    for idx, img_data in enumerate(images):
+                        z.writestr(f"ad_image_{idx+1}.png", img_data)
+                    z.writestr("ad_text.txt", answer)
+                
+                st.download_button("📥 تحميل حزمة الإعلانات والملفات (ZIP)", zip_buffer.getvalue(), "tassaout_package.zip", key="zip_download_new")
+
+    agent_msg = {"role": "assistant", "content": answer, "images": images if images else None, "zip": zip_buffer.getvalue() if zip_buffer else None, "id": datetime.now().timestamp()}
     st.session_state["messages"].append(agent_msg)
     
     st.rerun()
