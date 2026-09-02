@@ -1,38 +1,50 @@
 # ==============================================================================
-# app.py - OMEGA AGENTIC SUPER AI with Groq & WhatsApp Integration
+# app.py - OMEGA AGENTIC SUPER AI with Groq, Supabase & WhatsApp Integration
 # SEAU: TASSAOUT VISION VERIFIED © 2026 | BORDEAUX #800020 & GOLD #D4AF37
 # ==============================================================================
 
 import streamlit as st
 from groq import Groq
+from supabase import create_client, Client
 import requests
 import json
 
 st.set_page_config(page_title="OMEGA AGENTIC AI", page_icon="👑", layout="wide")
 st.markdown('<h1 style="text-align:center;color:#800020;">👑 OMEGA AGENTIC SUPER AI</h1>', unsafe_allow_html=True)
-st.markdown('<p style="text-align:center;color:#D4AF37;">Multi-Domaine + WHATSAPP AUTO | TASSAOUT & ATIS</p>', unsafe_allow_html=True)
+st.markdown('<p style="text-align:center;color:#D4AF37;">Multi-Domaine + WHATSAPP AUTO + SUPABASE | TASSAOUT & ATIS</p>', unsafe_allow_html=True)
 st.markdown("---")
 
-# قراءة المفاتيح من Streamlit Secrets
+# ==========================================
+# إعدادات المفاتيح (تُقرأ حصرياً وبأمان تام من Streamlit Secrets لتجنب حظر GitHub)
+# ==========================================
 GROQ_API_KEY = st.secrets.get("GROQ_API_KEY")
+SUPABASE_URL = st.secrets.get("SUPABASE_URL")
+SUPABASE_KEY = st.secrets.get("SUPABASE_KEY")
 WHATSAPP_TOKEN = st.secrets.get("WHATSAPP_ACCESS_TOKEN")
 WHATSAPP_PHONE_ID = st.secrets.get("WHATSAPP_PHONE_NUMBER_ID")
 WHATSAPP_VERSION = st.secrets.get("WHATSAPP_API_VERSION", "v20.0")
 
-# تهيئة عميل Groq
+# التحقق من وجود مفتاح Groq
 if not GROQ_API_KEY:
-    st.error("⚠️ تنبيه: مفتاح GROQ_API_KEY غير موجود في إعدادات الأسرار (Secrets).")
+    st.error("⚠️ تنبيه حرج: مفتاح GROQ_API_KEY غير موجود في إعدادات Secrets الخاصة بـ Streamlit.")
     st.stop()
 
 client = Groq(api_key=GROQ_API_KEY)
 
+# تهيئة عميل Supabase
+supabase: Client = None
+try:
+    if SUPABASE_URL and SUPABASE_KEY:
+        supabase = create_client(SUPABASE_URL, SUPABASE_KEY)
+except Exception:
+    pass
+
 def call_agent(role, task):
     """دالة ذكية تتنقل بين النماذج تلقائياً لضمان عدم توقف التطبيق نهائياً"""
     system_prompt = f"You are {role}. Expert for TASSAOUT & ATIS in Morocco. Respond in Moroccan Arabic with professional emojis."
-    
-    # قائمة النماذج المرتبة حسب الأولوية للاحتياط التلقائي
     models_to_try = ["llama-3.3-70b-versatile", "llama-3.1-8b-instant"]
     
+    last_error = ""
     for model_name in models_to_try:
         try:
             res = client.chat.completions.create(
@@ -42,13 +54,17 @@ def call_agent(role, task):
                 max_tokens=1000
             )
             return res.choices[0].message.content
-        except Exception:
-            continue # الانتقال تلقائياً للنموذج الموالي في حال حدوث أي خطأ
+        except Exception as e:
+            last_error = str(e)
+            continue 
             
-    return f"⚠️ خطأ في الاتصال بـ Groq API للوكيل {role}. تحقق من المفتاح."
+    return f"⚠️ خطأ تقني للوكيل {role}: {last_error}"
 
 def send_whatsapp(to_number, message):
     """دالة إرسال الواتساب عبر Meta Cloud API"""
+    if not WHATSAPP_TOKEN or not WHATSAPP_PHONE_ID:
+        return False, "بيانات واتساب غير مكتملة في الأسرار."
+        
     url = f"https://graph.facebook.com/{WHATSAPP_VERSION}/{WHATSAPP_PHONE_ID}/messages"
     headers = {"Authorization": f"Bearer {WHATSAPP_TOKEN}", "Content-Type": "application/json"}
     data = {
@@ -102,14 +118,23 @@ if st.button("⚡ فعل وكلاء OMEGA + إرسال واتساب"):
 
             # 4. إرسال واتساب تلقائي
             st.subheader("📲 تقرير إرسال واتساب التلقائي")
-            if WHATSAPP_TOKEN and WHATSAPP_PHONE_ID:
-                success, response = send_whatsapp(send_to, ad)
-                if success:
-                    st.success(f"✅ تم إرسال الإعلان بنجاح إلى الرقم: {send_to}")
-                else:
-                    st.error(f"❌ خطأ في إرسال الواتساب (تأكد من تجديد التوكن في Meta Secrets). التفاصيل: `{response}`")
+            success, response = send_whatsapp(send_to, ad)
+            if success:
+                st.success(f"✅ تم إرسال الإعلان بنجاح إلى الرقم: {send_to}")
             else:
-                st.warning("⚠️ لم يتم ضبط رموز توكن واتساب في الأسرار (Secrets).")
+                st.error(f"❌ خطأ في إرسال الواتساب (تأكد من صلاحية التوكن في Meta Secrets). التفاصيل: `{response}`")
+
+            # 5. حفظ السجل في Supabase
+            if supabase:
+                try:
+                    supabase.table("omega_logs").insert({
+                        "domain": domaine,
+                        "task": user_task,
+                        "ad_content": ad,
+                        "recipient": send_to
+                    }).execute()
+                except Exception:
+                    pass
 
             st.markdown("---")
             st.markdown("🌿 **[TASSAOUT & ATIS AGENTIC VERIFIED]** | ameur signature tassaout ai © 2026")
