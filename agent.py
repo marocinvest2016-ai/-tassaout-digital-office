@@ -15,42 +15,30 @@ def call_meta_ai(prompt, agent_name):
 
     try:
         res = requests.post(url, headers=headers, json=payload, timeout=60)
+        res.raise_for_status()
         data = res.json()
     except Exception as e:
         return f"خطأ في الاتصال بـ Meta: {e}"
 
-    # حماية من KeyError - نجربو كل الاحتمالات
-    try:
+    # نجربو كل صيغ الرد
+    if 'response' in data and data['response']:
         return data['response'][0]['content'][0]['text']
-    except KeyError:
-        try:
-            return data['output'][0]['content'][0]['text']
-        except KeyError:
-            try:
-                return data['choices'][0]['message']['content']
-            except KeyError:
-                return f"خطأ من Meta: {data}"
+    elif 'output' in data and data['output']:
+        return data['output'][0]['content'][0]['text']
+    elif 'choices' in data and data['choices']:
+        return data['choices'][0]['message']['content']
+    else:
+        return f"رد غير متوقع من Meta: {data}"
 
-class CEO:
+class OmegaAgent:
     def __init__(self, domaine):
         self.domaine = domaine
 
-    def plan(self, task):
-        prompt = f"Goal: {task}. Create 3-step marketing plan for {self.domaine}. Respond in Arabic."
-        return call_meta_ai(prompt, "Meta CEO Agent")
+    def ceo(self, task):
+        return call_meta_ai(f"Goal: {task}. Create 3-step marketing plan for {self.domaine}. Respond in Arabic.", "Meta CEO")
 
-class CTO:
-    def __init__(self, domaine):
-        self.domaine = domaine
+    def cto(self, task):
+        return call_meta_ai(f"Goal: {task}. Create technical strategy for {self.domaine}. Respond in Arabic.", "Meta CTO")
 
-    def strategy(self, task):
-        prompt = f"Goal: {task}. Create technical strategy for {self.domaine}. Respond in Arabic."
-        return call_meta_ai(prompt, "Meta CTO Agent")
-
-class COO:
-    def __init__(self, domaine):
-        self.domaine = domaine
-
-    def execute(self, task):
-        prompt = f"Goal: {task}. Create execution plan for {self.domaine}. Respond in Arabic."
-        return call_meta_ai(prompt, "Meta COO Agent")
+    def coo(self, task):
+        return call_meta_ai(f"Goal: {task}. Create execution plan for {self.domaine}. Respond in Arabic.", "Meta COO")
