@@ -1,79 +1,108 @@
 # ==============================================================================
-# app.py - OMEGA AGENT CLEAN | GROQ FREE
+# app.py - OMEGA AGENTIC SUPER AI with Groq & WhatsApp Integration
+# SEAU: TASSAOUT VISION VERIFIED © 2026 | BORDEAUX #800020 & GOLD #D4AF37
 # ==============================================================================
 
 import streamlit as st
-import os
-import json
-from datetime import datetime
 from groq import Groq
+import requests
+import json
 
-st.set_page_config(page_title="الوكيل الذكي | GROQ FREE", page_icon="👑", layout="centered")
-
-st.markdown('<h1 style="text-align:center;color:#800020;">👑 OMEGA AGENT</h1>', unsafe_allow_html=True)
-st.markdown('<p style="text-align:center;">VOLT_HUNTER + GROQ LLAMA 3.3 | TASSAOUT & ATIS</p>', unsafe_allow_html=True)
+st.set_page_config(page_title="OMEGA AGENTIC AI", page_icon="👑", layout="wide")
+st.markdown('<h1 style="text-align:center;color:#800020;">👑 OMEGA AGENTIC SUPER AI</h1>', unsafe_allow_html=True)
+st.markdown('<p style="text-align:center;color:#D4AF37;">Multi-Domaine + WHATSAPP AUTO | TASSAOUT & ATIS</p>', unsafe_allow_html=True)
 st.markdown("---")
 
-# المفاتيح من Secrets
+# قراءة المفاتيح من Streamlit Secrets
 GROQ_API_KEY = st.secrets.get("GROQ_API_KEY")
+WHATSAPP_TOKEN = st.secrets.get("WHATSAPP_ACCESS_TOKEN")
+WHATSAPP_PHONE_ID = st.secrets.get("WHATSAPP_PHONE_NUMBER_ID")
+WHATSAPP_VERSION = st.secrets.get("WHATSAPP_API_VERSION", "v20.0")
 
-# الذاكرة
-MEMORY_FILE = "memory.json"
-def load_mem():
-    if os.path.exists(MEMORY_FILE):
-        with open(MEMORY_FILE, "r", encoding="utf-8") as f: return json.load(f)
-    return []
-def save_mem(data):
-    with open(MEMORY_FILE, "w", encoding="utf-8") as f: json.dump(data, f, ensure_ascii=False, indent=2)
-memory = load_mem()
+# تهيئة عميل Groq
+if not GROQ_API_KEY:
+    st.error("⚠️ تنبيه: مفتاح GROQ_API_KEY غير موجود في إعدادات الأسرار (Secrets).")
+    st.stop()
 
-def hunt(query):
-    return f"Market data found for: {query}"
+client = Groq(api_key=GROQ_API_KEY)
 
-# الواجهة
-sector = st.selectbox("اختر القطاع", ["🏭 العقار", "🏗️ الهندسة", "🌐 التجارة"])
-user_input = st.text_area("أدخل طلبك", placeholder="مثال: شقق للبيع في قلعة السراغنة")
+def call_agent(role, task):
+    system_prompt = f"You are {role}. Expert for TASSAOUT & ATIS in Morocco. Respond in Moroccan Arabic with professional emojis."
+    try:
+        res = client.chat.completions.create(
+            model="llama-3.1-70b-versatile",
+            messages=[{"role": "system", "content": system_prompt}, {"role": "user", "content": task}],
+            temperature=0.7, 
+            max_tokens=1000
+        )
+        return res.choices[0].message.content
+    except Exception as e:
+        return f"⚠️ خطأ في الاتصال بـ Groq API للوكيل {role}: {e}"
 
-if st.button("⚡ شغل الوكيل"):
-    if user_input:
-        with st.spinner("جاري التوليد بواسطة Groq..."):
+def send_whatsapp(to_number, message):
+    """دالة إرسال الواتساب عبر Meta Cloud API"""
+    url = f"https://graph.facebook.com/{WHATSAPP_VERSION}/{WHATSAPP_PHONE_ID}/messages"
+    headers = {"Authorization": f"Bearer {WHATSAPP_TOKEN}", "Content-Type": "application/json"}
+    data = {
+        "messaging_product": "whatsapp",
+        "to": to_number,
+        "type": "text",
+        "text": {"body": message}
+    }
+    try:
+        res = requests.post(url, headers=headers, json=data)
+        return res.status_code == 200, res.json()
+    except Exception as e:
+        return False, str(e)
 
-            hunt_data = hunt(user_input)
-            st.info(f"✅ {hunt_data}")
+# القائمة الجانبية الواجهة
+st.sidebar.markdown("### 🏛️ إعدادات محطة القيادة")
+domaine = st.sidebar.selectbox("اختر المجال الرئيسي:", ["🏭 العقار", "🏗️ الهندسة والبناء", "🌐 التجارة الرقمية", "📚 التعليم", "🏥 الخدمات"])
+send_to = st.sidebar.text_input("رقم الواتساب للإرسال:", value="212691897126", help="بدون علامة +. مثال: 212691897126")
+st.sidebar.markdown("---")
+st.sidebar.info("📞 الهاتف: +212691897126\n📧 marocinvest2012@gmail.com")
 
-            try:
-                client = Groq(api_key=GROQ_API_KEY)
+# الواجهة الرئيسية
+st.markdown(f"### 🎯 المجال النشط: {domaine}")
+user_task = st.text_area("أعطي المهمة للوكيل الذكي:", placeholder="مثال: تسويق وبيع شقق ممتازة بقلعة السراغنة مع توفير الدعم")
 
-                prompt = f"""
-                You are a marketing agent for Tassaout & ATIS.
-                Sector: {sector}
-                User request: {user_input}
-                Market data: {hunt_data}
-                Contact: +212691897126 | marocinvest2012@gmail.com
-                Task: Write a professional ad in MOROCCAN ARABIC with emojis and hashtags.
-                End with: 🌿 [TASSAOUT & ATIS VERIFIED] ameur signature tassaout ai © 2026
-                """
+if st.button("⚡ فعل وكلاء OMEGA + إرسال واتساب"):
+    if user_task.strip() == "":
+        st.warning("المرجو إدخال تفاصيل المهمة أولاً.")
+    else:
+        with st.spinner("🤖 جاري تشغيل خلية الوكلاء الذكيين (CEO + Researcher + Copywriter)..."):
 
-                res = client.chat.completions.create(
-                    model="llama-3.3-70b-versatile", # أقوى موديل مجاني
-                    messages=[{"role": "user", "content": prompt}],
-                    temperature=0.7,
-                    max_tokens=800
-                )
-                output = res.choices[0].message.content
-                st.success("✅ تم التوليد بنجاح بواسطة Groq Llama 3.3")
+            # 1. المدير يخطط
+            plan = call_agent("CEO Agent", f"Goal: {user_task}. Domaine: {domaine}. Create 3-step professional execution plan.")
+            st.subheader("🧠 خطة المدير التنفيذي (CEO)")
+            st.write(plan)
 
-            except Exception as e:
-                output = f"👑 [تقرير بديل]\nالموضوع: {user_input}\nالقطاع: {sector}\n📞 +212691897126\n🌿 [TASSAOUT & ATIS VERIFIED]"
-                st.error(f"الوضع البديل: {e}")
+            # 2. الباحث يحلل السوق
+            research = call_agent("Market Researcher", f"Based on plan: {plan}. Research and analyze target market for: {user_task}")
+            st.subheader("🔍 تقرير استخبارات السوق")
+            st.write(research)
 
-            memory.append({"time": datetime.now().strftime("%Y-%m-%d %H:%M"), "request": user_input, "output": output})
-            save_mem(memory)
+            # 3. الكاتب يصيغ الإعلان النهائي
+            ad_prompt = f"""Based on research: {research}. Write a powerful, attractive marketing ad with clear CTA in Moroccan Arabic. 
+            Include contact info: الهاتف: +212691897126 | البريد: marocinvest2012@gmail.com"""
+            ad = call_agent("Marketing Copywriter", ad_prompt)
+            st.subheader("📢 الإعلان التسويقي النهائي")
+            st.success(ad)
+
+            # 4. إرسال واتساب تلقائي
+            st.subheader("📲 تقرير إرسال واتساب التلقائي")
+            if WHATSAPP_TOKEN and WHATSAPP_PHONE_ID:
+                success, response = send_whatsapp(send_to, ad)
+                if success:
+                    st.success(f"✅ تم إرسال الإعلان بنجاح إلى الرقم: {send_to}")
+                else:
+                    st.error(f"❌ فشل إرسال الواتساب: {response}")
+            else:
+                st.warning("⚠️ لم يتم ضبط رموز توكن واتساب في الأسرار (Secrets)، تم تخطي مرحلة الإرسال التلقائي.")
 
             st.markdown("---")
-            st.markdown(output)
+            st.markdown("🌿 **[TASSAOUT & ATIS AGENTIC VERIFIED]** | ameur signature tassaout ai © 2026")
 
-with st.expander("📁 سجل الأوامر"):
-    st.json(memory)
-
-st.markdown("🌿 [TASSAOUT & ATIS VERIFIED] | ameur signature tassaout ai © 2026")
+# تذييل الصفحة
+st.markdown("---")
+st.markdown("🌿 **[TASSAOUT & ATIS VERIFIED]** | ameur signature tassaout ai © 2026")
