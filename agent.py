@@ -8,7 +8,7 @@ def call_meta_ai(prompt, agent_name):
         "Content-Type": "application/json"
     }
     payload = {
-        "model": "llama-3.1-70b-versatile",
+        "model": "meta-llama-3.3-70b-versatile", # <-- تبدل هنا
         "messages": [
             {"role": "system", "content": f"You are {agent_name} from Meta AI. Expert in {st.session_state.domaine}. Respond in Moroccan Arabic Darija with bullet points and emojis."},
             {"role": "user", "content": prompt}
@@ -25,7 +25,7 @@ def call_meta_ai(prompt, agent_name):
 
 def send_whatsapp_meta(message):
     url = f"https://graph.facebook.com/{st.secrets['WHATSAPP_API_VERSION']}/{st.secrets['WHATSAPP_PHONE_NUMBER_ID']}/messages"
-    headers = { # <-- كان هنا القوس ناقص
+    headers = {
         "Authorization": f"Bearer {st.secrets['WHATSAPP_ACCESS_TOKEN']}",
         "Content-Type": "application/json"
     }
@@ -57,6 +57,6 @@ class OmegaAgent:
         send_whatsapp_meta(f"👑 OMEGA AGENT - Meta AI\nإعلان جديد:\n\n{ad}")
         return ad
 
-    def closer(self, ad): # <-- زدنا هادي باش يخدم app.py
+    def closer(self, ad):
         final = call_meta_ai(f"Take this ad: {ad}. Make it more aggressive with FOMO and urgency. Add 2 emojis max.", "Meta Closer")
         return final
