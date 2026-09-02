@@ -27,17 +27,25 @@ if not GROQ_API_KEY:
 client = Groq(api_key=GROQ_API_KEY)
 
 def call_agent(role, task):
+    """دالة ذكية تتنقل بين النماذج تلقائياً لضمان عدم توقف التطبيق نهائياً"""
     system_prompt = f"You are {role}. Expert for TASSAOUT & ATIS in Morocco. Respond in Moroccan Arabic with professional emojis."
-    try:
-        res = client.chat.completions.create(
-            model="llama-3.3-70b-versatile",  # نموذج مدعوم حالياً من Groq
-            messages=[{"role": "system", "content": system_prompt}, {"role": "user", "content": task}],
-            temperature=0.7, 
-            max_tokens=1000
-        )
-        return res.choices[0].message.content
-    except Exception as e:
-        return f"⚠️ خطأ في الاتصال بـ Groq API للوكيل {role}: {e}"
+    
+    # قائمة النماذج المرتبة حسب الأولوية للاحتياط التلقائي
+    models_to_try = ["llama-3.3-70b-versatile", "llama-3.1-8b-instant"]
+    
+    for model_name in models_to_try:
+        try:
+            res = client.chat.completions.create(
+                model=model_name,
+                messages=[{"role": "system", "content": system_prompt}, {"role": "user", "content": task}],
+                temperature=0.7, 
+                max_tokens=1000
+            )
+            return res.choices[0].message.content
+        except Exception:
+            continue # الانتقال تلقائياً للنموذج الموالي في حال حدوث أي خطأ
+            
+    return f"⚠️ خطأ في الاتصال بـ Groq API للوكيل {role}. تحقق من المفتاح."
 
 def send_whatsapp(to_number, message):
     """دالة إرسال الواتساب عبر Meta Cloud API"""
@@ -99,9 +107,9 @@ if st.button("⚡ فعل وكلاء OMEGA + إرسال واتساب"):
                 if success:
                     st.success(f"✅ تم إرسال الإعلان بنجاح إلى الرقم: {send_to}")
                 else:
-                    st.error(f"❌ خطأ في إرسال الواتساب (رمز الخطأ 190: التوكن منتهي الصلاحية أو غير صالح). التفاصيل: `{response}`")
+                    st.error(f"❌ خطأ في إرسال الواتساب (تأكد من تجديد التوكن في Meta Secrets). التفاصيل: `{response}`")
             else:
-                st.warning("⚠️ لم يتم ضبط رموز توكن واتساب في الأسرار (Secrets)، تم تخطي مرحلة الإرسال التلقائي.")
+                st.warning("⚠️ لم يتم ضبط رموز توكن واتساب في الأسرار (Secrets).")
 
             st.markdown("---")
             st.markdown("🌿 **[TASSAOUT & ATIS AGENTIC VERIFIED]** | ameur signature tassaout ai © 2026")
