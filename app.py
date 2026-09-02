@@ -30,7 +30,7 @@ def call_agent(role, task):
     system_prompt = f"You are {role}. Expert for TASSAOUT & ATIS in Morocco. Respond in Moroccan Arabic with professional emojis."
     try:
         res = client.chat.completions.create(
-            model="llama-3.3-70b-versatile",  # تم تحديث النموذج إلى الموديل المدعوم حالياً
+            model="llama-3.3-70b-versatile",  # نموذج مدعوم حالياً من Groq
             messages=[{"role": "system", "content": system_prompt}, {"role": "user", "content": task}],
             temperature=0.7, 
             max_tokens=1000
@@ -99,7 +99,7 @@ if st.button("⚡ فعل وكلاء OMEGA + إرسال واتساب"):
                 if success:
                     st.success(f"✅ تم إرسال الإعلان بنجاح إلى الرقم: {send_to}")
                 else:
-                    st.error(خطأ في إرسال الواتساب (رمز الخطأ 190: التوكن منتهي الصلاحية أو غير صالح). التفاصيل: `{response}`")
+                    st.error(f"❌ خطأ في إرسال الواتساب (رمز الخطأ 190: التوكن منتهي الصلاحية أو غير صالح). التفاصيل: `{response}`")
             else:
                 st.warning("⚠️ لم يتم ضبط رموز توكن واتساب في الأسرار (Secrets)، تم تخطي مرحلة الإرسال التلقائي.")
 
