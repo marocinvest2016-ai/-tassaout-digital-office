@@ -30,7 +30,7 @@ def call_agent(role, task):
     system_prompt = f"You are {role}. Expert for TASSAOUT & ATIS in Morocco. Respond in Moroccan Arabic with professional emojis."
     try:
         res = client.chat.completions.create(
-            model="llama-3.1-70b-versatile",
+            model="llama-3.3-70b-versatile",  # تم تحديث النموذج إلى الموديل المدعوم حالياً
             messages=[{"role": "system", "content": system_prompt}, {"role": "user", "content": task}],
             temperature=0.7, 
             max_tokens=1000
@@ -51,11 +51,14 @@ def send_whatsapp(to_number, message):
     }
     try:
         res = requests.post(url, headers=headers, json=data)
-        return res.status_code == 200, res.json()
+        if res.status_code == 200:
+            return True, res.json()
+        else:
+            return False, res.json()
     except Exception as e:
         return False, str(e)
 
-# القائمة الجانبية الواجهة
+# القائمة الجانبية للواجهة
 st.sidebar.markdown("### 🏛️ إعدادات محطة القيادة")
 domaine = st.sidebar.selectbox("اختر المجال الرئيسي:", ["🏭 العقار", "🏗️ الهندسة والبناء", "🌐 التجارة الرقمية", "📚 التعليم", "🏥 الخدمات"])
 send_to = st.sidebar.text_input("رقم الواتساب للإرسال:", value="212691897126", help="بدون علامة +. مثال: 212691897126")
@@ -96,7 +99,7 @@ if st.button("⚡ فعل وكلاء OMEGA + إرسال واتساب"):
                 if success:
                     st.success(f"✅ تم إرسال الإعلان بنجاح إلى الرقم: {send_to}")
                 else:
-                    st.error(f"❌ فشل إرسال الواتساب: {response}")
+                    st.error(خطأ في إرسال الواتساب (رمز الخطأ 190: التوكن منتهي الصلاحية أو غير صالح). التفاصيل: `{response}`")
             else:
                 st.warning("⚠️ لم يتم ضبط رموز توكن واتساب في الأسرار (Secrets)، تم تخطي مرحلة الإرسال التلقائي.")
 
