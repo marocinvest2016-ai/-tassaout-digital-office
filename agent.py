@@ -1,31 +1,56 @@
-import requests
 import streamlit as st
+import requests
 
-def call_meta_ai(task, role="Expert Agent"):
-    """هادي كتهضر مباشرة مع Meta AI Muse Spark 1.2"""
-    META_KEY = st.secrets["MODEL_API_KEY"] # مفتاح Meta
-
-    url = "https://api.meta.ai/v1/responses" # API ديال Meta
-    headers = {"Authorization": f"Bearer {META_KEY}", "Content-Type": "application/json"}
-    payload = {
-        "model": "muse-spark-1.2", # موديل Meta
-        "input": [
-            {"role": "system", "content": [{"type": "input_text", "text": f"You are {role} from Meta AI. Respond in Moroccan Arabic. For TASSAOUT & ATIS"}]},
-            {"role": "user", "content": [{"type": "input_text", "text": task}]}
-        ]
+def call_meta_ai(prompt, agent_name):
+    url = "https://api.meta.ai/v1/responses"
+    headers = {
+        "Authorization": f"Bearer {st.secrets['META_API_KEY']}",
+        "Content-Type": "application/json"
     }
-    res = requests.post(url, headers=headers, json=payload)
-    return res.json()['response'][0]['content'][0]['text']
+    payload = {
+        "model": "muse-spark-1.2",
+        "input": prompt,
+        "agent": agent_name
+    }
 
-class OmegaAgent:
+    try:
+        res = requests.post(url, headers=headers, json=payload, timeout=60)
+        data = res.json()
+    except Exception as e:
+        return f"خطأ في الاتصال بـ Meta: {e}"
+
+    # حماية من KeyError - نجربو كل الاحتمالات
+    try:
+        return data['response'][0]['content'][0]['text']
+    except KeyError:
+        try:
+            return data['output'][0]['content'][0]['text']
+        except KeyError:
+            try:
+                return data['choices'][0]['message']['content']
+            except KeyError:
+                return f"خطأ من Meta: {data}"
+
+class CEO:
     def __init__(self, domaine):
         self.domaine = domaine
 
-    def ceo(self, task):
-        return call_meta_ai(f"Goal: {task}. Create 3-step marketing plan for {self.domaine}", "Meta CEO Agent")
+    def plan(self, task):
+        prompt = f"Goal: {task}. Create 3-step marketing plan for {self.domaine}. Respond in Arabic."
+        return call_meta_ai(prompt, "Meta CEO Agent")
 
-    def copywriter(self, plan):
-        return call_meta_ai(f"Based on plan: {plan}. Write powerful ad in Moroccan Arabic for {self.domaine}. Add phone +212691897126", "Meta Marketing Agent")
+class CTO:
+    def __init__(self, domaine):
+        self.domaine = domaine
 
-    def closer(self, ad):
-        return call_meta_ai(f"Take this ad: {ad}. Add strong CTA and 3 hashtags for {self.domaine}", "Meta Sales Agent")
+    def strategy(self, task):
+        prompt = f"Goal: {task}. Create technical strategy for {self.domaine}. Respond in Arabic."
+        return call_meta_ai(prompt, "Meta CTO Agent")
+
+class COO:
+    def __init__(self, domaine):
+        self.domaine = domaine
+
+    def execute(self, task):
+        prompt = f"Goal: {task}. Create execution plan for {self.domaine}. Respond in Arabic."
+        return call_meta_ai(prompt, "Meta COO Agent")
