@@ -1,6 +1,7 @@
 streamlit>=1.38.0
 supabase>=2.10.0
 groq>=0.11.0
+openai>=1.40.0
 pillow>=11.0.0
 pandas>=2.2.0
 requests>=2.31.0
@@ -10,3 +11,10 @@ gdown>=5.0.0
 pyperclip>=1.8.2
 replicate>=0.25.0
 pypdf>=4.0.0
+
+# مكتبات agent_appy
+langchain-community
+langchain-core
+langgraph
+ollama
+beautifulsoup4
