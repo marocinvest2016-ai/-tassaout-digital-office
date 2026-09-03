@@ -1,14 +1,14 @@
 import streamlit as st
 import requests
 
-def call_groq_meta(prompt, agent_name):
-    """إرسال الطلب مباشرة إلى Groq API باستخدام نماذج Meta Llama"""
+def call_meta_ai(prompt, agent_name):
+    """إرسال الطلب مباشرة باستخدام نماذج Meta Llama"""
     url = "https://api.groq.com/openai/v1/chat/completions"
     
-    # جلب مفتاح Groq من الـ Secrets بأمان
-    api_key = st.secrets.get("GROQ_API_KEY", "")
+    # جلب مفتاح Meta من الـ Secrets بأمان
+    api_key = st.secrets.get("META_API_KEY", "")
     if not api_key:
-        return "❌ خطأ: مفتاح GROQ_API_KEY غير موجود في إعدادات Secrets الخاصة بـ Streamlit."
+        return "❌ خطأ: مفتاح META_API_KEY غير موجود في إعدادات Secrets الخاصة بـ Streamlit."
 
     headers = {
         "Authorization": f"Bearer {api_key}",
@@ -22,7 +22,7 @@ def call_groq_meta(prompt, agent_name):
         "messages": [
             {
                 "role": "system", 
-                "content": f"You are {agent_name}, an expert AI agent specialized in {domaine} powered by Groq and Meta Llama. Respond professionally in Moroccan Arabic Darija and clear Arabic, utilizing bullet points and emojis."
+                "content": f"You are {agent_name}, an expert AI agent specialized in {domaine} powered by Meta Llama. Respond professionally in Moroccan Arabic Darija and clear Arabic, utilizing bullet points and emojis."
             },
             {"role": "user", "content": prompt}
         ],
@@ -35,7 +35,7 @@ def call_groq_meta(prompt, agent_name):
         res.raise_for_status()
         return res.json()['choices'][0]['message']['content']
     except Exception as e:
-        return f"❌ خطأ في الاتصال بـ Groq: {e}"
+        return f"❌ خطأ في الاتصال بـ Meta AI: {e}"
 
 def send_whatsapp_alert(message):
     """إرسال إشعار عبر واتساب إذا كانت المفاتيح مفعلة"""
@@ -43,7 +43,7 @@ def send_whatsapp_alert(message):
         phone_id = st.secrets.get('WHATSAPP_PHONE_NUMBER_ID')
         access_token = st.secrets.get('WHATSAPP_ACCESS_TOKEN')
         target_number = st.secrets.get('WHATSAPP_BUSINESS_NUMBER')
-        version = st.secrets.get('WHATSAPP_API_VERSION', 'v17.0')
+        version = st.secrets.get('WHATSAPP_API_VERSION', 'v20.0')
         
         if not all([phone_id, access_token, target_number]):
             return
@@ -69,21 +69,21 @@ class OmegaAgent:
         self.domaine = domaine
 
     def ceo(self, task):
-        return call_groq_meta(f"ضع خطة استراتيجية تسويقية دقيقة من 3 خطوات لـ: {task}", "Meta CEO (Groq)")
+        return call_meta_ai(f"ضع خطة استراتيجية تسويقية دقيقة من 3 خطوات لـ: {task}", "Meta CEO")
 
     def cto(self, task):
-        return call_groq_meta(f"اقترح استراتيجية تقنية واستهداف إعلاني دقيق لـ: {task}", "Meta CTO (Groq)")
+        return call_meta_ai(f"اقترح استراتيجية تقنية واستهداف إعلاني دقيق لـ: {task}", "Meta CTO")
 
     def coo(self, task):
-        return call_groq_meta(f"ضع خطة تنفيذية، ميزانية، وجدولة زمنية لـ: {task}", "Meta COO (Groq)")
+        return call_meta_ai(f"ضع خطة تنفيذية، ميزانية، وجدولة زمنية لـ: {task}", "Meta COO")
 
     def copywriter(self, plan):
         whatsapp_num = st.secrets.get('WHATSAPP_BUSINESS_NUMBER', '')
         prompt = f"بناءً على هذه الخطة: {plan}. اكتب 3 إعلانات فيسبوك قوية باللهجة المغربية واللغة العربية مع دعوة واضحة لاتخاذ إجراء (CTA) ورقم الواتساب: {whatsapp_num}"
-        ad = call_groq_meta(prompt, "Meta Copywriter (Groq)")
-        send_whatsapp_alert(f"👑 OMEGA AGENT - Groq & Meta\nإعلان جديد:\n\n{ad}")
+        ad = call_meta_ai(prompt, "Meta Copywriter")
+        send_whatsapp_alert(f"👑 OMEGA AGENTIC v3.0 - Meta AI\nإعلان جديد:\n\n{ad}")
         return ad
 
     def closer(self, ad):
         prompt = f"قم بتحسين هذا الإعلان وجعله أكثر إقناعاً مع خلق شعور بالاستعجال (FOMO) لزيادة المبيعات: {ad}"
-        return call_groq_meta(prompt, "Meta Closer (Groq)")
+        return call_meta_ai(prompt, "Meta Closer")
