@@ -3,7 +3,7 @@ import requests
 import streamlit as st
 
 st.set_page_config(
-    page_config(page_title="OMEGA Super Agentic AI", page_icon="👑", layout="wide")
+    page_title="OMEGA Super Agentic AI", page_icon="👑", layout="wide"
 )
 
 
@@ -32,7 +32,7 @@ def call_super_ai(prompt, agent_name, domain):
   )
 
   payload = {
-      "model": "llama-3.3-70b-versatile",  # تم تحديث الموديل بنجاح
+      "model": "llama-3.1-70b-versatile",
       "messages": [
           {"role": "system", "content": system_prompt},
           {"role": "user", "content": prompt},
@@ -144,43 +144,43 @@ task = st.text_area(
 
 agent = SuperOmegaAgent(domain)
 
-# تهيئة Session State لتخزين النتائج
-if "result" not in st.session_state:
-  st.session_state.result = ""
+# تهيئة Session State لحفظ النتائج وتجنب ضياعها عند إعادة التحميل
 if "result_title" not in st.session_state:
   st.session_state.result_title = ""
+if "result_content" not in st.session_state:
+  st.session_state.result_content = ""
 
 col1, col2, col3 = st.columns(3)
 
 with col1:
   if st.button("🧠 خطة CEO"):
     with st.spinner("المدير التنفيذي كيخدم..."):
-      st.session_state.result_title = "خطة المدير التنفيذي (CEO)"
-      st.session_state.result = agent.ceo(task)
+      st.session_state.result_title = "🧠 خطة المدير التنفيذي (CEO)"
+      st.session_state.result_content = agent.ceo(task)
 
 with col2:
   if st.button("💻 خطة CTO"):
     with st.spinner("المدير التقني كيخدم..."):
-      st.session_state.result_title = "الاستراتيجية التقنية (CTO)"
-      st.session_state.result = agent.cto(task)
+      st.session_state.result_title = "💻 الاستراتيجية التقنية (CTO)"
+      st.session_state.result_content = agent.cto(task)
 
 with col3:
   if st.button("📊 خطة COO"):
     with st.spinner("مدير العمليات كيخدم..."):
-      st.session_state.result_title = "خطة العمليات (COO)"
-      st.session_state.result = agent.coo(task)
+      st.session_state.result_title = "📊 خطة العمليات (COO)"
+      st.session_state.result_content = agent.coo(task)
 
 if st.button("✍️ إنشاء إعلان + إرسال واتساب"):
-  with st.spinner("الكاتب والمسوق كيكتبو الإعلان..."):
+  with st.spinner("الكاتب والكلوزر كيوجدوا الإعلان..."):
     plan = agent.ceo(task)
     ad = agent.copywriter(plan)
     final_ad = agent.closer(ad)
-    st.session_state.result_title = "الإعلان التسويقي النهائي + FOMO"
-    st.session_state.result = final_ad
+    st.session_state.result_title = "✍️ الإعلان التسويقي النهائي + FOMO"
+    st.session_state.result_content = final_ad
     st.success("تم بنجاح وإرسال الإشعار للواتساب!")
 
-# عرض النتيجة المخزنة إذا وجدت
-if st.session_state.result:
+# عرض النتيجة بثبات
+if st.session_state.result_content:
   st.markdown("---")
   st.subheader(st.session_state.result_title)
-  st.markdown(st.session_state.result)
+  st.markdown(st.session_state.result_content)
