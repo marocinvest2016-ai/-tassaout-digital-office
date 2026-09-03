@@ -1,30 +1,32 @@
 import streamlit as st
 import requests
 
-def call_meta_ai(prompt, agent_name):
+def call_super_ai(prompt, agent_name, domain):
+    """محرك الذكاء الاصطناعي الفائق متعدد المجالات"""
     url = "https://api.groq.com/openai/v1/chat/completions"
     api_key = st.secrets.get("META_API_KEY", "")
     
     if not api_key:
-        return "❌ خطأ: مفتاح META_API_KEY غير موجود في إعدادات Secrets."
+        return "❌ خطأ: مفتاح META_API_KEY غير موجود في إعدادات Secrets الخاصة بـ Streamlit."
 
     headers = {
         "Authorization": f"Bearer {api_key}",
         "Content-Type": "application/json"
     }
     
-    domaine = st.session_state.get('domaine', 'العقار والتسويق الرقمي')
+    system_prompt = (
+        f"You are {agent_name}, an elite Super Agentic AI specialized in '{domain}' powered by Meta Llama. "
+        f"Analyze the user request deeply and provide professional, highly tailored, actionable strategies, "
+        f"marketing plans, or technical steps. Respond in Moroccan Arabic Darija and clear Arabic, utilizing professional formatting, bullet points, and emojis."
+    )
     
     payload = {
         "model": "llama3-70b-8192",
         "messages": [
-            {
-                "role": "system", 
-                "content": f"You are {agent_name}, an expert AI agent specialized in {domaine} powered by Meta Llama. Respond professionally in Moroccan Arabic Darija and clear Arabic, utilizing bullet points and emojis."
-            },
+            {"role": "system", "content": system_prompt},
             {"role": "user", "content": prompt}
         ],
-        "temperature": 0.7,
+        "temperature": 0.75,
         "max_tokens": 1500
     }
     
@@ -33,9 +35,10 @@ def call_meta_ai(prompt, agent_name):
         res.raise_for_status()
         return res.json()['choices'][0]['message']['content']
     except Exception as e:
-        return f"❌ خطأ في الاتصال: {e}"
+        return f"❌ خطأ في الاتصال بالذكاء الاصطناعي: {e}"
 
 def send_whatsapp_alert(message):
+    """إرسال إشعار مباشر عبر واتساب"""
     try:
         phone_id = st.secrets.get('WHATSAPP_PHONE_NUMBER_ID')
         access_token = st.secrets.get('WHATSAPP_ACCESS_TOKEN')
@@ -60,27 +63,26 @@ def send_whatsapp_alert(message):
     except Exception:
         pass
 
-class OmegaAgent:
-    def __init__(self, domaine="العقار"):
-        st.session_state.domaine = domaine
-        self.domaine = domaine
+class SuperOmegaAgent:
+    def __init__(self, domain):
+        self.domain = domain
 
     def ceo(self, task):
-        return call_meta_ai(f"ضع خطة استراتيجية تسويقية دقيقة بناءً على هذا الطلب: {task}", "Meta CEO")
+        return call_super_ai(f"ضع خطة استراتيجية شاملة وتنافسية لهذا المشروع في مجال {self.domain}: {task}", "Super CEO Agent", self.domain)
 
     def cto(self, task):
-        return call_meta_ai(f"اقترح استراتيجية تقنية واستهداف إعلاني دقيق بناءً على هذا الطلب: {task}", "Meta CTO")
+        return call_super_ai(f"اقترح الاستراتيجية التقنية، أدوات التشغيل، واستهداف الجمهور الرقمي لـ: {task}", "Super CTO Agent", self.domain)
 
     def coo(self, task):
-        return call_meta_ai(f"ضع خطة تنفيذية، ميزانية، وجدولة زمنية بناءً على هذا الطلب: {task}", "Meta COO")
+        return call_super_ai(f"ضع خطة تنفيذية، إدارة الموارد، وجدولة زمنية دقيقة لـ: {task}", "Super COO Agent", self.domain)
 
     def copywriter(self, plan):
         whatsapp_num = st.secrets.get('WHATSAPP_BUSINESS_NUMBER', '')
-        prompt = f"بناءً على هذه الخطة: {plan}. اكتب إعلانات فيسبوك احترافية ومنظمة بالأيقونات والكلمات المفتاحية والهاشتاقات باللهجة المغربية واللغة العربية مع رقم الواتساب: {whatsapp_num}"
-        ad = call_meta_ai(prompt, "Meta Copywriter")
-        send_whatsapp_alert(f"👑 OMEGA AGENTIC v3.0 - إعلان جديد:\n\n{ad}")
+        prompt = f"بناءً على هذه الخطة الاستراتيجية: {plan}. اكتب 3 إعلانات تسويقية جذابة ومنظمة بالأيقونات والكلمات المفتاحية والهاشتاقات باللهجة المغربية والعربية الفصحى مع دعوة للاتصال برقم الواتساب: {whatsapp_num}"
+        ad = call_super_ai(prompt, "Super Copywriter Agent", self.domain)
+        send_whatsapp_alert(f"👑 OMEGA SUPER AGENTIC v4.0\nمهمة جديدة في مجال: {self.domain}\n\n{ad}")
         return ad
 
     def closer(self, ad):
-        prompt = f"قم بتحسين صيغة هذا الإعلان وجعله أكثر إقناعاً مع خلق شعور بالاستعجال (FOMO) لزيادة المبيعات: {ad}"
-        return call_meta_ai(prompt, "Meta Closer")
+        prompt = f"قم بتحسين نص هذا الإعلان وإضافة محفزات الاستعجال (FOMO) لزيادة المبيعات ومعدل التحويل: {ad}"
+        return call_super_ai(prompt, "Super Closer Agent", self.domain)
