@@ -4,8 +4,8 @@ import json
 
 st.set_page_config(page_title="OMEGA Super Agentic AI", page_icon="👑", layout="wide")
 
-def call_super_ai(prompt, agent_name, domain):
-    """محرك الذكاء الاصطناعي الفائق متعدد المجالات - Groq + Llama"""
+def call_super_ai(prompt, agent_name):
+    """محرك الذكاء الاصطناعي الفائق - Groq + Llama"""
     url = "https://api.groq.com/openai/v1/chat/completions"
     api_key = st.secrets.get("GROQ_API_KEY", "")
 
@@ -18,7 +18,7 @@ def call_super_ai(prompt, agent_name, domain):
     }
 
     system_prompt = (
-        f"You are {agent_name}, an elite Super Agentic AI specialized in '{domain}' powered by Meta Llama on Groq. "
+        f"You are {agent_name}, an elite Super Agentic AI powered by Meta Llama on Groq. "
         f"Think step by step. Provide professional, highly tailored, actionable strategies. "
         f"Respond in Moroccan Arabic Darija + العربية الفصحى, with professional formatting, bullet points, emojis, and tables when needed."
     )
@@ -67,71 +67,67 @@ def send_whatsapp_alert(message):
         st.warning(f"تعذر إرسال إشعار الواتساب: {e}")
 
 class SuperOmegaAgent:
-    def __init__(self, domain):
-        self.domain = domain
-
     def ceo(self, task):
-        return call_super_ai(f"بصفتك CEO فائق، ضع خطة استراتيجية شاملة وتنافسية لهذا المشروع في مجال {self.domain}: {task}. عطيني SWOT + الميزة التنافسية + خطة 90 يوم", "Super CEO Agent", self.domain)
+        return call_super_ai(f"بصفتك CEO فائق، ضع خطة استراتيجية شاملة وتنافسية لهذا المشروع أو المهمة: {task}. عطيني SWOT + الميزة التنافسية + خطة 90 يوم", "Super CEO Agent")
 
     def cto(self, task):
-        return call_super_ai(f"بصفتك CTO فائق، اقترح الاستراتيجية التقنية، أدوات التشغيل، stack تقني، واستهداف الجمهور الرقمي لـ: {task} في {self.domain}", "Super CTO Agent", self.domain)
+        return call_super_ai(f"بصفتك CTO فائق، اقترح الاستراتيجية التقنية، أدوات التشغيل، stack تقني، واستهداف الجمهور الرقمي لـ: {task}", "Super CTO Agent")
 
     def coo(self, task):
-        return call_super_ai(f"بصفتك COO فائق، ضع خطة تنفيذية، إدارة الموارد، KPI، وجدولة زمنية دقيقة لـ: {task} في {self.domain}", "Super COO Agent", self.domain)
+        return call_super_ai(f"بصفتك COO فائق، ضع خطة تنفيذية، إدارة الموارد، KPI، وجدولة زمنية دقيقة لـ: {task}", "Super COO Agent")
 
-    def copywriter(self, plan):
+    def copywriter(self, plan, task):
         whatsapp_num = st.secrets.get('WHATSAPP_BUSINESS_NUMBER', '')
         prompt = f"بناءً على هذه الخطة: {plan}. اكتب 3 إعلانات تسويقية جذابة باللهجة المغربية والعربية الفصحى مع أيقونات، كلمات مفتاحية، هاشتاقات، ودعوة للاتصال برقم الواتساب: {whatsapp_num}"
-        ad = call_super_ai(prompt, "Super Copywriter Agent", self.domain)
-        send_whatsapp_alert(f"👑 OMEGA SUPER AGENTIC v4.1\nمهمة جديدة في مجال: {self.domain}\n\n{ad}")
+        ad = call_super_ai(prompt, "Super Copywriter Agent")
+        send_whatsapp_alert(f"👑 OMEGA SUPER AGENTIC v4.1\nالمهمة: {task}\n\n{ad}")
         return ad
 
     def closer(self, ad):
         prompt = f"قم بتحسين نص هذا الإعلان وإضافة محفزات الاستعجال FOMO + ضمان + شهادات لزيادة المبيعات: {ad}"
-        return call_super_ai(prompt, "Super Closer Agent", self.domain)
+        return call_super_ai(prompt, "Super Closer Agent")
 
 # ===== واجهة Streamlit =====
-st.title("👑 OMEGA Super Agentic AI - متعدد المجالات")
+st.title("👑 OMEGA Super Agentic AI")
 st.caption("CEO + CTO + COO + Copywriter + Closer في وكيل واحد يخدم على Groq")
 
-domain = st.selectbox("اختر المجال", ["العقار", "التجارة الإلكترونية", "المطاعم", "التعليم", "الصحة", "التسويق"])
-task = st.text_area("وصف المهمة / المشروع", placeholder="مثال: بيع بقع أرضية في تجزئة الهدى بقلعة السراغنة")
+task = st.text_area("وصف المهمة / المشروع", placeholder="اكتب مشروعك أو مهمتك مباشرة هنا بحرية تامة...")
 
-agent = SuperOmegaAgent(domain)
+agent = SuperOmegaAgent()
 
 col1, col2, col3 = st.columns(3)
 
 with col1:
     if st.button("🧠 خطة CEO"):
-        if task:
+        if task.strip():
             with st.spinner("المدير التنفيذي كيخدم..."):
                 st.markdown(agent.ceo(task))
         else:
-            st.warning("المرجو إدخال وصف المهمة أولاً.")
+            st.warning("⚠️ المرجو كتابة وصف المهمة أولاً.")
 
 with col2:
     if st.button("💻 خطة CTO"):
-        if task:
+        if task.strip():
             with st.spinner("المدير التقني كيخدم..."):
                 st.markdown(agent.cto(task))
         else:
-            st.warning("المرجو إدخال وصف المهمة أولاً.")
+            st.warning("⚠️ المرجو كتابة وصف المهمة أولاً.")
 
 with col3:
     if st.button("📊 خطة COO"):
-        if task:
+        if task.strip():
             with st.spinner("مدير العمليات كيخدم..."):
                 st.markdown(agent.coo(task))
         else:
-            st.warning("المرجو إدخال وصف المهمة أولاً.")
+            st.warning("⚠️ المرجو كتابة وصف المهمة أولاً.")
 
 if st.button("✍️ إنشاء إعلان + إرسال واتساب"):
-    if task:
-        with st.spinner("الكاتب كيكتب الإعلان..."):
+    if task.strip():
+        with st.spinner("الكاتب كيخدم على الإعلان..."):
             plan = agent.ceo(task)
-            ad = agent.copywriter(plan)
+            ad = agent.copywriter(plan, task)
             final_ad = agent.closer(ad)
-            st.success("تم!")
+            st.success("تم بنجاح!")
             st.markdown(final_ad)
     else:
-        st.warning("المرجو إدخال وصف المهمة أولاً.")
+        st.warning("⚠️ المرجو كتابة وصف المهمة أولاً.")
