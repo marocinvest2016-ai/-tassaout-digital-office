@@ -19,12 +19,12 @@ st.markdown("""
     </style>
 """, unsafe_allow_html=True)
 
-# حفظ الصور في session_state لتثبيتها وعدم ضياعها عند الضغط على الأزرار
+# حفظ الصور في session_state لتثبيتها وعدم ضياعها عند التفاعل
 if 'uploaded_files' not in st.session_state:
     st.session_state.uploaded_files = []
 
 def call_super_ai(prompt, agent_name, domain, language, use_vision=False, uploaded_files=None):
-    """محرك الذكاء الاصطناعي الفائق - مع دعم الرؤية واللغات المتعددة ونظام Groq"""
+    """محرك الذكاء الاصطناعي الفائق - Groq Engine"""
     url = "https://api.groq.com/openai/v1/chat/completions"
     api_key = st.secrets.get("GROQ_API_KEY", "")
 
@@ -43,18 +43,16 @@ def call_super_ai(prompt, agent_name, domain, language, use_vision=False, upload
         "Español (الإسبانية)": "Respond in professional Spanish (Español)."
     }.get(language, "Respond in Moroccan Arabic Darija + العربية الفصحى.")
 
-    # اختيار النموذج تلقائياً حسب وجود صور أو طلب استراتيجية
-    model = "qwen/qwen3.6-27b" if (use_vision and uploaded_files) else "groq/compound"
+    model = "qwen/qwen3.6-27b" if (use_vision and uploaded_files) else "llama-3.1-70b-versatile"
 
     system_prompt = (
         f"You are {agent_name}, an elite Super Agentic AI specialized in '{domain}' powered by Groq. "
-        f"Think step by step. Use web search and advanced capabilities if needed. "
+        f"Think step by step. Use advanced capabilities if needed. "
         f"{lang_instruction} Use professional formatting, bullet points, emojis, and tables when needed."
     )
 
     messages = [{"role": "system", "content": system_prompt}]
 
-    # معالجة الصور المرسلة إن وجدت
     if use_vision and uploaded_files:
         content = [{"type": "text", "text": prompt}]
         for file in uploaded_files:
@@ -98,7 +96,7 @@ def generate_audio(text):
         return None
 
 def export_pdf(title, content):
-    """تصدير التقارير والإعلانات إلى ملف PDF يدعم اللغة العربية بشكل تام"""
+    """تصدير التقارير والإعلانات إلى ملف PDF يدعم اللغة العربية تماماً"""
     class PDF(FPDF):
         def header(self):
             self.set_font('DejaVu', 'B', 14)
@@ -124,7 +122,7 @@ def export_pdf(title, content):
     return filename
 
 def save_campaign(domain, task, ad):
-    """حفظ الحملات الإعلانية في ملف محلي"""
+    """حفظ الحملات الإعلانية محلياً"""
     data = {"date": str(datetime.datetime.now()), "domain": domain, "task": task, "ad": ad}
     try:
         with open("campaigns.json", "r", encoding="utf-8") as f:
@@ -135,12 +133,12 @@ def save_campaign(domain, task, ad):
     with open("campaigns.json", "w", encoding="utf-8") as f:
         json.dump(campaigns, f, ensure_ascii=False, indent=2)
 
-def send_whatsapp_alert(message):
-    """إرسال إشعار مباشر عبر واتساب API"""
+def send_whatsapp_alert(message, custom_number=None):
+    """إرسال إشعار عبر واتساب API (لرقم فردي أو لعدة أرقام)"""
     try:
         phone_id = st.secrets.get('WHATSAPP_PHONE_NUMBER_ID')
         access_token = st.secrets.get('WHATSAPP_ACCESS_TOKEN')
-        target_number = st.secrets.get('WHATSAPP_BUSINESS_NUMBER')
+        target_number = custom_number if custom_number else st.secrets.get('WHATSAPP_BUSINESS_NUMBER')
         version = st.secrets.get('WHATSAPP_API_VERSION', 'v20.0')
 
         if not all([phone_id, access_token, target_number]):
@@ -153,13 +151,13 @@ def send_whatsapp_alert(message):
         }
         payload = {
             "messaging_product": "whatsapp",
-            "to": target_number,
+            "to": target_number.strip(),
             "type": "text",
             "text": {"body": message[:4096]}
         }
         requests.post(url, headers=headers, json=payload, timeout=10)
     except Exception as e:
-        st.warning(f"تعذر إرسال إشعار الواتساب: {e}")
+        st.warning(f"تعذر إرسال إشعار الواتساب لـ {custom_number}: {e}")
 
 class SuperOmegaAgent:
     def __init__(self, domain, language, uploaded_files):
@@ -180,7 +178,7 @@ class SuperOmegaAgent:
         whatsapp_num = st.secrets.get('WHATSAPP_BUSINESS_NUMBER', '')
         prompt = f"بناءً على هذه الخطة: {plan}. اكتب 3 إعلانات تسويقية جذابة مع أيقونات، كلمات مفتاحية، هاشتاقات، ودعوة للاتصال برقم الواتساب: {whatsapp_num}"
         ad = call_super_ai(prompt, "Super Copywriter Agent", self.domain, self.language)
-        send_whatsapp_alert(f"👑 OMEGA SUPER AGENTIC v4.4.3\nمهمة جديدة في مجال: {self.domain}\n\n{ad}")
+        send_whatsapp_alert(f"👑 OMEGA SUPER AGENTIC v5.0\nمهمة جديدة في مجال: {self.domain}\n\n{ad}")
         return ad
 
     def closer(self, ad):
@@ -188,10 +186,10 @@ class SuperOmegaAgent:
         return call_super_ai(prompt, "Super Closer Agent", self.domain, self.language)
 
 # ===== واجهة Streamlit الأنيقة =====
-st.title("👑 OMEGA Super Agentic AI - نظام الإدارة والوكلاء الأذكياء")
+st.title("👑 OMEGA Super Agentic AI - النسخة الماسية v5.0")
 st.markdown("---")
 
-# الشريط الجانبي للإعدادات والتحليلات
+# الشريط الجانبي للإعدادات والتحليلات وإرسال حملات متعددة
 with st.sidebar:
     st.image("https://img.icons8.com/color/96/artificial-intelligence.png", width=80)
     st.header("إعدادات العمل")
@@ -202,6 +200,10 @@ with st.sidebar:
         "English (الإنجليزية)", 
         "Español (الإسبانية)"
     ])
+    
+    st.markdown("---")
+    st.subheader("📱 إرسال جماعي للواتساب")
+    target_numbers_input = st.text_area("أدخل أرقام الواتساب (كل رقم فسطر، مفصولين بفاصلة)", placeholder="+212600000000\n+212611111111")
     
     st.markdown("---")
     st.subheader("📊 إحصائيات الحملات")
@@ -220,14 +222,14 @@ with col_input:
     st.subheader("📝 تفاصيل المشروع أو المهمة")
     task = st.text_area(
         "اكتب تفاصيل طلبك هنا...", 
-        placeholder="مثال: بيع 50 بقعة أرضية سكنية وتجارية في تجزئة الهدى بقلعة السراغنة، المساحة من 120م إلى 300م...",
+        placeholder="مثال: بيع 50 بقعة أرضية سكنية وتجارية في تجزئة الهدى بقلعة السراغنة، المساحة من 120م إلى 300م الثمن 1800 درهم للمتر...",
         height=160
     )
 
 with col_media:
     st.subheader("🖼️ مرفقات الصور (اختياري)")
     files = st.file_uploader(
-        "اختر صور المشروع (عقارات، منتجات، تصاميم...)", 
+        "اختر صور المشروع", 
         type=["jpg", "jpeg", "png"], 
         accept_multiple_files=True,
         key="uploader"
@@ -294,7 +296,14 @@ if campaign_btn:
             
             save_campaign(domain, task, final_ad)
             
-            st.success("✨ تم إنشاء الحملة الإعلانية وإرسالها بنجاح إلى الواتساب وحفظها!")
+            # إرسال جماعي إذا تم إدخال أرقام في الجانب
+            if target_numbers_input.strip():
+                numbers = [n.strip() for n in target_numbers_input.replace(',', '\n').split('\n') if n.strip()]
+                for num in numbers:
+                    send_whatsapp_alert(f"👑 OMEGA Campaign Alert:\n\n{final_ad}", custom_number=num)
+                st.info(f"📤 تم إرسال الحملة لـ {len(numbers)} رقم واتساب بنجاح!")
+
+            st.success("✨ تم إنشاء الحملة الإعلانية وإرسالها بنجاح وحفظها!")
             st.markdown("### ✍️ الحملة الإعلانية المطورة والمحسنة للمبيعات:")
             st.markdown(final_ad)
             
