@@ -1,46 +1,61 @@
 import streamlit as st
 import requests
-import google.generativeai as genai
-import os
 
-# ==========================================
-# 🚀 1. نظام وكلاء OMEGA (عبر Groq / Meta Llama API)
-# ==========================================
-
-def call_meta_ai(prompt, agent_name):
+def call_groq_meta(prompt, agent_name):
+    """إرسال الطلب مباشرة إلى Groq API باستخدام نماذج Meta Llama"""
     url = "https://api.groq.com/openai/v1/chat/completions"
+    
+    # جلب مفتاح Groq من الـ Secrets بأمان
+    api_key = st.secrets.get("GROQ_API_KEY", "")
+    if not api_key:
+        return "❌ خطأ: مفتاح GROQ_API_KEY غير موجود في إعدادات Secrets الخاصة بـ Streamlit."
+
     headers = {
-        "Authorization": f"Bearer {st.secrets.get('META_API_KEY', '')}",
+        "Authorization": f"Bearer {api_key}",
         "Content-Type": "application/json"
     }
     
-    domaine = st.session_state.get('domaine', 'General Business')
+    domaine = st.session_state.get('domaine', 'العقار والتسويق الرقمي')
+    
     payload = {
         "model": "meta-llama-3.3-70b-versatile",
         "messages": [
-            {"role": "system", "content": f"You are {agent_name} from Meta AI. Expert in {domaine}. Respond in Moroccan Arabic Darija with bullet points and emojis."},
+            {
+                "role": "system", 
+                "content": f"You are {agent_name}, an expert AI agent specialized in {domaine} powered by Groq and Meta Llama. Respond professionally in Moroccan Arabic Darija and clear Arabic, utilizing bullet points and emojis."
+            },
             {"role": "user", "content": prompt}
         ],
         "temperature": 0.8,
         "max_tokens": 1500
     }
+    
     try:
         res = requests.post(url, headers=headers, json=payload, timeout=60)
         res.raise_for_status()
         return res.json()['choices'][0]['message']['content']
     except Exception as e:
-        return f"❌ خطأ من Meta AI: {e}"
+        return f"❌ خطأ في الاتصال بـ Groq: {e}"
 
-def send_whatsapp_meta(message):
+def send_whatsapp_alert(message):
+    """إرسال إشعار عبر واتساب إذا كانت المفاتيح مفعلة"""
     try:
-        url = f"https://graph.facebook.com/{st.secrets['WHATSAPP_API_VERSION']}/{st.secrets['WHATSAPP_PHONE_NUMBER_ID']}/messages"
+        phone_id = st.secrets.get('WHATSAPP_PHONE_NUMBER_ID')
+        access_token = st.secrets.get('WHATSAPP_ACCESS_TOKEN')
+        target_number = st.secrets.get('WHATSAPP_BUSINESS_NUMBER')
+        version = st.secrets.get('WHATSAPP_API_VERSION', 'v17.0')
+        
+        if not all([phone_id, access_token, target_number]):
+            return
+            
+        url = f"https://graph.facebook.com/{version}/{phone_id}/messages"
         headers = {
-            "Authorization": f"Bearer {st.secrets['WHATSAPP_ACCESS_TOKEN']}",
+            "Authorization": f"Bearer {access_token}",
             "Content-Type": "application/json"
         }
         payload = {
             "messaging_product": "whatsapp",
-            "to": st.secrets['WHATSAPP_BUSINESS_NUMBER'],
+            "to": target_number,
             "type": "text",
             "text": {"body": message}
         }
@@ -49,53 +64,26 @@ def send_whatsapp_meta(message):
         pass
 
 class OmegaAgent:
-    def __init__(self, domaine):
+    def __init__(self, domaine="العقار"):
         st.session_state.domaine = domaine
         self.domaine = domaine
 
     def ceo(self, task):
-        return call_meta_ai(f"Create 3-step marketing plan for: {task}", "Meta CEO")
+        return call_groq_meta(f"ضع خطة استراتيجية تسويقية دقيقة من 3 خطوات لـ: {task}", "Meta CEO (Groq)")
 
     def cto(self, task):
-        return call_meta_ai(f"Create technical strategy + Facebook ads targeting for: {task}", "Meta CTO")
+        return call_groq_meta(f"اقترح استراتيجية تقنية واستهداف إعلاني دقيق لـ: {task}", "Meta CTO (Groq)")
 
     def coo(self, task):
-        return call_meta_ai(f"Create execution plan + budget + timeline for: {task}", "Meta COO")
+        return call_groq_meta(f"ضع خطة تنفيذية، ميزانية، وجدولة زمنية لـ: {task}", "Meta COO (Groq)")
 
     def copywriter(self, plan):
         whatsapp_num = st.secrets.get('WHATSAPP_BUSINESS_NUMBER', '')
-        ad = call_meta_ai(f"Based on this plan: {plan}. Write 3 powerful Facebook ads in Arabic with strong CTA + WhatsApp: {whatsapp_num}", "Meta Copywriter")
-        send_whatsapp_meta(f"👑 OMEGA AGENT - Meta AI\nإعلان جديد:\n\n{ad}")
+        prompt = f"بناءً على هذه الخطة: {plan}. اكتب 3 إعلانات فيسبوك قوية باللهجة المغربية واللغة العربية مع دعوة واضحة لاتخاذ إجراء (CTA) ورقم الواتساب: {whatsapp_num}"
+        ad = call_groq_meta(prompt, "Meta Copywriter (Groq)")
+        send_whatsapp_alert(f"👑 OMEGA AGENT - Groq & Meta\nإعلان جديد:\n\n{ad}")
         return ad
 
     def closer(self, ad):
-        final = call_meta_ai(f"Take this ad: {ad}. Make it more aggressive with FOMO and urgency. Add 2 emojis max.", "Meta Closer")
-        return final
-
-
-# ==========================================
-# 🧠 2. محرك DANA الأساسي (عبر Google Gemini)
-# ==========================================
-
-def dana_whatsapp_agent(prompt: str) -> str:
-    """
-    محرك الذكاء الاصطناعي المركزي لمعالجة الأوامر والنصوص والملفات 
-    وإرجاع النتيجة بالأسلوب الاستراتيجي المطلوب.
-    """
-    try:
-        model = genai.GenerativeModel('gemini-1.5-pro')
-        response = model.generate_content(prompt)
-        
-        if response and response.text:
-            return response.text
-        else:
-            return "⚠️ عذراً يا سيدي، لم يتم استلام أي رد من النظام الأساسي."
-            
-    except Exception as e:
-        return f"❌ حدث خطأ في محرك DANA الأساسي: {str(e)}"
-
-def send_whatsapp_message(phone_number: str, message: str):
-    """
-    دالة محاكاة وتجهيز إرسال الرسائل عبر واتساب.
-    """
-    pass
+        prompt = f"قم بتحسين هذا الإعلان وجعله أكثر إقناعاً مع خلق شعور بالاستعجال (FOMO) لزيادة المبيعات: {ad}"
+        return call_groq_meta(prompt, "Meta Closer (Groq)")
