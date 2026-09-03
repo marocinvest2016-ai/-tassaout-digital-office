@@ -1,30 +1,17 @@
 import streamlit as st
 import requests
 import json
-import base64
-from fpdf import FPDF
-import datetime
-import os
+import time
 
-st.set_page_config(page_title="OMEGA Super Agentic AI", page_icon="👑", layout="wide", initial_sidebar_state="expanded")
+st.set_page_config(
+    page_title="OMEGA Super Agentic AI - Enterprise", 
+    page_icon="👑", 
+    layout="wide"
+)
 
-# تنسيق واجهة أنيقة واحترافية
-st.markdown("""
-    <style>
-    .stButton>button {
-        width: 100% !important;
-        border-radius: 8px;
-        font-weight: bold;
-    }
-    </style>
-""", unsafe_allow_html=True)
-
-# حفظ الصور في session_state لتثبيتها وعدم ضياعها عند التفاعل
-if 'uploaded_files' not in st.session_state:
-    st.session_state.uploaded_files = []
-
-def call_super_ai(prompt, agent_name, domain, language, use_vision=False, uploaded_files=None):
-    """محرك الذكاء الاصطناعي الفائق - Groq Engine"""
+# ===== المحرك الذكي الموحد (Groq API) =====
+def call_super_ai(prompt, agent_name, domain):
+    """محرك الذكاء الاصطناعي الفائق متعدد المجالات المدعوم بـ Groq و Llama"""
     url = "https://api.groq.com/openai/v1/chat/completions"
     api_key = st.secrets.get("GROQ_API_KEY", "")
 
@@ -36,113 +23,42 @@ def call_super_ai(prompt, agent_name, domain, language, use_vision=False, upload
         "Content-Type": "application/json"
     }
 
-    lang_instruction = {
-        "العربية والدارجة المغربية": "Respond in Moroccan Arabic Darija + العربية الفصحى.",
-        "Français (الفرنسية)": "Respond in professional French (Français).",
-        "English (الإنجليزية)": "Respond in professional English.",
-        "Español (الإسبانية)": "Respond in professional Spanish (Español)."
-    }.get(language, "Respond in Moroccan Arabic Darija + العربية الفصحى.")
-
-    model = "qwen/qwen3.6-27b" if (use_vision and uploaded_files) else "llama-3.1-70b-versatile"
-
     system_prompt = (
-        f"You are {agent_name}, an elite Super Agentic AI specialized in '{domain}' powered by Groq. "
-        f"Think step by step. Use advanced capabilities if needed. "
-        f"{lang_instruction} Use professional formatting, bullet points, emojis, and tables when needed."
+        f"You are {agent_name}, an elite, autonomous Super Agentic AI specialized in '{domain}' "
+        f"powered by Meta Llama on Groq. Think deeply step by step. Provide professional, highly tailored, "
+        f"actionable strategies, execution steps, and precise metrics. "
+        f"Respond professionally in Moroccan Arabic Darija mixed with Standard Arabic (العربية الفصحى), "
+        f"using clean formatting, bullet points, emojis, and tables where applicable."
     )
 
-    messages = [{"role": "system", "content": system_prompt}]
-
-    if use_vision and uploaded_files:
-        content = [{"type": "text", "text": prompt}]
-        for file in uploaded_files:
-            file.seek(0)
-            img_b64 = base64.b64encode(file.read()).decode()
-            content.append({"type": "image_url", "image_url": {"url": f"data:image/jpeg;base64,{img_b64}"}})
-        messages.append({"role": "user", "content": content})
-    else:
-        messages.append({"role": "user", "content": prompt})
-
     payload = {
-        "model": model,
-        "messages": messages,
+        "model": "llama-3.1-70b-versatile",
+        "messages": [
+            {"role": "system", "content": system_prompt},
+            {"role": "user", "content": prompt}
+        ],
         "temperature": 0.7,
-        "max_tokens": 3000
+        "max_tokens": 2500
     }
 
     try:
-        res = requests.post(url, headers=headers, json=payload, timeout=120)
+        res = requests.post(url, headers=headers, json=payload, timeout=90)
         res.raise_for_status()
         return res.json()['choices'][0]['message']['content']
     except Exception as e:
-        return f"❌ خطأ في الاتصال بالذكاء الاصطناعي: {e}"
+        return f"❌ خطأ في الاتصال بنظام الذكاء الاصطناعي: {e}"
 
-def generate_audio(text):
-    """توليد صوت احترافي للإعلان (Text-to-Speech)"""
-    url = "https://api.groq.com/openai/v1/audio/speech"
-    api_key = st.secrets.get("GROQ_API_KEY", "")
-    payload = {
-        "model": "canopylabs/orpheus-arabic-saudi",
-        "input": text[:3000],
-        "voice": "saadi"
-    }
-    headers = {"Authorization": f"Bearer {api_key}"}
-    try:
-        res = requests.post(url, headers=headers, json=payload, timeout=30)
-        res.raise_for_status()
-        return res.content
-    except Exception as e:
-        st.warning(f"تعذر توليد الصوت: {e}")
-        return None
-
-def export_pdf(title, content):
-    """تصدير التقارير والإعلانات إلى ملف PDF يدعم اللغة العربية تماماً"""
-    class PDF(FPDF):
-        def header(self):
-            self.set_font('DejaVu', 'B', 14)
-            self.cell(0, 10, 'OMEGA Super Agentic AI - Report', 0, 1, 'C')
-            self.ln(5)
-
-    pdf = PDF()
-    pdf.add_page()
-    
-    if not os.path.exists("DejaVuSans.ttf"):
-        st.error("خطأ: ملف DejaVuSans.ttf غير موجود. حملو من github وحطو فمجلد المشروع")
-        return None
-        
-    pdf.add_font('DejaVu', '', 'DejaVuSans.ttf', uni=True)
-    pdf.set_font('DejaVu', '', 12)
-    
-    pdf.cell(0, 10, txt=title, ln=True, align='C')
-    pdf.ln(5)
-    pdf.multi_cell(0, 8, txt=content)
-    
-    filename = f"OMEGA_Report_{datetime.datetime.now().strftime('%Y%m%d_%H%M%S')}.pdf"
-    pdf.output(filename)
-    return filename
-
-def save_campaign(domain, task, ad):
-    """حفظ الحملات الإعلانية محلياً"""
-    data = {"date": str(datetime.datetime.now()), "domain": domain, "task": task, "ad": ad}
-    try:
-        with open("campaigns.json", "r", encoding="utf-8") as f:
-            campaigns = json.load(f)
-    except:
-        campaigns = []
-    campaigns.append(data)
-    with open("campaigns.json", "w", encoding="utf-8") as f:
-        json.dump(campaigns, f, ensure_ascii=False, indent=2)
-
-def send_whatsapp_alert(message, custom_number=None):
-    """إرسال إشعار عبر واتساب API (لرقم فردي أو لعدة أرقام)"""
+# ===== خدمة إرسال الإشعارات عبر واتساب =====
+def send_whatsapp_alert(message):
+    """إرسال تنبيهات تلقائية عبر Meta WhatsApp Cloud API"""
     try:
         phone_id = st.secrets.get('WHATSAPP_PHONE_NUMBER_ID')
         access_token = st.secrets.get('WHATSAPP_ACCESS_TOKEN')
-        target_number = custom_number if custom_number else st.secrets.get('WHATSAPP_BUSINESS_NUMBER')
+        target_number = st.secrets.get('WHATSAPP_BUSINESS_NUMBER')
         version = st.secrets.get('WHATSAPP_API_VERSION', 'v20.0')
 
         if not all([phone_id, access_token, target_number]):
-            return
+            return False
 
         url = f"https://graph.facebook.com/{version}/{phone_id}/messages"
         headers = {
@@ -151,183 +67,159 @@ def send_whatsapp_alert(message, custom_number=None):
         }
         payload = {
             "messaging_product": "whatsapp",
-            "to": target_number.strip(),
+            "to": target_number,
             "type": "text",
             "text": {"body": message[:4096]}
         }
-        requests.post(url, headers=headers, json=payload, timeout=10)
+        response = requests.post(url, headers=headers, json=payload, timeout=10)
+        return response.status_code == 200
     except Exception as e:
-        st.warning(f"تعذر إرسال إشعار الواتساب لـ {custom_number}: {e}")
+        st.warning(f"تعذر إرسال إشعار الواتساب: {e}")
+        return False
 
-class SuperOmegaAgent:
-    def __init__(self, domain, language, uploaded_files):
+# ===== هيكل الوكلاء الأذكياء (Multi-Agent System) =====
+class SuperOmegaOrchestrator:
+    def __init__(self, domain):
         self.domain = domain
-        self.language = language
-        self.uploaded_files = uploaded_files
 
-    def ceo(self, task, use_vision=False):
-        return call_super_ai(f"بصفتك CEO فائق، ضع خطة استراتيجية شاملة وتنافسية لهذا المشروع في مجال {self.domain}: {task}. عطيني SWOT + الميزة التنافسية + خطة 90 يوم", "Super CEO Agent", self.domain, self.language, use_vision, self.uploaded_files)
+    def run_ceo(self, task):
+        prompt = (
+            f"بصفتك المدير التنفيذي (CEO) الفائق، قم بتحليل هذا المشروع في مجال {self.domain}: '{task}'. "
+            f"قدم لي خطة استراتيجية شاملة تحتوي على: تحليل SWOT، الميزة التنافسية الفريدة، وتخطيط زمني دقيق لـ 90 يوماً."
+        )
+        return call_super_ai(prompt, "Super CEO Agent", self.domain)
 
-    def cto(self, task, use_vision=False):
-        return call_super_ai(f"بصفتك CTO فائق، اقترح الاستراتيجية التقنية، أدوات التشغيل، stack تقني، واستهداف الجمهور الرقمي لـ: {task} في {self.domain}", "Super CTO Agent", self.domain, self.language, use_vision, self.uploaded_files)
+    def run_cto(self, task):
+        prompt = (
+            f"بصفتك المدير التقني (CTO) الفائق، بناءً على المشروع في مجال {self.domain}: '{task}'. "
+            f"اقترح البنية التحتية التقنية المناسبة، أدوات التشغيل الرقمية، تكديس التقنيات (Tech Stack)، وأدوات الأتمتة لضمان كفاءة العمل."
+        )
+        return call_super_ai(prompt, "Super CTO Agent", self.domain)
 
-    def coo(self, task, use_vision=False):
-        return call_super_ai(f"بصفتك COO فائق، ضع خطة تنفيذية، إدارة الموارد، KPI، وجدولة زمنية دقيقة لـ: {task} في {self.domain}", "Super COO Agent", self.domain, self.language, use_vision, self.uploaded_files)
+    def run_coo(self, task):
+        prompt = (
+            f"بصفتك مدير العمليات (COO) الفائق، للمشروع في مجال {self.domain}: '{task}'. "
+            f"ضع خطة تشغيلية يومية، مؤشرات الأداء الرئيسية (KPIs)، إدارة الموارد المتاحة، وجدولة زمنية صارمة للتنفيذ."
+        )
+        return call_super_ai(prompt, "Super COO Agent", self.domain)
 
-    def copywriter(self, plan):
-        whatsapp_num = st.secrets.get('WHATSAPP_BUSINESS_NUMBER', '')
-        prompt = f"بناءً على هذه الخطة: {plan}. اكتب 3 إعلانات تسويقية جذابة مع أيقونات، كلمات مفتاحية، هاشتاقات، ودعوة للاتصال برقم الواتساب: {whatsapp_num}"
-        ad = call_super_ai(prompt, "Super Copywriter Agent", self.domain, self.language)
-        send_whatsapp_alert(f"👑 OMEGA SUPER AGENTIC v5.0\nمهمة جديدة في مجال: {self.domain}\n\n{ad}")
-        return ad
+    def run_copywriter(self, strategy_plan):
+        whatsapp_num = st.secrets.get('WHATSAPP_BUSINESS_NUMBER', 'الهاتف غير محدد')
+        prompt = (
+            f"بناءً على هذه الاستراتيجية التنفيذية:\n{strategy_plan}\n\n"
+            f"بصفتك خبير كتابة إعلانية (Copywriter)، اكتب 3 صيغ إعلانية تسويقية قوية جداً باللهجة المغربية والفلصحة المبسطة، "
+            f"تتضمن عناوين جذابة، فوائد واضحة، هاشتاقات، ودعوة مباشرة لاتخاذ الإجراء (Call to Action) عبر الواتساب على الرقم: {whatsapp_num}"
+        )
+        ad_text = call_super_ai(prompt, "Super Copywriter Agent", self.domain)
+        return ad_text
 
-    def closer(self, ad):
-        prompt = f"قم بتحسين نص هذا الإعلان وإضافة محفزات الاستعجال FOMO + ضمان + شهادات لزيادة المبيعات: {ad}"
-        return call_super_ai(prompt, "Super Closer Agent", self.domain, self.language)
+    def run_closer(self, ad_copy):
+        prompt = (
+            f"بصفتك خبير مبيعات وإغلاق صفقات (Closer) محترف، قم بتحسين هذا النص الإعلاني:\n{ad_copy}\n\n"
+            f"أضف إليه محفزات الاستعجال الحقيقي (FOMO)، ضمانات قوية لإزالة المخاطر لدى الزبون، وعناصر لبناء الثقة الفورية لرفع نسبة المبيعات."
+        )
+        return call_super_ai(prompt, "Super Closer Agent", self.domain)
 
-# ===== واجهة Streamlit الأنيقة =====
-st.title("👑 OMEGA Super Agentic AI - النسخة الماسية v5.0")
-st.markdown("---")
+# ===== واجهة المستخدم الاحترافية (Streamlit UI) =====
+st.title("👑 OMEGA Super Agentic AI - Multi-Domain Enterprise")
+st.caption("النظام الذكي المتكامل للوكلاء المتعددين (CEO + CTO + COO + Copywriter + Closer) مدعوم بـ Groq Llama 3.1")
 
-# الشريط الجانبي للإعدادات والتحليلات وإرسال حملات متعددة
+# الشريط الجانبي للإعدادات
 with st.sidebar:
-    st.image("https://img.icons8.com/color/96/artificial-intelligence.png", width=80)
-    st.header("إعدادات العمل")
-    domain = st.selectbox("🎯 اختر المجال المستهدف", ["العقار", "التجارة الإلكترونية", "المطاعم", "التعليم", "الصحة", "التسويق الرقمي"])
-    language = st.selectbox("🌐 اختر لغة المخرجات", [
-        "العربية والدارجة المغربية", 
-        "Français (الفرنسية)", 
-        "English (الإنجليزية)", 
-        "Español (الإسبانية)"
-    ])
-    
-    st.markdown("---")
-    st.subheader("📱 إرسال جماعي للواتساب")
-    target_numbers_input = st.text_area("أدخل أرقام الواتساب (كل رقم فسطر، مفصولين بفاصلة)", placeholder="+212600000000\n+212611111111")
-    
-    st.markdown("---")
-    st.subheader("📊 إحصائيات الحملات")
-    try:
-        with open("campaigns.json", "r", encoding="utf-8") as f:
-            campaigns = json.load(f)
-        st.metric("عدد الحملات", len(campaigns))
-        st.metric("آخر مجال", campaigns[-1]['domain'] if campaigns else "لا يوجد")
-    except:
-        st.metric("عدد الحملات", 0)
-
-# تقسيم الشاشة (المهمة + رفع الصور)
-col_input, col_media = st.columns([2, 1], gap="medium")
-
-with col_input:
-    st.subheader("📝 تفاصيل المشروع أو المهمة")
-    task = st.text_area(
-        "اكتب تفاصيل طلبك هنا...", 
-        placeholder="مثال: بيع 50 بقعة أرضية سكنية وتجارية في تجزئة الهدى بقلعة السراغنة، المساحة من 120م إلى 300م الثمن 1800 درهم للمتر...",
-        height=160
+    st.header("⚙️ إعدادات النظام")
+    domain = st.selectbox(
+        "اختر قطاع العمل (Domain)", 
+        ["العقار والمقاولات", "التجارة الإلكترونية (E-commerce)", "المطاعم والضيافة", "التعليم والتدريب", "الخدمات الطبية والصحية", "التسويق الرقمي والوكالات"]
     )
+    st.info("💡 نصيحة: حدد بدقة تفاصيل المشروع في مربع النص للحصول على نتائج دقيقة وقابلة للتنفيذ الفوري.")
+    st.markdown("---")
+    st.write("📌 **الإصدار:** v5.0 Autonomous")
 
-with col_media:
-    st.subheader("🖼️ مرفقات الصور (اختياري)")
-    files = st.file_uploader(
-        "اختر صور المشروع", 
-        type=["jpg", "jpeg", "png"], 
-        accept_multiple_files=True,
-        key="uploader"
-    )
-    if files:
-        st.session_state.uploaded_files = files
+# واجهة المدخلات الرئيسية
+task = st.text_area(
+    "📝 أدخل تفاصيل المهمة أو المشروع المراد إنجازه:", 
+    placeholder="مثال: تسويق وبيع بقع أرضية سكنية في تجزئة الهدى بقلعة السراغنة مع استهداف المستثمرين المغاربة المقيمين بالخارج.",
+    height=100
+)
 
-if st.session_state.uploaded_files:
-    st.markdown("**📸 الصور المرفوعة للمشروع:**")
-    img_cols = st.columns(min(len(st.session_state.uploaded_files), 4))
-    for idx, uploaded_file in enumerate(st.session_state.uploaded_files):
-        with img_cols[idx % 4]:
-            st.image(uploaded_file, caption=f"صورة {idx+1}", use_container_width=True)
+orchestrator = SuperOmegaOrchestrator(domain)
 
-st.markdown("---")
+# تبويبات العمل المستقل لكل وكيل
+tab1, tab2, tab3, tab4, tab5 = st.tabs(["🧠 الاستراتيجية (CEO)", "💻 التقنية (CTO)", "📊 العمليات (COO)", "✍️ الحملة الإعلانية", "🚀 دورة المبيعات الكاملة (Pipeline)"])
 
-agent = SuperOmegaAgent(domain, language, st.session_state.uploaded_files)
+with tab1:
+    if st.button("تشغيل وكيل CEO", key="btn_ceo"):
+        if not task.strip():
+            st.warning("⚠️ يرجى إدخال وصف المهمة أولاً.")
+        else:
+            with st.spinner("المدير التنفيذي الفائق يحلل السوق ويضع الاستراتيجية..."):
+                result = orchestrator.run_ceo(task)
+                st.markdown(result)
 
-st.subheader("⚡ لوحة التحكم وتحفيز الوكلاء")
-btn_col1, btn_col2, btn_col3, btn_col4 = st.columns(4)
+with tab2:
+    if st.button("تشغيل وكيل CTO", key="btn_cto"):
+        if not task.strip():
+            st.warning("⚠️ يرجى إدخال وصف المهمة أولاً.")
+        else:
+            with st.spinner("المدير التقني يجهز البنية التحتية والتقنيات..."):
+                result = orchestrator.run_cto(task)
+                st.markdown(result)
 
-with btn_col1:
-    ceo_btn = st.button("🧠 استشارة CEO")
-with btn_col2:
-    cto_btn = st.button("💻 استشارة CTO")
-with btn_col3:
-    coo_btn = st.button("📊 استشارة COO")
-with btn_col4:
-    campaign_btn = st.button("✍️ إعلان + واتساب 📱")
+with tab3:
+    if st.button("تشغيل وكيل COO", key="btn_coo"):
+        if not task.strip():
+            st.warning("⚠️ يرجى إدخال وصف المهمة أولاً.")
+        else:
+            with st.spinner("مدير العمليات ينظم مسار التشغيل والمؤشرات..."):
+                result = orchestrator.run_coo(task)
+                st.markdown(result)
 
-if ceo_btn:
-    if task.strip():
-        with st.spinner("⏳ المدير التنفيذي (CEO) يدرس المشروع و يحلل الصور..."):
-            result = agent.ceo(task, use_vision=True if st.session_state.uploaded_files else False)
-            st.markdown("### 🧠 تقرير المدير التنفيذي (CEO)")
-            st.markdown(result)
-    else:
-        st.warning("⚠️ يرجى كتابة وصف المهمة أو المشروع أولاً.")
+with tab4:
+    if st.button("توليد الإعلان التسويقي", key="btn_copy"):
+        if not task.strip():
+            st.warning("⚠️ يرجى إدخال وصف المهمة أولاً.")
+        else:
+            with st.spinner("كاتب الإعلانات المحترف يصيغ الحملة..."):
+                plan = orchestrator.run_ceo(task)
+                ad_result = orchestrator.run_copywriter(plan)
+                st.markdown(ad_result)
 
-if cto_btn:
-    if task.strip():
-        with st.spinner("⏳ المدير التقني (CTO) يجهز الحلول التقنية..."):
-            result = agent.cto(task, use_vision=True if st.session_state.uploaded_files else False)
-            st.markdown("### 💻 تقرير المدير التقني (CTO)")
-            st.markdown(result)
-    else:
-        st.warning("⚠️ يرجى كتابة وصف المهمة أو المشروع أولاً.")
+with tab5:
+    st.subheader("⚡ مسار الأتمتة الشامل (Full Autonomous Pipeline)")
+    st.write("هذا الزر يشغل السلسلة كاملة: استراتيجية CEO -> صياغة الإعلان -> تحسين المبيعات بالـ Closer -> إرسال التنبيه تلقائياً عبر WhatsApp API.")
+    
+    if st.button("🚀 تنفيذ المسار الفائق بالكامل وإرسال التنبيه", type="primary", key="btn_full"):
+        if not task.strip():
+            st.warning("⚠️ يرجى إدخال وصف المهمة أولاً.")
+        else:
+            progress_bar = st.progress(0)
+            status_text = st.empty()
 
-if coo_btn:
-    if task.strip():
-        with st.spinner("⏳ مدير العمليات (COO) يضع الجدول الزمني وخطة التنفيذ..."):
-            result = agent.coo(task, use_vision=True if st.session_state.uploaded_files else False)
-            st.markdown("### 📊 تقرير مدير العمليات (COO)")
-            st.markdown(result)
-    else:
-        st.warning("⚠️ يرجى كتابة وصف المهمة أو المشروع أولاً.")
+            status_text.text("1/4 - جارٍ إعداد الاستراتيجية الكبرى (CEO)...")
+            progress_bar.progress(25)
+            plan = orchestrator.run_ceo(task)
 
-if campaign_btn:
-    if task.strip():
-        with st.spinner("🚀 جاري إنشاء الحملة الإعلانية، الإرسال للواتساب، والحفظ..."):
-            plan = agent.ceo(task, use_vision=True if st.session_state.uploaded_files else False)
-            ad = agent.copywriter(plan)
-            final_ad = agent.closer(ad)
+            status_text.text("2/4 - جارٍ كتابة الإعلانات الترويجية (Copywriter)...")
+            progress_bar.progress(50)
+            ad = orchestrator.run_copywriter(plan)
+
+            status_text.text("3/4 - تحسين الإعلان عبر خبير الإغلاق (Closer & FOMO)...")
+            progress_bar.progress(75)
+            final_output = orchestrator.run_closer(ad)
+
+            status_text.text("4/4 - إرسال التقرير النهائي عبر واتساب API...")
+            progress_bar.progress(90)
             
-            save_campaign(domain, task, final_ad)
-            
-            # إرسال جماعي إذا تم إدخال أرقام في الجانب
-            if target_numbers_input.strip():
-                numbers = [n.strip() for n in target_numbers_input.replace(',', '\n').split('\n') if n.strip()]
-                for num in numbers:
-                    send_whatsapp_alert(f"👑 OMEGA Campaign Alert:\n\n{final_ad}", custom_number=num)
-                st.info(f"📤 تم إرسال الحملة لـ {len(numbers)} رقم واتساب بنجاح!")
+            whatsapp_msg = f"👑 *OMEGA SUPER AGENTIC v5.0*\n🎯 القطاع: {domain}\n\n{final_output}"
+            sent_status = send_whatsapp_alert(whatsapp_msg)
 
-            st.success("✨ تم إنشاء الحملة الإعلانية وإرسالها بنجاح وحفظها!")
-            st.markdown("### ✍️ الحملة الإعلانية المطورة والمحسنة للمبيعات:")
-            st.markdown(final_ad)
-            
+            progress_bar.progress(100)
+            status_text.text("✅ تمت العملية بنجاح تام!")
+
+            if sent_status:
+                st.success("📩 تم إرسال الإشعار والتفاصيل بنجاح إلى رقم الواتساب المخصص في إعدادات Secrets!")
+            else:
+                st.info("ℹ️ تم إعداد المخرجات بالأسفل بنجاح (تأكد من إعدادات مفاتيح الواتساب في حال رغبتك بالتنبيه التلقائي).")
+
             st.markdown("---")
-            col_a, col_b = st.columns(2)
-            
-            with col_a:
-                if st.button("🎙️ توليد صوت للإعلان"):
-                    with st.spinner("جاري تسجيل الصوت..."):
-                        audio_bytes = generate_audio(final_ad)
-                        if audio_bytes:
-                            st.audio(audio_bytes, format="audio/mp3")
-                            st.success("✅ تم توليد التسجيل الصوتي بنجاح!")
-            
-            with col_b:
-                if st.button("📄 تحميل التقرير بصيغة PDF"):
-                    pdf_file = export_pdf(f"OMEGA Campaign - {domain}", final_ad)
-                    if pdf_file:
-                        with open(pdf_file, "rb") as f:
-                            st.download_button(
-                                label="📥 اضغط هنا لتحميل ملف PDF",
-                                data=f,
-                                file_name=pdf_file,
-                                mime="application/pdf"
-                            )
-    else:
-        st.warning("⚠️ يرجى كتابة وصف المهمة أو المشروع أولاً.")
+            st.markdown(final_output)
