@@ -1,11 +1,12 @@
 import streamlit as st
 import requests
 import json
+from PIL import Image
 
 st.set_page_config(page_title="OMEGA Super Agentic AI", page_icon="👑", layout="wide")
 
 def call_super_ai(prompt, agent_name, domain):
-    """محرك الذكاء الاصطناعي الفائق متعدد المجالات - Groq + Llama مع نظام النماذج الاحتياطية (Fallback)"""
+    """محرك الذكاء الاصطناعي الفائق متعدد المجالات - Groq + Llama مع نظام النماذج الاحتياطية"""
     url = "https://api.groq.com/openai/v1/chat/completions"
     api_key = st.secrets.get("GROQ_API_KEY", "")
 
@@ -23,7 +24,7 @@ def call_super_ai(prompt, agent_name, domain):
         f"Respond in Moroccan Arabic Darija + العربية الفصحى, with professional formatting, bullet points, emojis, and tables when needed."
     )
 
-    # قائمة النماذج مرتبة للأمان والتحويل التلقائي في حال توقف أي موديل (Fallback)
+    # قائمة النماذج الاحتياطية المحدثة لمنع خطأ 404 وتوقف الوكيل نهائياً
     fallback_models = [
         "llama-3.3-70b-versatile",
         "llama-3.1-8b-instant"
@@ -103,13 +104,26 @@ st.caption("الوكيل الذكي المتكامل للخطط التسويقي
 domain = st.selectbox("اختر المجال", ["العقار", "التجارة الإلكترونية", "المطاعم", "التعليم", "الصحة", "التسويق"])
 task = st.text_area("وصف المهمة / المشروع", placeholder="مثال: بيع بقع أرضية في تجزئة الهدى بقلعة السراغنة")
 
-agent = SuperOmegaAgent(domain)
+# قسم مرفقات الصور (اختياري)
+st.markdown("---")
+st.subheader("🖼️ مرفقات الصور (اختياري)")
+uploaded_files = st.file_uploader("اختر الصور المتعلقة بالمشروع (PNG, JPG, JPEG)", type=["png", "jpg", "jpeg"], accept_multiple_files=True)
+
+if uploaded_files:
+    st.write(f"📁 تم إرفاق {len(uploaded_files)} صورة بنجاح:")
+    cols = st.columns(min(len(uploaded_files), 4))
+    for i, file in enumerate(uploaded_files):
+        img = Image.open(file)
+        with cols[i % 4]:
+            st.image(img, caption=file.name, use_container_width=True)
 
 st.markdown("---")
 
+agent = SuperOmegaAgent(domain)
+
 if st.button("🚀 تشغيل الوكيل الذكي الشامل + إرسال واتساب", use_container_width=True):
     if task.strip():
-        with st.spinner("الوكيل الذكي يختار النموذج المناسب ويعمل على المهمة داخلياً..."):
+        with st.spinner("الوكيل الذكي يختار النموذج المناسب داخلياً ويعمل على المشروع..."):
             plan = agent.ceo(task)
             ad = agent.copywriter(plan)
             final_ad = agent.closer(ad)
