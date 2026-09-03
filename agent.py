@@ -2,7 +2,7 @@ import streamlit as st
 import requests
 
 def call_meta_ai(prompt, agent_name):
-    """إرسال الطلب مباشرة باستخدام نماذج Meta Llama عبر Groq API"""
+    """إرسال الطلب مباشرة باستخدام النماذج المتاحة عبر Groq API"""
     url = "https://api.groq.com/openai/v1/chat/completions"
     
     # جلب مفتاح Meta من الـ Secrets بأمان
@@ -18,7 +18,7 @@ def call_meta_ai(prompt, agent_name):
     domaine = st.session_state.get('domaine', 'العقار والتسويق الرقمي')
     
     payload = {
-        "model": "llama-3.3-70b-specdec",  # موديل محدث ومستقر
+        "model": "llama3-70b-8192",  # نموذج مستقر ومدعوم على نطاق واسع في Groq
         "messages": [
             {
                 "role": "system", 
