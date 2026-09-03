@@ -6,7 +6,7 @@ from PIL import Image
 st.set_page_config(page_title="OMEGA Super Agentic AI", page_icon="👑", layout="wide")
 
 def call_super_ai(prompt, agent_name):
-    """محرك الذكاء الاصطناعي الفائق عبر Groq باستخدام Llama 3.3"""
+    """محرك الذكاء الاصطناعي الفائق عبر Groq باستخدام Llama"""
     url = "https://api.groq.com/openai/v1/chat/completions"
     api_key = st.secrets.get("GROQ_API_KEY", "")
 
@@ -28,7 +28,7 @@ def call_super_ai(prompt, agent_name):
     )
 
     payload = {
-        "model": "llama-3.3-70b-versatile",
+        "model": "llama-3.1-70b-versatile",
         "messages": [
             {"role": "system", "content": system_prompt},
             {"role": "user", "content": prompt}
