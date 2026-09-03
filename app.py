@@ -32,13 +32,13 @@ def call_super_ai(prompt, agent_name, domain):
   )
 
   payload = {
-      "model": "llama-3.1-70b-versatile",
+      "model": "llama-3.3-70b-versatile",  # تم تحديث الموديل للاستقرار وتفادي خطأ 400
       "messages": [
           {"role": "system", "content": system_prompt},
           {"role": "user", "content": prompt},
       ],
       "temperature": 0.75,
-      "max_tokens": 2000,
+      "max_tokens": 1500,  # تقليص طفيف لتفادي تجاوز الحد المسموح به
   }
 
   try:
