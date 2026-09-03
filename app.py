@@ -32,13 +32,13 @@ def call_super_ai(prompt, agent_name, domain):
   )
 
   payload = {
-      "model": "llama-3.3-70b-versatile",  # تم تحديث الموديل للاستقرار وتفادي خطأ 400
+      "model": "llama-3.3-70b-versatile",  # الموديل النشط والمدعوم حالياً لتفادي 404
       "messages": [
           {"role": "system", "content": system_prompt},
           {"role": "user", "content": prompt},
       ],
       "temperature": 0.75,
-      "max_tokens": 1500,  # تقليص طفيف لتفادي تجاوز الحد المسموح به
+      "max_tokens": 2000,
   }
 
   try:
@@ -139,12 +139,12 @@ domain = st.selectbox(
 )
 task = st.text_area(
     "وصف المهمة / المشروع",
-    placeholder="مثال: بيع بقع أرضية في تجزئة الهدى بقلعة السراغنة",
+    placeholder="مثال: بيع بقعة تجارية في قلعة السراغنة",
 )
 
 agent = SuperOmegaAgent(domain)
 
-# تهيئة Session State لحفظ النتائج وتجنب ضياعها عند إعادة التحميل
+# تهيئة Session State لحفظ النتائج وثباتها
 if "result_title" not in st.session_state:
   st.session_state.result_title = ""
 if "result_content" not in st.session_state:
