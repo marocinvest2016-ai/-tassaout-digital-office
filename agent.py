@@ -8,32 +8,43 @@ st.set_page_config(
 )
 
 
-# ===== 1. دالة باش نجيبو أسرع موديل من Groq =====
+# ===== 1. دالة اختيار النماذج (تلقائي + يدوي) =====
 @st.cache_data
-def get_best_groq_model(api_key):
-  """كيجيب لائحة الموديلات ويختار أسرع واحد تلقائيا"""
+def get_available_groq_models(api_key):
+  """كيجيب لائحة الموديلات المتاحة من المنصة"""
   if not api_key:
-    return "llama-3.1-70b-versatile"  # الافتراضي
+    return ["qwen/qwen3.8-27b", "openai/gpt-oss-120b", "groq/compound"]
 
   url = "https://api.groq.com/openai/v1/models"
   headers = {"Authorization": f"Bearer {api_key}"}
   try:
     res = requests.get(url, headers=headers, timeout=10)
     res.raise_for_status()
-    models = res.json().get("data", [])
-    model_ids = [m["id"] for m in models]
-
-    # الأولوية: 70b > 8b > mixtral
-    for preferred in [
-        "llama-3.1-70b-versatile",
-        "llama-3.1-8b-instant",
-        "mixtral-8x7b-32768",
-    ]:
-      if preferred in model_ids:
-        return preferred
-    return model_ids[0] if model_ids else "llama-3.1-70b-versatile"
+    models = [m["id"] for m in res.json().get("data", [])]
+    return models if models else ["qwen/qwen3.8-27b"]
   except:
-    return "llama-3.1-70b-versatile"
+    return [
+        "openai/gpt-oss-120b",
+        "qwen/qwen3.8-27b",
+        "qwen/qwen3.6-27b",
+        "groq/compound",
+        "openai/gpt-oss-20b",
+    ]
+
+
+def get_default_best_model(models_list):
+  """كيختار أحسن موديل للعربية والدارجة تلقائيا كقيمة افتراضية"""
+  priority = [
+      "openai/gpt-oss-120b",  # الأقوى للخطط
+      "qwen/qwen3.8-27b",  # ملك العربية والدارجة
+      "qwen/qwen3.6-27b",  # النسخة الخفيفة
+      "groq/compound",  # فيه بحث
+      "openai/gpt-oss-20b",  # الخفيف
+  ]
+  for preferred in priority:
+    if preferred in models_list:
+      return preferred
+  return models_list[0] if models_list else "qwen/qwen3.8-27b"
 
 
 # ===== 2. المحرك الرئيسي =====
@@ -51,14 +62,14 @@ def call_super_ai(prompt, agent_name, domain, model_name):
 
   system_prompt = (
       f"You are {agent_name}, an elite Super Agentic AI specialized in"
-      f" '{domain}' powered by Meta Llama on Groq. Think step by step. Provide"
-      " professional, highly tailored, actionable strategies. Respond in"
-      " Moroccan Arabic Darija + العربية الفصحى, with professional formatting,"
-      " bullet points, emojis, and tables when needed."
+      f" '{domain}' powered by Meta Llama / advanced LLMs on Groq. Think step by"
+      " step. Provide professional, highly tailored, actionable strategies."
+      " Respond in Moroccan Arabic Darija + العربية الفصحى, with professional"
+      " formatting, bullet points, emojis, and tables when needed."
   )
 
   payload = {
-      "model": model_name,  # هنا ولا ديناميكي
+      "model": model_name,
       "messages": [
           {"role": "system", "content": system_prompt},
           {"role": "user", "content": prompt},
@@ -100,19 +111,16 @@ def send_whatsapp_alert(message):
     st.warning(f"تعذر إرسال إشعار الواتساب: {e}")
 
 
-# ===== 4. محرك توليد الفيديو (Veo / API Placeholder) =====
-def generate_ai_video(prompt_text, domain):
-  """دالة مخصصة لربط خدمة توليد الفيديو (مثل Google Veo API أو الخدمات المشابهة)"""
-  # يمكنك استبدال أو ربط مفتاح API الخاص بالفيديو هنا عبر st.secrets
-  video_api_key = st.secrets.get("VIDEO_API_KEY", "")
-
-  # كمثال توضيحي احترافي يولد سكريبت بصري دقيق جاهز للتصوير أو الربط التقني
+# ===== 4. محرك توليد الفيديو الذكي =====
+def generate_ai_video(prompt_text, domain, model_name):
   prompt = (
       f"قم بصياغة سيناريو إعلاني بصري احترافي (Storyboard) لمدة 3 دقائق"
       f" لمشروع في مجال '{domain}' بناءً على هذا الوصف: {prompt_text}."
-      " اعطيني تفاصيل كل مشهد (Légende, Angle de caméra, Voix off)."
+      " اعطيني تفاصيل كل مشهد (Légende, Angle de caméra, Voix off) بالدارجة والعربية."
   )
-  return call_super_ai(prompt, "Super Video Director Agent", domain, "llama-3.1-70b-versatile")
+  return call_super_ai(
+      prompt, "Super Video Director Agent", domain, model_name
+  )
 
 
 class SuperOmegaAgent:
@@ -147,27 +155,48 @@ class SuperOmegaAgent:
 
   def copywriter(self, plan):
     whatsapp_num = st.secrets.get("WHATSAPP_BUSINESS_NUMBER", "")
-    prompt = f"بناءً على هذه الخطة: {plan}. اكتب 3 إعلانات تسويقية... رقم الواتساب: {whatsapp_num}"
+    prompt = f"بناءً على هذه الخطة: {plan}. اكتب 3 إعلانات تسويقية بالدارجة... رقم الواتساب: {whatsapp_num}"
     ad = call_super_ai(
         prompt, "Super Copywriter Agent", self.domain, self.model
     )
     send_whatsapp_alert(
-        f"👑 OMEGA SUPER AGENTIC v4.2\nمهمة جديدة: {self.domain}\n\n{ad}"
+        f"👑 OMEGA SUPER AGENTIC v29.0\nمهمة جديدة: {self.domain}\n\n{ad}"
     )
     return ad
 
   def closer(self, ad):
-    prompt = f"قم بتحسين نص هذا الإعلان وإضافة FOMO... {ad}"
+    prompt = f"قم بتحسين نص هذا الإعلان وإضافة FOMO بالدارجة المغربية... {ad}"
     return call_super_ai(prompt, "Super Closer Agent", self.domain, self.model)
 
 
-# ===== 5. واجهة Streamlit =====
-st.title("👑 OMEGA Super Agentic AI - AUTO MODEL + VEO")
-st.caption("كيختار أسرع موديل من Groq بوحدو مع دعم توليد الفيديو")
+# ===== 5. واجهة Streamlit & Sidebar Control =====
+st.title("👑 OMEGA Super Agentic AI - V12 NEXUS")
+st.caption("نظام الوكلاء الأذكياء مع التحكم الذكي واليدوي في النماذج")
 
 api_key = st.secrets.get("GROQ_API_KEY", "")
-selected_model = get_best_groq_model(api_key)
-st.sidebar.success(f"المحرك النشط: `{selected_model}` ⚡")
+available_models = get_available_groq_models(api_key)
+default_model = get_default_best_model(available_models)
+
+# إعدادات الـ Sidebar لاختيار الموديل يدوياً أو تركها تلقائية
+st.sidebar.header("⚙️ إعدادات المحرك (Model Nexus)")
+mode_selection = st.sidebar.radio(
+    "طريقة اختيار الموديل:", ["تلقائي (Auto-Model الذكي)", "اختيار يدوي"]
+)
+
+if mode_selection == "تلقائي (Auto-Model الذكي)":
+  selected_model = default_model
+  st.sidebar.success(f"المحرك النشط (تلقائي): `{selected_model}` ⚡")
+else:
+  selected_model = st.sidebar.selectbox(
+      "اختر الموديل يدوياً:",
+      available_models,
+      index=(
+          available_models.index(default_model)
+          if default_model in available_models
+          else 0
+      ),
+  )
+  st.sidebar.info(f"المحرك النشط (يدوي): `{selected_model}` 🎯")
 
 domain = st.selectbox(
     "اختر المجال",
@@ -205,10 +234,12 @@ with col4:
   if st.button("🎬 توليد فيديو (Veo)"):
     with st.spinner("مخرج الفيديو الذكي كيوجد الستوري بورد..."):
       st.session_state.result_title = "🎬 سيناريو فيديو احترافي (3 دقائق)"
-      st.session_state.result_content = generate_ai_video(task, domain)
+      st.session_state.result_content = generate_ai_video(
+          task, domain, selected_model
+      )
 
 if st.button("✍️ إنشاء إعلان + إرسال واتساب"):
-  with st.spinner("الكاتب والكلوزر كيوجدوا الإعلان..."):
+  with st.spinner("الكاتب والكلوزر كيوجدوا الإعلان بالدارجة..."):
     plan = agent.ceo(task)
     ad = agent.copywriter(plan)
     final_ad = agent.closer(ad)
