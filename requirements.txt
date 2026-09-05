@@ -1,21 +1,25 @@
+# الأساسيات
 streamlit>=1.38.0
 requests>=2.31.0
+pandas>=2.2.0
+pillow>=11.0.0
+
+# AI والدماغ
+groq
+sentence-transformers
+chromadb
 supabase>=2.10.0
 
-# العربية
+# البحث والملفات
+duckgo_search
+pypdf>=4.0.0
+beautifulsoup4>=4.12.0
+
+# تصدير PDF + العربية
+reportlab>=4.0.0
 python-bidi>=0.6.0
 arabic-reshaper>=3.0.0
 
-# الصور والملفات
-pillow>=11.0.0
-pandas>=2.2.0
-pypdf>=4.0.0
-beautifulsoup4>=4.12.0
+# أدوات مساعدة
 gdown>=5.0.0
-pyperclip>=1.8.2
-
-# AI متقدم - للمرحلة 2
-langchain-community
-langchain-core
-langgraph
-ollama
+pyperclip>=1.
