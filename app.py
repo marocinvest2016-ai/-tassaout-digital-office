@@ -3,7 +3,7 @@ from openai import OpenAI
 import json, os, datetime, re
 from duckduckgo_search import DDGS
 
-st.set_page_config(page_title="DANA OMEGA BRAIN v11.4.1", page_icon="🧠", layout="wide")
+st.set_page_config(page_title="DANA OMEGA BRAIN v11.4.2", page_icon="🧠", layout="wide")
 
 ARCHIVE_FILE = "dana_office_archive.json"
 AVAILABLE_SECTORS = [
@@ -50,8 +50,8 @@ if "config" not in st.session_state:
         "agent": "DANA General",
         "model": "openai/gpt-oss-120b",
         "memory": {"الاسم": "القائد", "المدينة": "قلعة السراغنة"},
-        "sectors": AVAILABLE_SECTORS[:4], # هنا كان الخطأ - صلحناه
-        "system_prompt": """أنت DANA OMEGA BRAIN v11.4.1 - الدماغ الصياد المجاني.
+        "sectors": ["العقار","الهندسة المعمارية"], # صلحت الديفولت
+        "system_prompt": """أنت DANA OMEGA BRAIN v11.4.2 - الدماغ الصياد المجاني.
 مهمتك: تعطي نتائج حقيقية من DuckDuckGo.
 القواعد: 1. جاوب بالدارجة. 2. جدول: | # | الاسم | التخصص | رقم الهاتف | رابط | المصدر |
 3. 2 رسائل واتساب. 4. إلا ما لقيتيش قل "لم يتم العثور".
@@ -72,20 +72,14 @@ def call_dana(prompt):
         st.error(f"❌ خطأ من Groq: {e}"); return None
 
 with st.sidebar:
-    st.title("⚙️ مركز القيادة v11.4.1")
-
-    # الإصلاح هنا: كنفلطريو الديفولت باش يكون ديما فاللائحة
-    raw_default = st.session_state.config.get("sectors", [])
-    if not isinstance(raw_default, list): raw_default = [raw_default] if raw_default else []
-    safe_default = [s for s in raw_default if s in AVAILABLE_SECTORS] or AVAILABLE_SECTORS[:2]
-
-    st.session_state.config["sectors"] = st.multiselect("اختار القطاعات", AVAILABLE_SECTORS, default=safe_default)
+    st.title("⚙️ مركز القيادة v11.4.2")
+    st.session_state.config["sectors"] = st.multiselect("اختار القطاعات", AVAILABLE_SECTORS, default=st.session_state.config["sectors"])
     st.success("✅ DuckDuckGo مفعل - مجاني 100%")
     st.subheader("2. 📁 مكتب المدير")
     st.json(st.session_state.office)
     if st.button("💾 حفظ الأرشيف"): save_json(ARCHIVE_FILE, st.session_state.office); st.success("تم")
 
-st.title("🧠 DANA OMEGA BRAIN v11.4.1")
+st.title("🧠 DANA OMEGA BRAIN v11.4.2")
 if "messages" not in st.session_state: st.session_state.messages = []
 for msg in st.session_state.messages:
     with st.chat_message(msg["role"]): st.markdown(msg["content"])
