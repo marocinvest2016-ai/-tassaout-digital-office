@@ -29,7 +29,9 @@ def call_super_ai(prompt, agent_name, domain):
   )
 
   payload = {
-      "model": "llama-3.1-70b-versatile",
+      "model": (
+          "llama-3.3-70b-versatile"
+      ),  # موديل لاما الأحدث والأقوى على Groq
       "messages": [
           {"role": "system", "content": system_prompt},
           {"role": "user", "content": prompt},
