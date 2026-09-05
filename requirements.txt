@@ -1,6 +1,6 @@
 streamlit
 requests
 python-dotenv
-openai==1.54.4
-duckgo-search==8.1.1
+openai
+duckduckgo-search
 pandas
