@@ -2,3 +2,5 @@ streamlit
 requests
 python-dotenv
 openai>=1.40.0
+duckduckgo-search
+pandas
