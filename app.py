@@ -1,71 +1,151 @@
+from datetime import datetime
+import io
 import json
 import os
+import faiss
+import numpy as np
+from pypdf import PdfReader
+from reportlab.lib.pagesizes import A4
+from reportlab.pdfgen import canvas
 import requests
+from sentence_transformers import SentenceTransformer
 import streamlit as st
 
-st.set_page_config(
-    page_title="OMEGA Super Agentic AI", page_icon="👑", layout="wide"
-)
+st.set_page_config(page_title="DANA CORE v5.1", page_icon="👑", layout="wide")
+MEMORY_FILE = "dana_brain_capsule.json"
 
 
-# ===== 1. دالة اختيار النماذج (تلقائي + يدوي) =====
-@st.cache_data
-def get_available_groq_models(api_key):
-  """كيجيب لائحة الموديلات المتاحة من المنصة"""
-  if not api_key:
-    return ["llama-3.3-70b-versatile", "openai/gpt-oss-120b", "groq/compound"]
+def load_capsule():
+  if os.path.exists(MEMORY_FILE):
+    with open(MEMORY_FILE, "r", encoding="utf-8") as f:
+      return json.load(f)
+  return {
+      "identity": {"name": "DANA CORE", "role": "وكيل عقاري وتجاري سيادي"},
+      "knowledge": [],
+      "research": [],
+  }
 
-  url = "https://api.groq.com/openai/v1/models"
-  headers = {"Authorization": f"Bearer {api_key}"}
+
+def save_capsule(data):
+  with open(MEMORY_FILE, "w", encoding="utf-8") as f:
+    json.dump(data, f, ensure_ascii=False, indent=2)
+
+
+if "capsule" not in st.session_state:
+  st.session_state.capsule = load_capsule()
+if "last_result" not in st.session_state:
+  st.session_state.last_result = ""
+
+
+# ===== 1. تصدير PDF =====
+def export_to_pdf(text, title):
+  buffer = io.BytesIO()
+  c = canvas.Canvas(buffer, pagesize=A4)
+  width, height = A4
+  c.setFont("Helvetica", 12)
+  y = height - 50
+  c.drawString(30, y, f"تقرير: {title}")
+  y -= 30
+  for line in text.split("\n"):
+    c.drawString(30, y, line[:90])  # تقطيع السطور لتناسب العرض
+    y -= 20
+    if y < 50:
+      c.showPage()
+      y = height - 50
+  c.save()
+  buffer.seek(0)
+  return buffer
+
+
+# ===== 2. إرسال واتساب =====
+def send_whatsapp(phone_number, message):
+  token = st.secrets.get("WHATSAPP_TOKEN", "")
+  phone_id = st.secrets.get("WHATSAPP_PHONE_ID", "")
+  if not token or not phone_id:
+    return "❌ ضع WHATSAPP_TOKEN و WHATSAPP_PHONE_ID في Secrets"
+
+  url = f"https://graph.facebook.com/v20.0/{phone_id}/messages"
+  headers = {
+      "Authorization": f"Bearer {token}",
+      "Content-Type": "application/json",
+  }
+  payload = {
+      "messaging_product": "whatsapp",
+      "to": phone_number,
+      "type": "text",
+      "text": {"body": message[:1000]},  # حد الواتساب للنص المرسل
+  }
   try:
-    res = requests.get(url, headers=headers, timeout=10)
-    res.raise_for_status()
-    models = [m["id"] for m in res.json().get("data", [])]
-    return models if models else ["llama-3.3-70b-versatile"]
-  except:
-    return [
-        "llama-3.3-70b-versatile",
-        "openai/gpt-oss-120b",
-        "qwen/qwen2.5-72b-instruct",
-        "groq/compound",
-    ]
+    res = requests.post(url, headers=headers, json=payload, timeout=10)
+    return (
+        "✅ تم الإرسال للواتساب بنجاح"
+        if res.status_code == 200
+        else f"❌ خطأ: {res.text}"
+    )
+  except Exception as e:
+    return f"❌ خطأ في الاتصال بالواتساب: {e}"
 
 
-def get_default_best_model(models_list):
-  """كيختار أحسن موديل للعربية والدارجة تلقائيا كقيمة افتراضية"""
-  priority = [
-      "llama-3.3-70b-versatile",
-      "openai/gpt-oss-120b",
-      "qwen/qwen2.5-72b-instruct",
-      "groq/compound",
-  ]
-  for preferred in priority:
-    if preferred in models_list:
-      return preferred
-  return models_list[0] if models_list else "llama-3.3-70b-versatile"
+# ===== 3. RAG + Groq Engine =====
+@st.cache_resource
+def load_embedding_model():
+  return SentenceTransformer("all-MiniLM-L6-v2")
 
 
-# ===== 2. المحرك الرئيسي =====
-def call_super_ai(prompt, agent_name, domain, model_name):
-  url = "https://api.groq.com/openai/v1/chat/completions"
+def ingest_docs(uploaded_files):
+  model = load_embedding_model()
+  texts = []
+  for pdf in uploaded_files:
+    reader = PdfReader(pdf)
+    for page in reader.pages:
+      if page.extract_text():
+        texts.append(page.extract_text())
+
+  chunks = [t[i : i + 1000] for t in texts for i in range(0, len(t), 800)]
+  if not chunks:
+    return 0
+  embeddings = model.encode(chunks)
+  index = faiss.IndexFlatL2(embeddings.shape[1])
+  index.add(np.array(embeddings))
+  st.session_state.index, st.session_state.chunks = index, chunks
+  return len(chunks)
+
+
+def rag_search(query, k=3):
+  if "index" not in st.session_state:
+    return ""
+  model = load_embedding_model()
+  q_emb = model.encode([query])
+  _, indices = st.session_state.index.search(np.array(q_emb), k)
+  return "\n---\n".join([
+      st.session_state.chunks[i]
+      for i in indices[0]
+      if i < len(st.session_state.chunks)
+  ])
+
+
+def call_dana_brain(prompt, model_name):
   api_key = st.secrets.get("GROQ_API_KEY", "")
-
   if not api_key:
     return "❌ خطأ: مفتاح GROQ_API_KEY غير موجود في إعدادات Secrets"
+
+  context = ""
+  if "index" in st.session_state:
+    rag = rag_search(prompt)
+    if rag:
+      context += "\n\nمعرفة مستخرجة من الملفات المرفوعة:\n" + rag
+
+  identity = st.session_state.capsule["identity"]
+  system_prompt = (
+      f"أنت {identity['name']}. دورك: {identity['role']}. السياق الإضافي:"
+      f" {context} . القواعد: فكر كـ CEO+CTO+COO. جاوب بالدارجة المغربية + العربية"
+      " الفصحى. استعمل جداول، نقط واضحة، و Emojis."
+  )
 
   headers = {
       "Authorization": f"Bearer {api_key}",
       "Content-Type": "application/json",
   }
-
-  system_prompt = (
-      f"You are {agent_name}, an elite Super Agentic AI specialized in"
-      f" '{domain}' powered by advanced LLMs on Groq. Think step by step."
-      " Provide professional, highly tailored, actionable strategies. Respond"
-      " in Moroccan Arabic Darija + العربية الفصحى, with professional"
-      " formatting, bullet points, emojis, and tables when needed."
-  )
-
   payload = {
       "model": model_name,
       "messages": [
@@ -73,199 +153,79 @@ def call_super_ai(prompt, agent_name, domain, model_name):
           {"role": "user", "content": prompt},
       ],
       "temperature": 0.75,
-      "max_tokens": 3000,
+      "max_tokens": 2000,
   }
 
   try:
-    res = requests.post(url, headers=headers, json=payload, timeout=120)
+    res = requests.post(
+        "https://api.groq.com/openai/v1/chat/completions",
+        headers=headers,
+        json=payload,
+        timeout=90,
+    )
     res.raise_for_status()
-    return res.json()["choices"][0]["message"]["content"]
+    result = res.json()["choices"][0]["message"]["content"]
+    st.session_state.last_result = result
+    return result
   except Exception as e:
     return f"❌ خطأ في الاتصال بالذكاء الاصطناعي: {e}"
 
 
-# ===== 3. إرسال الواتساب =====
-def send_whatsapp_alert(message):
-  try:
-    phone_id = st.secrets.get("WHATSAPP_PHONE_NUMBER_ID")
-    access_token = st.secrets.get("WHATSAPP_ACCESS_TOKEN")
-    target_number = st.secrets.get("WHATSAPP_BUSINESS_NUMBER")
-    version = st.secrets.get("WHATSAPP_API_VERSION", "v20.0")
-    if not all([phone_id, access_token, target_number]):
-      return
-    url = f"https://graph.facebook.com/{version}/{phone_id}/messages"
-    headers = {
-        "Authorization": f"Bearer {access_token}",
-        "Content-Type": "application/json",
-    }
-    payload = {
-        "messaging_product": "whatsapp",
-        "to": target_number,
-        "type": "text",
-        "text": {"body": message[:4096]},
-    }
-    requests.post(url, headers=headers, json=payload, timeout=10)
-  except Exception as e:
-    st.warning(f"تعذر إرسال إشعار الواتساب: {e}")
+# ===== 4. واجهة Streamlit =====
+st.title("👑 DANA CORE v5.1 - النواة السيادية (واتساب + PDF)")
 
-
-# ===== 4. محرك توليد الفيديو الذكي =====
-def generate_ai_video(prompt_text, domain, model_name):
-  prompt = (
-      f"قم بصياغة سيناريو إعلاني بصري احترافي (Storyboard) لمدة 3 دقائق"
-      f" لمشروع في مجال '{domain}' بناءً على هذا الوصف: {prompt_text}."
-      " اعطيني تفاصيل كل مشهد (Légende, Angle de caméra, Voix off) بالدارجة والعربية."
+with st.sidebar:
+  st.header("⚙️ إعدادات الوكيل")
+  st.text_input(
+      "رقمك للواتساب",
+      key="my_phone",
+      placeholder="2126xxxxxxxx",
+      value="212",
   )
-  return call_super_ai(
-      prompt, "Super Video Director Agent", domain, model_name
+  uploaded_files = st.file_uploader(
+      "ارفع ملفات PDF للذاكرة", type="pdf", accept_multiple_files=True
   )
+  if st.button("💉 حقن الملفات"):
+    if uploaded_files:
+      count = ingest_docs(uploaded_files)
+      st.success(f"تم حقن {count} قطعة معلومات في ذاكرة الدماغ بنجاح!")
+    else:
+      st.warning("المرجو اختيار ملف PDF أولاً.")
 
-
-class SuperOmegaAgent:
-
-  def __init__(self, domain, model):
-    self.domain = domain
-    self.model = model
-
-  def ceo(self, task):
-    return call_super_ai(
-        f"بصفتك CEO فائق، ضع خطة استراتيجية شاملة وتنافسية لهذا المشروع في مجال"
-        f" {self.domain}: {task}. عطيني SWOT + الميزة التنافسية + خطة 90 يوم",
-        "Super CEO Agent",
-        self.domain,
-        self.model,
-    )
-
-  def cto(self, task):
-    return call_super_ai(
-        f"بصفتك CTO فائق، اقترح الاستراتيجية التقنية، أدوات التشغيل، stack تقني،"
-        f" واستهداف الجمهور الرقمي لـ: {task} في {self.domain}",
-        "Super CTO Agent",
-        self.domain,
-        self.model,
-    )
-
-  def coo(self, task):
-    return call_super_ai(
-        f"بصفتك COO فائق، ضع خطة تنفيذية، إدارة الموارد، KPI، وجدولة زمنية دقيقة"
-        f" لـ: {task} في {self.domain}",
-        "Super COO Agent",
-        self.domain,
-        self.model,
-    )
-
-  def copywriter(self, plan):
-    whatsapp_num = st.secrets.get("WHATSAPP_BUSINESS_NUMBER", "")
-    prompt = (
-        f"بناءً على هذه الخطة: {plan}. اكتب 3 إعلانات تسويقية جذابة باللهجة"
-        " المغربية والعربية الفصحى مع أيقونات، كلمات مفتاحية، هاشتاقات، ودعوة"
-        f" للاتصال برقم الواتساب: {whatsapp_num}"
-    )
-    ad = call_super_ai(
-        prompt, "Super Copywriter Agent", self.domain, self.model
-    )
-    send_whatsapp_alert(
-        f"👑 OMEGA SUPER AGENTIC v29.0\nالمجال والمشروع: {self.domain}\n\n{ad}"
-    )
-    return ad
-
-  def closer(self, ad):
-    prompt = (
-        "قم بتحسين نص هذا الإعلان وإضافة محفزات الاستعجال FOMO + ضمان + شهادات"
-        f" لزيادة المبيعات: {ad}"
-    )
-    return call_super_ai(prompt, "Super Closer Agent", self.domain, self.model)
-
-
-# ===== 5. واجهة Streamlit & Sidebar Control =====
-st.title("👑 OMEGA Super Agentic AI - V12 NEXUS")
-st.caption(
-    "نظام الوكلاء الأذكياء المفتوح لكافة القطاعات مع التحكم في النماذج"
-)
-
-api_key = st.secrets.get("GROQ_API_KEY", "")
-available_models = get_available_groq_models(api_key)
-default_model = get_default_best_model(available_models)
-
-# إعدادات الـ Sidebar لاختيار الموديل يدوياً أو تركها تلقائية
-st.sidebar.header("⚙️ إعدادات المحرك (Model Nexus)")
-mode_selection = st.sidebar.radio(
-    "طريقة اختيار الموديل:", ["تلقائي (Auto-Model الذكي)", "اختيار يدوي"]
-)
-
-if mode_selection == "تلقائي (Auto-Model الذكي)":
-  selected_model = default_model
-  st.sidebar.success(f"المحرك النشط (تلقائي): `{selected_model}` ⚡")
-else:
-  selected_model = st.sidebar.selectbox(
-      "اختر الموديل يدوياً:",
-      available_models,
-      index=(
-          available_models.index(default_model)
-          if default_model in available_models
-          else 0
-      ),
-  )
-  st.sidebar.info(f"المحرك النشط (يدوي): `{selected_model}` 🎯")
-
-# حقل حر مفتوح لإدخال أي مجال أو قطاع دون قيود
-domain = st.text_input(
-    "حدد المجال أو القطاع (مثال: العقار، التجارة الرقمية، اللوجستيك، الفلاحة...)",
-    placeholder="أدخل المجال هنا...",
-)
 task = st.text_area(
-    "وصف المهمة / المشروع",
-    placeholder="مثال: تسويق وبناء منصة رقمية لبيع بقع أرضية بقلعة السراغنة",
+    "أعطي الأمر للوكيل:",
+    height=130,
+    placeholder=(
+        "مثال: اقترح علي استراتيجية تسويق لـ 3 شقق بقلعة السراغنة مع محفزات"
+        " البيع"
+    ),
 )
 
-if "result_title" not in st.session_state:
-  st.session_state.result_title = ""
-if "result_content" not in st.session_state:
-  st.session_state.result_content = ""
+if st.button("🚀 فعّل DANA", use_container_width=True):
+  if task.strip():
+    with st.spinner("الدماغ السيادي يخطط، يحلل، ويصيغ التقرير..."):
+      result = call_dana_brain(task, "llama-3.3-70b-versatile")
+      st.markdown(result)
+  else:
+    st.warning("المرجو كتابة الأمر أو المهمة أولاً.")
 
-if domain and task:
-  agent = SuperOmegaAgent(domain, selected_model)
-
-  col1, col2, col3, col4 = st.columns(4)
-  with col1:
-    if st.button("🧠 خطة CEO", use_container_width=True):
-      with st.spinner("المدير التنفيذي كيخدم..."):
-        st.session_state.result_title = f"🧠 خطة المدير التنفيذي (CEO) - {domain}"
-        st.session_state.result_content = agent.ceo(task)
-  with col2:
-    if st.button("💻 خطة CTO", use_container_width=True):
-      with st.spinner("المدير التقني كيخدم..."):
-        st.session_state.result_title = (
-            f"💻 الاستراتيجية التقنية (CTO) - {domain}"
-        )
-        st.session_state.result_content = agent.cto(task)
-  with col3:
-    if st.button("📊 خطة COO", use_container_width=True):
-      with st.spinner("مدير العمليات كيخدم..."):
-        st.session_state.result_title = f"📊 خطة العمليات (COO) - {domain}"
-        st.session_state.result_content = agent.coo(task)
-  with col4:
-    if st.button("🎬 توليد فيديو", use_container_width=True):
-      with st.spinner("مخرج الفيديو الذكي كيوجد الستوري بورد..."):
-        st.session_state.result_title = (
-            f"🎬 سيناريو فيديو احترافي (3 دقائق) - {domain}"
-        )
-        st.session_state.result_content = generate_ai_video(
-            task, domain, selected_model
-        )
-
-  if st.button("✍️ إنشاء إعلان + إرسال واتساب", use_container_width=True):
-    with st.spinner("الكاتب والكلوزر كيوجدوا الإعلان بالدارجة..."):
-      plan = agent.ceo(task)
-      ad = agent.copywriter(plan)
-      final_ad = agent.closer(ad)
-      st.session_state.result_title = f"✍️ الإعلان التسويقي النهائي + FOMO"
-      st.session_state.result_content = final_ad
-      st.success("تم بنجاح وإرسال الإشعار للواتساب!")
-else:
-  st.info("المرجو ملء خانة 'المجال' وخانة 'وصف المهمة' لتفعيل أزرار الوكلاء.")
-
-if st.session_state.result_content:
+# ===== 5. أزرار التصدير والإرسال الفوري =====
+if st.session_state.last_result:
   st.markdown("---")
-  st.subheader(st.session_state.result_title)
-  st.markdown(st.session_state.result_content)
+  col1, col2 = st.columns(2)
+  with col1:
+    pdf_file = export_to_pdf(st.session_state.last_result, task[:30])
+    st.download_button(
+        "📄 تحميل التقرير كملف PDF",
+        data=pdf_file,
+        file_name=f"report_{datetime.now().strftime('%Y%m%d_%H%M')}.pdf",
+        use_container_width=True,
+    )
+  with col2:
+    if st.button("📲 إرسال التقرير للواتساب مباشرة", use_container_width=True):
+      msg = f"*DANA CORE Report*\n\n{st.session_state.last_result[:900]}"
+      status = send_whatsapp(st.session_state.my_phone, msg)
+      if "✅" in status:
+        st.success(status)
+      else:
+        st.error(status)
