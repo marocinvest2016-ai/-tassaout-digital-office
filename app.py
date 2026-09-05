@@ -1,5 +1,5 @@
 import streamlit as st
-from duckduckgo_search import DDGS
+from ddgs import DDGS # تبدل من duckduckgo_search
 import pandas as pd
 import re
 
@@ -59,3 +59,13 @@ if st.button("🚀 نفد الأمر الآن"):
 
         if data:
             df = pd.DataFrame(data)
+            st.success(f"تم التنفيذ. تم العثور على {len(df)} نتيجة")
+            st.dataframe(df, use_container_width=True, hide_index=True)
+
+            if do_excel:
+                csv = df.to_csv(index=False).encode('utf-8-sig')
+                st.download_button("📥 تحميل النتائج Excel", csv, "dana_k9_results.csv", "text/csv")
+        else:
+            st.warning("لم يتم العثور على نتائج للأمر")
+    else:
+        st.error("لم يتم إعطاء أي أمر")
