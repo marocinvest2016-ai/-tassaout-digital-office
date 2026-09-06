@@ -110,4 +110,5 @@ def select_best_agent_model() -> str:
     if not valid_models:
         logger.error("لم يتم العثور على أي نموذج نصي مناسب")
         raise RuntimeError(
-            "لم يتم العثور على أي نموذج نصي مناسب.
+            "لم يتم العثور على أي نموذج نصي مناسب."
+        )
