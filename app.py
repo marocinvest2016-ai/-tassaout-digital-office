@@ -2,15 +2,28 @@ import streamlit as st
 import requests
 import json
 
-st.set_page_config(page_title="OMEGA Super Agentic AI - Ultra v101", page_icon="👑", layout="wide")
+st.set_page_config(page_title="OMEGA Super Agentic AI", page_icon="👑", layout="wide")
 
-def select_best_model(domain):
-    """اختيار النموذج المناسب تلقائياً حسب طبيعة المجال مع اعتماد النماذج المستقرة"""
-    # استخدام الموديل القياسي والمستقر تماماً على Groq لتفادي أخطاء 404
-    return "llama-3.3-70b-versatile"
+# قائمة النماذج المتاحة والمستقرة على Groq
+AVAILABLE_MODELS = {
+    "Llama 3.1 70B (الأقوى للتحليل والاستراتيجيات)": "llama-3.1-70b-versatile",
+    "Llama 3.1 8B (السريع للإعلانات والنصوص)": "llama-3.1-8b-instant",
+    "Mixtral 8x7B (الممتاز للحلول البرمجية والمنطق)": "mixtral-8x7b-32768",
+    "Gemma 2 9B (خفيف ودقيق)": "gemma2-9b-it"
+}
 
-def call_super_ai(prompt, agent_name, domain, custom_system_prompt):
-    """محرك الذكاء الاصطناعي الفائق مع تصحيح نقطة النهاية للاتصال"""
+def auto_select_model(domain):
+    """آلية ذكية تتيح للوكيل اختيار النموذج الأنسب تلقائياً بناءً على طبيعة المجال"""
+    domain_lower = domain.lower()
+    if any(k in domain_lower for k in ["قانون", "فلسفة", "تعليم", "صحة", "استراتيجية"]):
+        return "llama-3.1-70b-versatile"
+    elif any(k in domain_lower for k in ["برمجة", "تقنية", "تطوير", "cto"]):
+        return "mixtral-8x7b-32768"
+    else:
+        return "llama-3.1-70b-versatile"
+
+def call_super_ai(prompt, agent_name, domain, selected_model=None):
+    """محرك الذكاء الاصطناعي الفائق مع التوجيه الآلي للموديلات"""
     url = "https://api.groq.com/openai/v1/chat/completions"
     api_key = st.secrets.get("GROQ_API_KEY", "")
 
@@ -22,19 +35,17 @@ def call_super_ai(prompt, agent_name, domain, custom_system_prompt):
         "Content-Type": "application/json"
     }
 
-    if custom_system_prompt.strip():
-        system_prompt = f"{custom_system_prompt} | Domain: {domain} | Agent: {agent_name}"
-    else:
-        system_prompt = (
-            f"You are {agent_name}, an elite Super Agentic AI specialized in '{domain}' powered by Llama on Groq. "
-            f"Think step by step. Provide professional, highly tailored, actionable strategies. "
-            f"Respond in Moroccan Arabic Darija + العربية الفصحى, with professional formatting, bullet points, emojis, and tables when needed."
-        )
+    system_prompt = (
+        f"You are {agent_name}, an elite Super Agentic AI specialized in '{domain}' powered by Groq. "
+        f"Think step by step. Provide professional, highly tailored, actionable strategies. "
+        f"Respond in Moroccan Arabic Darija + العربية الفصحى, with professional formatting, bullet points, emojis, and tables when needed."
+    )
 
-    selected_model = select_best_model(domain)
+    # إذا لم يحدد المستخدم نموذجاً يدوياً، يختار الوكيل تلقائياً
+    model_to_use = selected_model if selected_model else auto_select_model(domain)
 
     payload = {
-        "model": selected_model,
+        "model": model_to_use,
         "messages": [
             {"role": "system", "content": system_prompt},
             {"role": "user", "content": prompt}
@@ -45,41 +56,10 @@ def call_super_ai(prompt, agent_name, domain, custom_system_prompt):
 
     try:
         res = requests.post(url, headers=headers, json=payload, timeout=90)
-        
-        # التقاط الأخطاء بدقة وإظهار التفاصيل إن وجدت
-        if res.status_code != 200:
-            return f"❌ خطأ من الخادم (رمز {res.status_code}): {res.text}"
-            
+        res.raise_for_status()
         return res.json()['choices'][0]['message']['content']
     except Exception as e:
-        return f"❌ خطأ في الاتصال بالشبكة أو الخادم: {e}"
-
-def transcribe_audio_with_whisper(audio_bytes):
-    """تحويل التسجيل الصوتي إلى نص باستخدام Whisper API على Groq"""
-    url = "https://api.groq.com/openai/v1/audio/transcriptions"
-    api_key = st.secrets.get("GROQ_API_KEY", "")
-    
-    if not api_key:
-        return ""
-
-    headers = {
-        "Authorization": f"Bearer {api_key}"
-    }
-    files = {
-        "file": ("audio.wav", audio_bytes, "audio/wav")
-    }
-    data = {
-        "model": "whisper-large-v3",
-        "language": "ar"
-    }
-
-    try:
-        response = requests.post(url, headers=headers, files=files, data=data, timeout=30)
-        if response.status_code == 200:
-            return response.json().get("text", "")
-        return ""
-    except Exception:
-        return ""
+        return f"❌ خطأ في الاتصال بالذكاء الاصطناعي: {e}"
 
 def send_whatsapp_alert(message):
     """إرسال إشعار مباشر عبر واتساب API"""
@@ -108,90 +88,74 @@ def send_whatsapp_alert(message):
         st.warning(f"تعذر إرسال إشعار الواتساب: {e}")
 
 class SuperOmegaAgent:
-    def __init__(self, domain, custom_prompt):
+    def __init__(self, domain, model):
         self.domain = domain
-        self.custom_prompt = custom_prompt
+        self.model = model
 
     def ceo(self, task):
-        return call_super_ai(f"بصفتك CEO فائق، ضع خطة استراتيجية شاملة وتنافسية لهذا المشروع في مجال {self.domain}: {task}. عطيني SWOT + الميزة التنافسية + خطة 90 يوم", "Super CEO Agent", self.domain, self.custom_prompt)
+        return call_super_ai(f"بصفتك CEO فائق، ضع خطة استراتيجية شاملة وتنافسية لهذا المشروع في مجال {self.domain}: {task}. عطيني SWOT + الميزة التنافسية + خطة 90 يوم", "Super CEO Agent", self.domain, self.model)
 
     def cto(self, task):
-        return call_super_ai(f"بصفتك CTO فائق، اقترح الاستراتيجية التقنية، أدوات التشغيل، والتقنيات لـ: {task} في {self.domain}", "Super CTO Agent", self.domain, self.custom_prompt)
+        return call_super_ai(f"بصفتك CTO فائق، اقترح الاستراتيجية التقنية، أدوات التشغيل، stack تقني، واستهداف الجمهور الرقمي لـ: {task} في {self.domain}", "Super CTO Agent", self.domain, self.model)
 
     def coo(self, task):
-        return call_super_ai(f"بصفتك COO فائق، ضع خطة تنفيذية، إدارة الموارد، KPI، وجدولة زمنية دقيقة لـ: {task} في {self.domain}", "Super COO Agent", self.domain, self.custom_prompt)
+        return call_super_ai(f"بصفتك COO فائق، ضع خطة تنفيذية، إدارة الموارد، KPI، وجدولة زمنية دقيقة لـ: {task} في {self.domain}", "Super COO Agent", self.domain, self.model)
 
     def copywriter(self, plan):
         whatsapp_num = st.secrets.get('WHATSAPP_BUSINESS_NUMBER', '')
         prompt = f"بناءً على هذه الخطة: {plan}. اكتب 3 إعلانات تسويقية جذابة باللهجة المغربية والعربية الفصحى مع أيقونات، كلمات مفتاحية، هاشتاقات، ودعوة للاتصال برقم الواتساب: {whatsapp_num}"
-        ad = call_super_ai(prompt, "Super Copywriter Agent", self.domain, self.custom_prompt)
-        send_whatsapp_alert(f"👑 OMEGA SUPER AGENTIC Ultra v101\nالمجال: {self.domain}\n\n{ad}")
+        ad = call_super_ai(prompt, "Super Copywriter Agent", self.domain, self.model)
+        send_whatsapp_alert(f"👑 OMEGA SUPER AGENTIC v4.2\nمهمة جديدة في مجال: {self.domain}\n\n{ad}")
         return ad
 
     def closer(self, ad):
         prompt = f"قم بتحسين نص هذا الإعلان وإضافة محفزات الاستعجال FOMO + ضمان + شهادات لزيادة المبيعات: {ad}"
-        return call_super_ai(prompt, "Super Closer Agent", self.domain, self.custom_prompt)
+        return call_super_ai(prompt, "Super Closer Agent", self.domain, self.model)
 
-# ===== واجهة Streamlit المتطورة =====
-st.title("👑 OMEGA Super Agentic AI - Ultra v101")
-st.caption("النظام الذكي المفتوح كلياً مع التوجيه الآلي للنماذج، الإدخال الصوتي، والحقن التفاعلي للبرومبتات")
+# ===== واجهة Streamlit =====
+st.title("👑 OMEGA Super Agentic AI - متعدد المجالات")
+st.caption("CEO + CTO + COO + Copywriter + Closer في وكيل واحد يخدم على Groq")
 
-domain = st.text_input("🎯 أدخل مجال النشاط / التخصص (عقار، قانون، شعر، آليات فلاحية، هندسة...)", placeholder="مثال: العقار والبناء / السيارات الفلاحية / القانون")
+col_d, col_m = st.columns([2, 1])
 
-st.markdown("🎙️ **أو تحدث مباشرة لتسجيل المهمة صوتياً:**")
-audio_value = st.audio_input("اضغط للتسجيل الصوتي")
+with col_d:
+    domain = st.selectbox("اختر المجال", ["العقار", "التجارة الإلكترونية", "المطاعم", "التعليم", "الصحة", "التسويق", "آليات وفلاحة", "خدمات عامة"])
 
-task_input_method = st.text_area("📝 وصف المهمة / المشروع (يتم تعبئته تلقائياً من الصوت أو يدوياً)", placeholder="مثال: تسويق بقع أرضية سكنية أو شحنة جرارات فلاحية")
-
-if audio_value is not None:
-    with st.spinner("🎧 جاري تحويل صوتك إلى نص عبر Whisper..."):
-        audio_bytes = audio_value.read()
-        transcribed_text = transcribe_audio_with_whisper(audio_bytes)
-        if transcribed_text:
-            task = transcribed_text
-            st.success(f'تم التعرف على الصوت بنجاح: "{task}"')
-        else:
-            task = task_input_method
-            st.warning("تعذر استخراج النص من الصوت، يرجى إعادة المحاولة أو الكتابة يدوياً.")
-else:
-    task = task_input_method
-
-with st.expander("⚙️ إعدادات الحقن التفاعلي المتقدم للبرومبت (اختياري)"):
-    custom_system_prompt = st.text_area(
-        "حقن توجيهات خاصة للوكلاء (System Prompt Override):",
-        placeholder="اكتب هنا أي تعليمات دقيقة تريد من الوكلاء الالتزام بها أثناء المعالجة..."
+with col_m:
+    model_choice = st.selectbox(
+        "اختيار النموذج (أو اتركه آلياً)",
+        ["🤖 الاختيار التلقائي بواسطة الوكيل"] + list(AVAILABLE_MODELS.keys())
     )
 
-if domain and task:
-    agent = SuperOmegaAgent(domain, custom_system_prompt)
-    
-    active_model = select_best_model(domain)
-    st.info(f"🤖 **النموذج النشط تلقائياً لهذا القطاع:** `{active_model}`")
+selected_model_id = None if model_choice.startswith("🤖") else AVAILABLE_MODELS[model_choice]
 
-    col1, col2, col3 = st.columns(3)
-    with col1:
-        if st.button("🧠 خطة CEO"):
-            with st.spinner("المدير التنفيذي كيخدم..."):
-                st.markdown(agent.ceo(task))
-    with col2:
-        if st.button("💻 خطة CTO"):
-            with st.spinner("المدير التقني كيخدم..."):
-                st.markdown(agent.cto(task))
-    with col3:
-        if st.button("📊 خطة COO"):
-            with st.spinner("مدير العمليات كيخدم..."):
-                st.markdown(agent.coo(task))
+task = st.text_area("وصف المهمة / المشروع", placeholder="مثال: بيع بقع أرضية في تجزئة الهدى بقلعة السراغنة")
 
-    st.markdown("---")
+agent = SuperOmegaAgent(domain, selected_model_id)
 
-    if st.button("✍️ تنفيذ النظام الشامل (إنشاء الإعلان الاحترافي + إرسال واتساب تلقائي)"):
-        with st.spinner("🔄 جاري تحليل المعطيات وتوليد الإعلان النهائي..."):
-            plan = agent.ceo(task)
-            ad = agent.copywriter(plan)
-            final_ad = agent.closer(ad)
-            
-            st.success("تم بنجاح! تم إنشاء الإعلان وإرساله عبر الواتساب.")
-            st.markdown("### 📋 الإعلان النهائي الجاهز للنشر:")
-            st.markdown(final_ad)
-else:
-    st.info("الرجاء إدخال مجال المشروع ووصف المهمة (سواء كتابة أو عبر الصوت) أعلاه لتفعيل النظام.")
+# إظهار النموذج المستهدف
+active_model_name = selected_model_id if selected_model_id else auto_select_model(domain)
+st.info(f"🤖 **النموذج النشط للعملية:** `{active_model_name}`")
+
+col1, col2, col3 = st.columns(3)
+
+with col1:
+    if st.button("🧠 خطة CEO"):
+        with st.spinner("المدير التنفيذي كيخدم..."):
+            st.markdown(agent.ceo(task))
+with col2:
+    if st.button("💻 خطة CTO"):
+        with st.spinner("المدير التقني كيخدم..."):
+            st.markdown(agent.cto(task))
+with col3:
+    if st.button("📊 خطة COO"):
+        with st.spinner("مدير العمليات كيخدم..."):
+            st.markdown(agent.coo(task))
+
+if st.button("✍️ إنشاء إعلان + إرسال واتساب"):
+    with st.spinner("الكاتب كيكتب الإعلان..."):
+        plan = agent.ceo(task)
+        ad = agent.copywriter(plan)
+        final_ad = agent.closer(ad)
+        st.success("تم!")
+        st.markdown(final_ad)
