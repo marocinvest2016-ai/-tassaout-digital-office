@@ -1,308 +1,279 @@
 import streamlit as st
-from groq import Groq
-import pandas as pd
 import os
-import tempfile
-from google.oauth2 import service_account
-from googleapiclient.discovery import build
-import gspread
-from duckduckgo_search import DDGS
+import json
+import logging
 import requests
 from datetime import datetime
+from dotenv import load_dotenv
+from groq import Groq
 
 # إعداد الصفحة
 st.set_page_config(
-    page_title="🤖 OMEGA Super Agentic AI",
-    page_icon="👑",
-    layout="wide"
+    page_title="👑 OMEGA AI",
+    page_icon="🤖",
+    layout="centered",
+    initial_sidebar_state="collapsed"
 )
 
-# العنوان الرئيسي
-st.title("👑 OMEGA Super Agentic AI")
-st.markdown("### CEO + CTO + COO + Copywriter + Closer في وكيل واحد")
-st.markdown("---")
+# إعداد logging
+logging.basicConfig(
+    level=logging.INFO,
+    format='%(asctime)s - %(levelname)s - %(message)s',
+    handlers=[
+        logging.FileHandler('omega_agent.log', encoding='utf-8'),
+        logging.StreamHandler()
+    ]
+)
+logger = logging.getLogger(__name__)
 
-# الشريط الجانبي للإعدادات
-with st.sidebar:
-    st.header("⚙️ الإعدادات")
-    
-    # مفاتيح API
-    groq_api_key = st.text_input("🔑 Groq API Key", type="password", 
-                                  value=os.getenv("GROQ_API_KEY", ""))
-    
-    use_google_sheets = st.checkbox("📊 تفعيل Google Sheets", value=False)
-    
-    if use_google_sheets:
-        st.info("📝 أضف ملف `credentials.json` في مجلد المشروع")
-        sheet_id = st.text_input("📋 معرف جدول البيانات (Sheet ID)")
-        sheet_name = st.text_input("📄 اسم الورقة (Worksheet)", value="Sheet1")
-    
-    # اختيار المجال
-    domain = st.selectbox(
-        "🎯 اختر المجال",
-        ["تسويق ومبيعات", "تطوير أعمال", "كتابة إعلانية", "تحليل بيانات", "بحث إنترنت", "تفريغ صوتي"]
-    )
-    
-    # اختيار النموذج
-    model = st.selectbox(
-        "🤖 النموذج",
-        ["whisper-large-v3", "whisper-large-v3-turbo", "llama-3.3-70b-versatile", "llama-3.1-8b-instant"]
-    )
+load_dotenv()
 
-# تهيئة Groq Client
-client = None
-if groq_api_key:
+# CSS مخصص
+st.markdown("""
+<style>
+    .main-header {
+        font-size: 4rem;
+        font-weight: bold;
+        text-align: center;
+        background: linear-gradient(90deg, #FF416C, #FF4B2B);
+        -webkit-background-clip: text;
+        -webkit-text-fill-color: transparent;
+        margin-bottom: 0.5rem;
+        margin-top: 2rem;
+    }
+    .sub-header {
+        font-size: 1.2rem;
+        text-align: center;
+        color: #888;
+        margin-bottom: 3rem;
+    }
+    .button-container {
+        display: flex;
+        flex-direction: column;
+        gap: 1.5rem;
+        margin-top: 3rem;
+    }
+    .stButton > button {
+        font-size: 1.5rem;
+        font-weight: bold;
+        padding: 1.5rem 3rem;
+        border-radius: 1rem;
+        height: 80px;
+    }
+    .status-box {
+        text-align: center;
+        padding: 1rem;
+        margin-top: 2rem;
+        font-size: 1rem;
+        color: #666;
+    }
+</style>
+""", unsafe_allow_html=True)
+
+# العنوان
+st.markdown('<h1 class="main-header">👑 OMEGA AI</h1>', unsafe_allow_html=True)
+st.markdown('<p class="sub-header">وكيل أعمال ذكي متكامل</p>', unsafe_allow_html=True)
+
+# مفتاح API (مخفي)
+if "GROQ_API_KEY" in os.environ:
+    groq_api_key = os.environ["GROQ_API_KEY"]
+else:
+    groq_api_key = st.text_input("🔑 Groq API Key", type="password", value="", key="api_key_input", label_visibility="collapsed")
+
+# System Prompt (مخفي في دماغ الوكيل)
+SYSTEM_PROMPT = """
+أنت OMEGA Super Agentic AI، وكيل أعمال ذكي.
+
+تعمل كـ CEO + CTO + COO + Copywriter + Closer في نفس الوقت.
+
+أرجع JSON بهذه البنية:
+{
+  "ceo_plan": {"vision": "", "objectives": [], "priorities": [], "kpis": []},
+  "cto_plan": {"recommended_stack": [], "automation_workflow": [], "implementation_steps": []},
+  "coo_plan": {"operations": [], "timeline": [], "responsibilities": []},
+  "marketing_copy": {"title": "", "short_ad": "", "long_ad": "", "cta": ""},
+  "whatsapp_message": "",
+  "generated_images": [{"description": "", "prompt": "", "style": ""}]
+}
+""".strip()
+
+# زر التشغيل الرئيسي
+if st.button("🚀 تشغيل OMEGA", type="primary", use_container_width=True):
+    if not groq_api_key:
+        st.error("❌ أدخل مفتاح Groq API")
+        st.stop()
+    
+    logger.info("بدء OMEGA...")
+    
+    # تهيئة العميل
     client = Groq(api_key=groq_api_key)
-    st.sidebar.success("✅ Groq متصل")
-
-# تهيئة Google Sheets
-gc = None
-if use_google_sheets and sheet_id and os.path.exists("credentials.json"):
-    try:
-        creds = service_account.Credentials.from_service_account_file(
-            "credentials.json",
-            scopes=["https://www.googleapis.com/auth/spreadsheets", "https://www.googleapis.com/auth/drive"]
-        )
-        gc = gspread.authorize(creds)
-        st.sidebar.success("✅ Google Sheets متصل")
-    except Exception as e:
-        st.sidebar.error(f"❌ خطأ في Google Sheets: {e}")
-
-# التبويبات الرئيسية
-tab1, tab2, tab3, tab4, tab5 = st.tabs([
-    "💬 محادثة ذكية", 
-    "🎙️ تفريغ صوتي", 
-    "🌐 بحث إنترنت", 
-    "📊 Google Sheets",
-    "📝 سجل العمليات"
-])
-
-# === التبويب 1: محادثة ذكية ===
-with tab1:
-    st.header("💬 محادثة ذكية مع AI")
     
-    if "messages" not in st.session_state:
-        st.session_state.messages = []
-    
-    # عرض المحادثة
-    for msg in st.session_state.messages:
-        with st.chat_message(msg["role"]):
-            st.write(msg["content"])
-    
-    # إدخال المستخدم
-    if prompt := st.chat_input("اكتب رسالتك..."):
-        if client:
-            st.session_state.messages.append({"role": "user", "content": prompt})
-            
-            with st.chat_message("user"):
-                st.write(prompt)
-            
-            with st.chat_message("assistant"):
-                with st.spinner("جاري التفكير..."):
-                    try:
-                        response = client.chat.completions.create(
-                            model="llama-3.3-70b-versatile",
-                            messages=[
-                                {"role": "system", "content": f"أنت مساعد ذكي متخصص في {domain}. قدم إجابات دقيقة ومفيدة."},
-                                *st.session_state.messages
-                            ],
-                            max_tokens=2048,
-                            temperature=0.7
-                        )
-                        
-                        ai_response = response.choices[0].message.content
-                        st.write(ai_response)
-                        st.session_state.messages.append({"role": "assistant", "content": ai_response})
-                        
-                        # حفظ في Google Sheets إذا مفعّل
-                        if gc and sheet_id:
-                            try:
-                                sh = gc.open_by_key(sheet_id)
-                                worksheet = sh.worksheet(sheet_name)
-                                worksheet.append_row([
-                                    datetime.now().strftime("%Y-%m-%d %H:%M:%S"),
-                                    "user",
-                                    prompt[:500]
-                                ])
-                                worksheet.append_row([
-                                    datetime.now().strftime("%Y-%m-%d %H:%M:%S"),
-                                    "assistant",
-                                    ai_response[:500]
-                                ])
-                            except Exception as e:
-                                st.warning(f"⚠️ لم يُحفظ في Sheets: {e}")
-                    
-                    except Exception as e:
-                        st.error(f"❌ خطأ: {e}")
-        else:
-            st.warning("⚠️ يرجى إدخال مفتاح Groq API في الشريط الجانبي")
-
-# === التبويب 2: تفريغ صوتي ===
-with tab2:
-    st.header("🎙️ تفريغ صوتي باستخدام Whisper")
-    
-    if client:
-        uploaded_file = st.file_uploader(
-            "حمّل ملف صوتي أو فيديو",
-            type=["wav", "mp3", "mp4", "m4a", "ogg", "flac", "webm", "mpeg", "mpga"]
-        )
-        
-        if uploaded_file:
-            st.info(f"📁 {uploaded_file.name} ({uploaded_file.size / 1024 / 1024:.2f} MB)")
-            
-            if uploaded_file.type.startswith("audio"):
-                st.audio(uploaded_file)
-            elif uploaded_file.type.startswith("video"):
-                st.video(uploaded_file)
-            
-            if st.button("🚀 ابدأ التفريغ", type="primary"):
-                with st.spinner("جاري التفريغ..."):
-                    try:
-                        with tempfile.NamedTemporaryFile(delete=False, suffix=os.path.splitext(uploaded_file.name)[1]) as tmp:
-                            tmp.write(uploaded_file.getvalue())
-                            tmp_path = tmp.name
-                        
-                        with open(tmp_path, "rb") as f:
-                            transcription = client.audio.transcriptions.create(
-                                file=(uploaded_file.name, f),
-                                model=model,
-                                response_format="text",
-                                language="ar"
-                            )
-                        
-                        os.unlink(tmp_path)
-                        
-                        st.success("✅ تم التفريغ بنجاح!")
-                        st.text_area("📝 النص المفّرغ", value=transcription.text, height=300)
-                        
-                        st.download_button(
-                            label="📥 تحميل النص",
-                            data=transcription.text,
-                            file_name=f"transcript_{datetime.now().strftime('%Y%m%d_%H%M%S')}.txt",
-                            mime="text/plain"
-                        )
-                        
-                        # حفظ في Sheets
-                        if gc and sheet_id:
-                            try:
-                                sh = gc.open_by_key(sheet_id)
-                                worksheet = sh.worksheet(sheet_name)
-                                worksheet.append_row([
-                                    datetime.now().strftime("%Y-%m-%d %H:%M:%S"),
-                                    "transcription",
-                                    uploaded_file.name,
-                                    transcription.text[:500]
-                                ])
-                            except Exception as e:
-                                st.warning(f"⚠️ لم يُحفظ في Sheets: {e}")
-                    
-                    except Exception as e:
-                        st.error(f"❌ خطأ: {e}")
-                        st.code(str(e))
-    else:
-        st.warning("⚠️ يرجى إدخال مفتاح Groq API")
-
-# === التبويب 3: بحث إنترنت ===
-with tab3:
-    st.header("🌐 بحث إنترنت باستخدام DuckDuckGo")
-    
-    search_query = st.text_input("أدخل كلمة البحث")
-    
-    if st.button("🔍 بحث"):
-        if search_query:
-            with st.spinner("جاري البحث..."):
-                try:
-                    with DDGS() as ddgs:
-                        results = ddgs.text(search_query, max_results=10)
-                    
-                    if results:
-                        for i, result in enumerate(results, 1):
-                            with st.expander(f"📄 {i}. {result.get('title', 'بدون عنوان')[:100]}"):
-                                st.write(f"**الرابط:** {result.get('href', 'N/A')}")
-                                st.write(f"**الوصف:** {result.get('body', 'N/A')[:500]}")
-                        
-                        # حفظ في Sheets
-                        if gc and sheet_id:
-                            try:
-                                sh = gc.open_by_key(sheet_id)
-                                worksheet = sh.worksheet(sheet_name)
-                                for result in results[:5]:
-                                    worksheet.append_row([
-                                        datetime.now().strftime("%Y-%m-%d %H:%M:%S"),
-                                        "search",
-                                        search_query,
-                                        result.get('title', '')[:200],
-                                        result.get('href', '')
-                                    ])
-                            except Exception as e:
-                                st.warning(f"⚠️ لم يُحفظ في Sheets: {e}")
-                    else:
-                        st.warning("⚠️ لم تُعثر على نتائج")
-                
-                except Exception as e:
-                    st.error(f"❌ خطأ: {e}")
-        else:
-            st.warning("⚠️ يرجى إدخال كلمة بحث")
-
-# === التبويب 4: Google Sheets ===
-with tab4:
-    st.header("📊 إدارة Google Sheets")
-    
-    if gc and sheet_id:
+    with st.spinner("🧠 جاري التفكير..."):
         try:
-            sh = gc.open_by_key(sheet_id)
-            worksheet = sh.worksheet(sheet_name)
+            # جلب النماذج
+            GROQ_MODELS_URL = "https://api.groq.com/openai/v1/models"
+            headers = {
+                "Authorization": f"Bearer {groq_api_key}",
+                "Content-Type": "application/json",
+            }
             
-            # عرض البيانات
-            data = worksheet.get_all_records()
-            df = pd.DataFrame(data)
+            response = requests.get(GROQ_MODELS_URL, headers=headers, timeout=20)
+            response.raise_for_status()
+            data = response.json()
             
-            st.dataframe(df, use_container_width=True)
+            all_models = [item["id"] for item in data.get("data", []) if item.get("id")]
             
-            # إحصائيات
-            st.subheader("📈 إحصائيات")
-            st.metric("عدد الصفوف", len(df))
-            st.metric("عدد الأعمدة", len(df.columns))
+            # تصفية النماذج
+            EXCLUDED_KEYWORDS = [
+                "prompt-guard", "llama-guard", "safeguard", "moderation",
+                "whisper", "speech", "tts", "audio", "transcription", "vision",
+            ]
             
-            # تصدير
-            csv = df.to_csv(index=False, encoding='utf-8-sig')
-            st.download_button(
-                label="📥 تحميل كـ CSV",
-                data=csv,
-                file_name=f"data_{datetime.now().strftime('%Y%m%d_%H%M%S')}.csv",
-                mime="text/csv"
+            valid_models = [
+                model for model in all_models
+                if not any(kw in model.lower() for kw in EXCLUDED_KEYWORDS)
+            ]
+            
+            if not valid_models:
+                st.error("❌ لم يتم العثور على نماذج صالحة")
+                st.stop()
+            
+            # اختيار النموذج
+            PREFERRED_MODELS = ["llama-3.3-70b-versatile", "llama-3.1-8b-instant"]
+            active_model = None
+            for preferred in PREFERRED_MODELS:
+                if preferred in valid_models:
+                    active_model = preferred
+                    break
+            
+            if not active_model:
+                active_model = valid_models[0]
+            
+            # استدعاء API
+            completion = client.chat.completions.create(
+                model=active_model,
+                messages=[
+                    {"role": "system", "content": SYSTEM_PROMPT},
+                    {"role": "user", "content": "أنشئ خطة أعمال متكاملة لمشروع جديد"}
+                ],
+                temperature=0.7,
+                max_completion_tokens=2500,
+                response_format={"type": "json_object"},
             )
             
+            raw_result = completion.choices[0].message.content
+            result = json.loads(raw_result)
+            
+            # حفظ في session state
+            st.session_state.omega_result = result
+            st.session_state.omega_timestamp = datetime.now().isoformat()
+            
+            logger.info("اكتمل OMEGA بنجاح")
+            st.success("✅ تم إنشاء الخطة بنجاح!")
+            
+            # حفظ في ملف
+            os.makedirs("omega_results", exist_ok=True)
+            output_file = f"omega_results/omega_{datetime.now().strftime('%Y%m%d_%H%M%S')}.json"
+            with open(output_file, 'w', encoding='utf-8') as f:
+                json.dump(result, f, ensure_ascii=False, indent=2)
+            
+            st.info(f"💾 حُفظ في: {output_file}")
+        
         except Exception as e:
-            st.error(f"❌ خطأ في قراءة البيانات: {e}")
-    else:
-        st.warning("⚠️ قم بتفعيل Google Sheets في الشريط الجانبي")
+            logger.error(f"خطأ: {e}", exc_info=True)
+            st.error(f"❌ خطأ: {str(e)}")
 
-# === التبويب 5: سجل العمليات ===
-with tab5:
-    st.header("📝 سجل العمليات")
+# عرض حالة آخر تشغيل
+if "omega_timestamp" in st.session_state:
+    timestamp = st.session_state.omega_timestamp
+    st.markdown(f'<div class="status-box">🕐 آخر تشغيل: {timestamp[:19]}</div>', unsafe_allow_html=True)
+
+# الأزرار دائمًا متاحة
+st.markdown('<div class="button-container">', unsafe_allow_html=True)
+
+# زر تحميل الصور
+if "omega_result" in st.session_state:
+    result = st.session_state.omega_result
+    images = result.get("generated_images", [])
     
-    log_file = "operations_log.txt"
-    
-    if os.path.exists(log_file):
-        with open(log_file, "r", encoding="utf-8") as f:
-            logs = f.read()
-        st.text_area("سجل العمليات", value=logs, height=500)
+    if images:
+        images_text = "
+
+".join([
+            f"🖼️ صورة {i}
+"
+            f"الوصف: {img.get('description', 'N/A')}
+"
+            f"Prompt: {img.get('prompt', 'N/A')}
+"
+            f"Style: {img.get('style', 'N/A')}"
+            for i, img in enumerate(images, 1)
+        ])
+        
+        st.download_button(
+            label="📥 تحميل الصور",
+            data=images_text,
+            file_name=f"images_{datetime.now().strftime('%Y%m%d_%H%M%S')}.txt",
+            mime="text/plain",
+            use_container_width=True
+        )
     else:
-        st.info("📝 لا يوجد سجل عمليات بعد")
+        st.download_button(
+            label="📥 تحميل الصور",
+            data="لا توجد صور في هذه الجلسة
+
+شغّل OMEGA لإنشاء صور جديدة",
+            file_name=f"images_{datetime.now().strftime('%Y%m%d_%H%M%S')}.txt",
+            mime="text/plain",
+            use_container_width=True
+        )
+else:
+    st.download_button(
+        label="📥 تحميل الصور",
+        data="لا توجد صور بعد
+
+اضغط على 'تشغيل OMEGA' أولاً",
+        file_name=f"images_{datetime.now().strftime('%Y%m%d_%H%M%S')}.txt",
+        mime="text/plain",
+        use_container_width=True
+    )
+
+# زر واتساب
+if "omega_result" in st.session_state:
+    result = st.session_state.omega_result
+    whatsapp_msg = result.get("whatsapp_message", "")
     
-    if st.button("🗑️ مسح السجل"):
-        if os.path.exists(log_file):
-            os.remove(log_file)
-            st.success("✅ تم مسح السجل")
-            st.rerun()
+    if whatsapp_msg:
+        st.download_button(
+            label="📱 رسالة واتساب",
+            data=whatsapp_msg,
+            file_name=f"whatsapp_{datetime.now().strftime('%Y%m%d_%H%M%S')}.txt",
+            mime="text/plain",
+            use_container_width=True
+        )
+    else:
+        st.download_button(
+            label="📱 رسالة واتساب",
+            data="لا توجد رسالة واتساب
+
+شغّل OMEGA لإنشاء رسالة",
+            file_name=f"whatsapp_{datetime.now().strftime('%Y%m%d_%H%M%S')}.txt",
+            mime="text/plain",
+            use_container_width=True
+        )
+else:
+    st.download_button(
+        label="📱 رسالة واتساب",
+        data="لا توجد رسالة بعد
+
+اضغط على 'تشغيل OMEGA' أولاً",
+        file_name=f"whatsapp_{datetime.now().strftime('%Y%m%d_%H%M%S')}.txt",
+        mime="text/plain",
+        use_container_width=True
+    )
+
+st.markdown('</div>', unsafe_allow_html=True)
 
 # التذييل
 st.markdown("---")
-st.markdown("""
-<div style='text-align: center'>
-    <b>👑 OMEGA Super Agentic AI</b> | 
-    يعمل على <b>Groq</b> 🚀 | 
-    تم التطوير باستخدام <b>Streamlit</b>
-</div>
-""", unsafe_allow_html=True)
+st.markdown('<p style="text-align: center; color: #888; margin-top: 3rem;">👑 OMEGA AI | يعمل على Groq 🚀</p>', unsafe_allow_html=True)
