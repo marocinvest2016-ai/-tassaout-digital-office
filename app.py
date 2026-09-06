@@ -2,20 +2,15 @@ import streamlit as st
 import requests
 import json
 
-st.set_page_config(page_title="OMEGA Super Agentic AI - Ultra v100", page_icon="👑", layout="wide")
+st.set_page_config(page_title="OMEGA Super Agentic AI - Ultra v101", page_icon="👑", layout="wide")
 
 def select_best_model(domain):
-    """اختيار النموذج المناسب تلقائياً حسب طبيعة المجال"""
-    domain_lower = domain.lower()
-    if any(k in domain_lower for k in ["قانون", "اقتصاد", "أدب", "شعر", "فلسفة", "علوم إنسانية"]):
-        return "llama-3.3-70b-versatile"
-    elif any(k in domain_lower for k in ["هندسة", "ميكانيك", "فلاحة", "جرارات", "بناء", "مقاولات"]):
-        return "llama-3.3-70b-versatile"
-    else:
-        return "llama-3.3-70b-versatile"
+    """اختيار النموذج المناسب تلقائياً حسب طبيعة المجال مع اعتماد النماذج المستقرة"""
+    # استخدام الموديل القياسي والمستقر تماماً على Groq لتفادي أخطاء 404
+    return "llama-3.3-70b-versatile"
 
 def call_super_ai(prompt, agent_name, domain, custom_system_prompt):
-    """محرك الذكاء الاصطناعي الفائق مع الحقن الديناميكي للبرومبتات والنموذج التلقائي"""
+    """محرك الذكاء الاصطناعي الفائق مع تصحيح نقطة النهاية للاتصال"""
     url = "https://api.groq.com/openai/v1/chat/completions"
     api_key = st.secrets.get("GROQ_API_KEY", "")
 
@@ -31,7 +26,7 @@ def call_super_ai(prompt, agent_name, domain, custom_system_prompt):
         system_prompt = f"{custom_system_prompt} | Domain: {domain} | Agent: {agent_name}"
     else:
         system_prompt = (
-            f"You are {agent_name}, an elite Super Agentic AI specialized in '{domain}' powered by Llama 3.3 on Groq. "
+            f"You are {agent_name}, an elite Super Agentic AI specialized in '{domain}' powered by Llama on Groq. "
             f"Think step by step. Provide professional, highly tailored, actionable strategies. "
             f"Respond in Moroccan Arabic Darija + العربية الفصحى, with professional formatting, bullet points, emojis, and tables when needed."
         )
@@ -50,10 +45,14 @@ def call_super_ai(prompt, agent_name, domain, custom_system_prompt):
 
     try:
         res = requests.post(url, headers=headers, json=payload, timeout=90)
-        res.raise_for_status()
+        
+        # التقاط الأخطاء بدقة وإظهار التفاصيل إن وجدت
+        if res.status_code != 200:
+            return f"❌ خطأ من الخادم (رمز {res.status_code}): {res.text}"
+            
         return res.json()['choices'][0]['message']['content']
     except Exception as e:
-        return f"❌ خطأ في الاتصال بالذكاء الاصطناعي: {e}"
+        return f"❌ خطأ في الاتصال بالشبكة أو الخادم: {e}"
 
 def transcribe_audio_with_whisper(audio_bytes):
     """تحويل التسجيل الصوتي إلى نص باستخدام Whisper API على Groq"""
@@ -126,7 +125,7 @@ class SuperOmegaAgent:
         whatsapp_num = st.secrets.get('WHATSAPP_BUSINESS_NUMBER', '')
         prompt = f"بناءً على هذه الخطة: {plan}. اكتب 3 إعلانات تسويقية جذابة باللهجة المغربية والعربية الفصحى مع أيقونات، كلمات مفتاحية، هاشتاقات، ودعوة للاتصال برقم الواتساب: {whatsapp_num}"
         ad = call_super_ai(prompt, "Super Copywriter Agent", self.domain, self.custom_prompt)
-        send_whatsapp_alert(f"👑 OMEGA SUPER AGENTIC Ultra v100\nالمجال: {self.domain}\n\n{ad}")
+        send_whatsapp_alert(f"👑 OMEGA SUPER AGENTIC Ultra v101\nالمجال: {self.domain}\n\n{ad}")
         return ad
 
     def closer(self, ad):
@@ -134,19 +133,16 @@ class SuperOmegaAgent:
         return call_super_ai(prompt, "Super Closer Agent", self.domain, self.custom_prompt)
 
 # ===== واجهة Streamlit المتطورة =====
-st.title("👑 OMEGA Super Agentic AI - Ultra v100")
+st.title("👑 OMEGA Super Agentic AI - Ultra v101")
 st.caption("النظام الذكي المفتوح كلياً مع التوجيه الآلي للنماذج، الإدخال الصوتي، والحقن التفاعلي للبرومبتات")
 
-# إدخال المجال بحرية تامة دون قيود
 domain = st.text_input("🎯 أدخل مجال النشاط / التخصص (عقار، قانون، شعر، آليات فلاحية، هندسة...)", placeholder="مثال: العقار والبناء / السيارات الفلاحية / القانون")
 
-# قسم الإدخال الصوتي
 st.markdown("🎙️ **أو تحدث مباشرة لتسجيل المهمة صوتياً:**")
 audio_value = st.audio_input("اضغط للتسجيل الصوتي")
 
 task_input_method = st.text_area("📝 وصف المهمة / المشروع (يتم تعبئته تلقائياً من الصوت أو يدوياً)", placeholder="مثال: تسويق بقع أرضية سكنية أو شحنة جرارات فلاحية")
 
-# تحويل الصوت عبر Whisper API إن وجد
 if audio_value is not None:
     with st.spinner("🎧 جاري تحويل صوتك إلى نص عبر Whisper..."):
         audio_bytes = audio_value.read()
@@ -160,7 +156,6 @@ if audio_value is not None:
 else:
     task = task_input_method
 
-# قسم الحقن التفاعلي للبرومبتات
 with st.expander("⚙️ إعدادات الحقن التفاعلي المتقدم للبرومبت (اختياري)"):
     custom_system_prompt = st.text_area(
         "حقن توجيهات خاصة للوكلاء (System Prompt Override):",
