@@ -1,13 +1,11 @@
 import streamlit as st
 import requests
 import json
-import pandas as pd
-import re
 
-st.set_page_config(page_title="OMEGA & DANA K9 - مركز القيادة العقاري", page_icon="👑", layout="wide")
+st.set_page_config(page_title="OMEGA Super Agentic AI", page_icon="👑", layout="wide")
 
-# ===== محرك الذكاء الاصطناعي (Groq) =====
 def call_super_ai(prompt, agent_name, domain):
+    """محرك الذكاء الاصطناعي الفائق متعدد المجالات - Groq + Llama 3.3"""
     url = "https://api.groq.com/openai/v1/chat/completions"
     api_key = st.secrets.get("GROQ_API_KEY", "")
 
@@ -20,13 +18,13 @@ def call_super_ai(prompt, agent_name, domain):
     }
 
     system_prompt = (
-        f"You are {agent_name}, an elite Super Real Estate Agent & Broker specialized in '{domain}' in Tissaout, Tamlalt, and El Kelaa des Sraghna region. "
-        f"Think step by step. Provide professional, highly tailored, actionable real estate strategies, land offers, zoning details, and investment insights. "
+        f"You are {agent_name}, an elite Super Agentic AI specialized in '{domain}' powered by Meta Llama on Groq. "
+        f"Think step by step. Provide professional, highly tailored, actionable strategies. "
         f"Respond in Moroccan Arabic Darija + العربية الفصحى, with professional formatting, bullet points, emojis, and tables when needed."
     )
 
     payload = {
-        "model": "llama-3.3-70b-versatile",
+        "model": "llama-3.3-70b-versatile", # أحدث وأقوى موديل مفتوح المصدر على Groq
         "messages": [
             {"role": "system", "content": system_prompt},
             {"role": "user", "content": prompt}
@@ -43,6 +41,7 @@ def call_super_ai(prompt, agent_name, domain):
         return f"❌ خطأ في الاتصال بالذكاء الاصطناعي: {e}"
 
 def send_whatsapp_alert(message):
+    """إرسال إشعار مباشر عبر واتساب API"""
     try:
         phone_id = st.secrets.get('WHATSAPP_PHONE_NUMBER_ID')
         access_token = st.secrets.get('WHATSAPP_ACCESS_TOKEN')
@@ -72,117 +71,46 @@ class SuperOmegaAgent:
         self.domain = domain
 
     def ceo(self, task):
-        return call_super_ai(f"بصفتك CEO عقاري محترف، قم بإعداد دراسة السوق والعرض الاستثماري الشامل لهذا الطلب: {task}. حدد المواصفات، الفئة المستهدفة، الفرص الاستثمارية، وخطوات الإنجاز بمدينة تملالت.", "Super CEO Agent", self.domain)
+        return call_super_ai(f"بصفتك CEO فائق، ضع خطة استراتيجية شاملة وتنافسية لهذا المشروع في مجال {self.domain}: {task}. عطيني SWOT + الميزة التنافسية + خطة 90 يوم", "Super CEO Agent", self.domain)
 
     def cto(self, task):
-        return call_super_ai(f"بصفتك خبير رقمي و تقني عقاري (CTO)، اقترح استراتيجية التسويق الرقمي المستهدفة (اعلانات منصات التواصل، Geo-targeting) لجذب المشترين والمستثمرين لـ: {task}", "Super CTO Agent", self.domain)
+        return call_super_ai(f"بصفتك CTO فائق، اقترح الاستراتيجية التقنية، أدوات التشغيل، stack تقني، واستهداف الجمهور الرقمي لـ: {task} في {self.domain}", "Super CTO Agent", self.domain)
 
     def coo(self, task):
-        return call_super_ai(f"بصفتك مدبر عمليات (COO)، ضع خطة عمل ميدانية دقيقة لتدبير المعاملات العقارية، الوثائق الإدارية (تحفيظ، تصميم التهيئة)، والتنسيق الميداني بخصوص: {task}", "Super COO Agent", self.domain)
+        return call_super_ai(f"بصفتك COO فائق، ضع خطة تنفيذية، إدارة الموارد، KPI، وجدولة زمنية دقيقة لـ: {task} في {self.domain}", "Super COO Agent", self.domain)
 
     def copywriter(self, plan):
         whatsapp_num = st.secrets.get('WHATSAPP_BUSINESS_NUMBER', '')
-        prompt = f"بناءً على هذه الخطة الاستراتيجية: {plan}. اكتب 3 إعلانات عقارية استثنائية وجذابة جداً خاصة بـ (بقع سكنية وتجارية بتملالت) باللهجة المغربية والفصحى مع الأيقونات، الهاشتاقات، وتحديد رقم الواتساب للتواصل: {whatsapp_num}"
+        prompt = f"بناءً على هذه الخطة: {plan}. اكتب 3 إعلانات تسويقية جذابة باللهجة المغربية والعربية الفصحى مع أيقونات، كلمات مفتاحية، هاشتاقات، ودعوة للاتصال برقم الواتساب: {whatsapp_num}"
         ad = call_super_ai(prompt, "Super Copywriter Agent", self.domain)
-        send_whatsapp_alert(f"👑 OMEGA TAMLALT REAL ESTATE\nطلب جديد: بقع سكنية وتجارية بتملالت\n\n{ad}")
+        send_whatsapp_alert(f"👑 OMEGA SUPER AGENTIC v4.1\nمهمة جديدة في مجال: {self.domain}\n\n{ad}")
         return ad
 
     def closer(self, ad):
-        prompt = f"قم بتحسين نص هذا الإعلان العقاري وإضافة محفزات الاستعجال FOMO، ضمانات الموثوقية القانونية، ودعوة قوية لاتخاذ القرار الشراعي فوراً: {ad}"
+        prompt = f"قم بتحسين نص هذا الإعلان وإضافة محفزات الاستعجال FOMO + ضمان + شهادات لزيادة المبيعات: {ad}"
         return call_super_ai(prompt, "Super Closer Agent", self.domain)
 
-# ===== واجهة التطبيق الموحدة =====
-st.title("👑 OMEGA & DANA K9 - عقارات تملالت وقلعة السراغنة")
-st.caption("نظام الوكلاء الأذكياء ومحرك البحث الاستراتيجي للبقع السكنية والتجارية")
+# ===== واجهة Streamlit =====
+st.title("👑 OMEGA Super Agentic AI - متعدد المجالات")
+st.caption("النظام الذكي المتكامل للتحليل وتوليد الإعلانات عبر Llama 3.3 في Groq")
 
-tab1, tab2 = st.tabs(["🚀 نظام الوكلاء (OMEGA Agents)", "🐕 أداة الصيد والبحث (DANA K9)"])
+domain = st.selectbox("اختر المجال", ["العقار", "التجارة الإلكترونية", "المطاعم", "التعليم", "الصحة", "التسويق"])
+task = st.text_area("وصف المهمة / المشروع", placeholder="مثال: بيع بقع أرضية في تجزئة الهدى بقلعة السراغنة")
 
-with tab1:
-    domain = "العقار - تملالت وقلعة السراغنة"
-    task = st.text_area("وصف الطلب أو العرض العقاري", value="مطلوب/عرض بقع سكنية وتجارية استراتيجية في تملالت للمستثمرين والخواص مع دراسة الفرص الاستثمارية")
+agent = SuperOmegaAgent(domain)
 
-    agent = SuperOmegaAgent(domain)
+# تم حذف الأزرار الظاهرة للخطط الجزئية لتكون العملية تلقائية وسلسة في الخلفية
 
-    col1, col2, col3 = st.columns(3)
-
-    with col1:
-        if st.button("🧠 دراسة الاستثمار العقاري (CEO)"):
-            with st.spinner("جاري إعداد التحليل الاستراتيجي للبقع بتملالت..."):
-                st.markdown(agent.ceo(task))
-    with col2:
-        if st.button("💻 الاستراتيجية الرقمية (CTO)"):
-            with st.spinner("جاري صياغة استراتيجية استهداف المستثمرين..."):
-                st.markdown(agent.cto(task))
-    with col3:
-        if st.button("📊 الخطة الميدانية والتحفيظ (COO)"):
-            with st.spinner("جاري تجهيز الخطوات الميدانية والإدارية..."):
-                st.markdown(agent.coo(task))
-
-    if st.button("✍️ توليد الإعلان الاحترافي + إرسال واتساب"):
-        with st.spinner("جاري صياغة الإعلانات القوية وتنبيه الواتساب..."):
+if st.button("✍️ إنشاء الإعلان الاحترافي + إرسال واتساب"):
+    if task.strip():
+        with st.spinner("جاري تحليل المعطيات عبر وكلاء OMEGA في الخلفية..."):
+            # الخطوات تعمل تلقائياً بشكل سري خلف الكواليس
             plan = agent.ceo(task)
             ad = agent.copywriter(plan)
             final_ad = agent.closer(ad)
-            st.success("تم بنجاح!")
+            
+            st.success("تم بنجاح! تم إنشاء الإعلان وإرساله عبر الواتساب.")
+            st.markdown("### 📋 الإعلان النهائي الجاهز للنشر:")
             st.markdown(final_ad)
-
-with tab2:
-    st.markdown("**القاعدة**: عطي الأمر و أنا ننفد.")
-    command = st.text_area("🎯 عطي الأمر للبحث:", placeholder="مثال: بقع سكنية وتجارية للبيع في تملالت")
-
-    col_a, col_b, col_c = st.columns(3)
-    with col_a:
-        do_phone = st.checkbox("استخرج الأرقام", value=True)
-    with col_b:
-        do_price = st.checkbox("استخرج الأثمنة", value=True)
-    with col_c:
-        do_excel = st.checkbox("صدر Excel", value=True)
-
-    PHONE_REGEX = r'(\+212[67]\d{8}|0[67]\d{8})'
-    PRICE_REGEX = r'(\d+[\s,]?\d*)\s*(درهم|dh|MAD)'
-
-    if st.button("🚀 نفد أمر البحث الآن"):
-        if command:
-            query = f"{command} تملالت قلعة السراغنة المغرب"
-            with st.spinner("🐕 DANA K9 كيصيد دابا..."):
-                try:
-                    from duckduckgo_search import DDGS
-                    results = []
-                    with DDGS() as ddgs:
-                        res = ddgs.text(query, region="ma-ma", max_results=15)
-                        for i, r in enumerate(res):
-                            text = r.get('title', '') + " " + r.get('body', '')
-
-                            phone = "غير متوفر"
-                            if do_phone:
-                                phones = re.findall(PHONE_REGEX, text)
-                                if phones: phone = phones[0]
-
-                            price = "غير محدد"
-                            if do_price:
-                                prices = re.findall(PRICE_REGEX, text)
-                                if prices: price = f"{prices[0][0]} {prices[0][1]}"
-
-                            results.append({
-                                "م": i+1,
-                                "النتيجة": r.get('title', ''),
-                                "الوصف": r.get('body', '')[:180] + "...",
-                                "الثمن": price,
-                                "الهاتف": phone,
-                                "الرابط": r.get('href', '')
-                            })
-
-                    if results:
-                        df = pd.DataFrame(results)
-                        st.success(f"تم التنفيذ. تم العثور على {len(df)} نتيجة")
-                        st.dataframe(df, use_container_width=True, hide_index=True)
-
-                        if do_excel:
-                            csv = df.to_csv(index=False).encode('utf-8-sig')
-                            st.download_button("📥 تحميل النتائج Excel", csv, "dana_k9_results.csv", "text/csv")
-                    else:
-                        st.warning("لم يتم العثور على نتائج مطابقة للأمر.")
-                except Exception as e:
-                    st.error(f"حدث خطأ أثناء البحث: {e}")
-        else:
-            st.error("لم يتم إعطاء أي أمر للبحث.")
+    else:
+        st.warning("الرجاء إدخال وصف المهمة أو المشروع أولاً.")
