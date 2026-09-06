@@ -1,114 +1,123 @@
-import os
-import json
-import logging
+import streamlit as st
 import requests
-from datetime import datetime
-from dotenv import load_dotenv
-from groq import Groq
-from groq import BadRequestError, AuthenticationError, APIConnectionError, APIStatusError
+import json
 
-# إعداد logging
-logging.basicConfig(
-    level=logging.INFO,
-    format='%(asctime)s - %(levelname)s - %(message)s',
-    handlers=[
-        logging.FileHandler('omega_agent.log', encoding='utf-8'),
-        logging.StreamHandler()
-    ]
-)
-logger = logging.getLogger(__name__)
+st.set_page_config(page_title="OMEGA Super Agentic AI", page_icon="👑", layout="wide")
 
-load_dotenv()
+def call_super_ai(prompt, agent_name, domain):
+    """محرك الذكاء الاصطناعي الفائق متعدد المجالات - Groq + Llama"""
+    url = "https://api.groq.com/openai/v1/chat/completions"
+    api_key = st.secrets.get("GROQ_API_KEY", "")
 
-GROQ_API_KEY = os.getenv("GROQ_API_KEY")
-GROQ_MODELS_URL = "https://api.groq.com/openai/v1/models"
+    if not api_key:
+        return "❌ خطأ: مفتاح GROQ_API_KEY غير موجود في إعدادات Secrets الخاصة بـ Streamlit."
 
-if not GROQ_API_KEY:
-    raise RuntimeError(
-        "لم يتم العثور على GROQ_API_KEY. أضفه داخل ملف .env ثم أعد التشغيل."
+    headers = {
+        "Authorization": f"Bearer {api_key}",
+        "Content-Type": "application/json"
+    }
+
+    system_prompt = (
+        f"You are {agent_name}, an elite Super Agentic AI specialized in '{domain}' powered by Meta Llama on Groq. "
+        f"Think step by step. Provide professional, highly tailored, actionable strategies. "
+        f"Respond in Moroccan Arabic Darija + العربية الفصحى, with professional formatting, bullet points, emojis, and tables when needed."
     )
 
-client = Groq(api_key=GROQ_API_KEY)
-
-EXCLUDED_KEYWORDS = [
-    "prompt-guard",
-    "llama-guard",
-    "safeguard",
-    "moderation",
-    "whisper",
-    "speech",
-    "tts",
-    "audio",
-    "transcription",
-    "vision",
-]
-
-PREFERRED_MODELS = [
-    "llama-3.3-70b-versatile",
-    "openai/gpt-oss-120b",
-    "openai/gpt-oss-20b",
-    "meta-llama/llama-4-scout-17b-16e-instruct",
-    "meta-llama/llama-4-maverick-17b-128e-instruct",
-    "llama-3.1-8b-instant",
-]
-
-
-def get_active_models() -> list[str]:
-    """يجلب قائمة النماذج المتاحة فعلياً في حساب Groq."""
-    logger.info("جاري جلب قائمة النماذج من Groq...")
-    
-    headers = {
-        "Authorization": f"Bearer {GROQ_API_KEY}",
-        "Content-Type": "application/json",
+    payload = {
+        "model": "llama-3.1-70b-versatile",
+        "messages": [
+            {"role": "system", "content": system_prompt},
+            {"role": "user", "content": prompt}
+        ],
+        "temperature": 0.75,
+        "max_completion_tokens": 2000
     }
 
     try:
-        response = requests.get(
-            GROQ_MODELS_URL,
-            headers=headers,
-            timeout=20
-        )
-        response.raise_for_status()
-        data = response.json()
+        res = requests.post(url, headers=headers, json=payload, timeout=90)
+        res.raise_for_status()
+        return res.json()['choices'][0]['message']['content']
+    except Exception as e:
+        return f"❌ خطأ في الاتصال بالذكاء الاصطناعي: {e}"
 
-        models = [
-            item["id"]
-            for item in data.get("data", [])
-            if item.get("id")
-        ]
-        
-        logger.info(f"تم العثور على {len(models)} نموذج متاح")
-        return models
-    
-    except requests.RequestException as e:
-        logger.error(f"فشل جلب النماذج: {e}")
-        raise
+def send_whatsapp_alert(message):
+    """إرسال إشعار مباشر عبر واتساب API"""
+    try:
+        phone_id = st.secrets.get('WHATSAPP_PHONE_NUMBER_ID')
+        access_token = st.secrets.get('WHATSAPP_ACCESS_TOKEN')
+        target_number = st.secrets.get('WHATSAPP_BUSINESS_NUMBER')
+        version = st.secrets.get('WHATSAPP_API_VERSION', 'v20.0')
 
+        if not all([phone_id, access_token, target_number]):
+            return
 
-def is_valid_agent_model(model_id: str) -> bool:
-    """يستبعد نماذج الحماية والتصنيف والصوت."""
-    model_name = model_id.lower()
-    return not any(
-        keyword in model_name
-        for keyword in EXCLUDED_KEYWORDS
-    )
+        url = f"https://graph.facebook.com/{version}/{phone_id}/messages"
+        headers = {
+            "Authorization": f"Bearer {access_token}",
+            "Content-Type": "application/json"
+        }
+        payload = {
+            "messaging_product": "whatsapp",
+            "to": target_number,
+            "type": "text",
+            "text": {"body": message[:4096]}
+        }
+        requests.post(url, headers=headers, json=payload, timeout=10)
+    except Exception as e:
+        st.warning(f"تعذر إرسال إشعار الواتساب: {e}")
 
+class SuperOmegaAgent:
+    def __init__(self, domain):
+        self.domain = domain
 
-def select_best_agent_model() -> str:
-    """
-    يختار أفضل نموذج توليدي متاح.
-    لا يختار Prompt Guard كنموذج رئيسي تحت أي ظرف.
-    """
-    all_models = get_active_models()
+    def ceo(self, task):
+        return call_super_ai(f"بصفتك CEO فائق، ضع خطة استراتيجية شاملة وتنافسية لهذا المشروع في مجال {self.domain}: {task}. عطيني SWOT + الميزة التنافسية + خطة 90 يوم", "Super CEO Agent", self.domain)
 
-    valid_models = [
-        model
-        for model in all_models
-        if is_valid_agent_model(model)
-    ]
+    def cto(self, task):
+        return call_super_ai(f"بصفتك CTO فائق، اقترح الاستراتيجية التقنية، أدوات التشغيل، stack تقني، واستهداف الجمهور الرقمي لـ: {task} في {self.domain}", "Super CTO Agent", self.domain)
 
-    if not valid_models:
-        logger.error("لم يتم العثور على أي نموذج نصي مناسب")
-        raise RuntimeError(
-            "لم يتم العثور على أي نموذج نصي مناسب."
-        )
+    def coo(self, task):
+        return call_super_ai(f"بصفتك COO فائق، ضع خطة تنفيذية، إدارة الموارد، KPI، وجدولة زمنية دقيقة لـ: {task} في {self.domain}", "Super COO Agent", self.domain)
+
+    def copywriter(self, plan):
+        whatsapp_num = st.secrets.get('WHATSAPP_BUSINESS_NUMBER', '')
+        prompt = f"بناءً على هذه الخطة: {plan}. اكتب 3 إعلانات تسويقية جذابة باللهجة المغربية والعربية الفصحى مع أيقونات، كلمات مفتاحية، هاشتاقات، ودعوة للاتصال برقم الواتساب: {whatsapp_num}"
+        ad = call_super_ai(prompt, "Super Copywriter Agent", self.domain)
+        send_whatsapp_alert(f"👑 OMEGA SUPER AGENTIC v4.2\nمهمة جديدة في مجال: {self.domain}\n\n{ad}")
+        return ad
+
+    def closer(self, ad):
+        prompt = f"قم بتحسين نص هذا الإعلان وإضافة محفزات الاستعجال FOMO + ضمان + شهادات لزيادة المبيعات: {ad}"
+        return call_super_ai(prompt, "Super Closer Agent", self.domain)
+
+# ===== واجهة Streamlit =====
+st.title("👑 OMEGA Super Agentic AI - متعدد المجالات")
+st.caption("CEO + CTO + COO + Copywriter + Closer في وكيل واحد يخدم على Groq")
+
+domain = st.selectbox("اختر المجال", ["العقار", "التجارة الإلكترونية", "المطاعم", "التعليم", "الصحة", "التسويق"])
+task = st.text_area("وصف المهمة / المشروع", placeholder="مثال: بيع بقع أرضية في تجزئة الهدى بقلعة السراغنة")
+
+agent = SuperOmegaAgent(domain)
+
+col1, col2, col3 = st.columns(3)
+
+with col1:
+    if st.button("🧠 خطة CEO"):
+        with st.spinner("المدير التنفيذي كيخدم..."):
+            st.markdown(agent.ceo(task))
+with col2:
+    if st.button("💻 خطة CTO"):
+        with st.spinner("المدير التقني كيخدم..."):
+            st.markdown(agent.cto(task))
+with col3:
+    if st.button("📊 خطة COO"):
+        with st.spinner("مدير العمليات كيخدم..."):
+            st.markdown(agent.coo(task))
+
+if st.button("✍️ إنشاء إعلان + إرسال واتساب"):
+    with st.spinner("الكاتب كيكتب الإعلان..."):
+        plan = agent.ceo(task)
+        ad = agent.copywriter(plan)
+        final_ad = agent.closer(ad)
+        st.success("تم بنجاح!")
+        st.markdown(final_ad)
