@@ -4,8 +4,8 @@ import json
 
 st.set_page_config(page_title="OMEGA Super Agentic AI", page_icon="👑", layout="wide")
 
-def call_super_ai(prompt, agent_name, domain):
-    """محرك الذكاء الاصطناعي الفائق متعدد المجالات - Groq + Llama 3.3"""
+def call_super_ai(prompt, agent_name, domain, selected_model):
+    """محرك الذكاء الاصطناعي الفائق متعدد المجالات - Groq مع دعم النماذج المفتوحة المتعددة"""
     url = "https://api.groq.com/openai/v1/chat/completions"
     api_key = st.secrets.get("GROQ_API_KEY", "")
 
@@ -18,13 +18,13 @@ def call_super_ai(prompt, agent_name, domain):
     }
 
     system_prompt = (
-        f"You are {agent_name}, an elite Super Agentic AI specialized in '{domain}' powered by Meta Llama on Groq. "
+        f"You are {agent_name}, an elite Super Agentic AI specialized in '{domain}' powered by Open Source models on Groq. "
         f"Think step by step. Provide professional, highly tailored, actionable strategies. "
         f"Respond in Moroccan Arabic Darija + العربية الفصحى, with professional formatting, bullet points, emojis, and tables when needed."
     )
 
     payload = {
-        "model": "llama-3.3-70b-versatile", # أحدث وأقوى موديل مفتوح المصدر على Groq
+        "model": selected_model, # النموذج المختار من طرف المستخدم عبر الواجهة
         "messages": [
             {"role": "system", "content": system_prompt},
             {"role": "user", "content": prompt}
@@ -67,49 +67,83 @@ def send_whatsapp_alert(message):
         st.warning(f"تعذر إرسال إشعار الواتساب: {e}")
 
 class SuperOmegaAgent:
-    def __init__(self, domain):
+    def __init__(self, domain, selected_model):
         self.domain = domain
+        self.selected_model = selected_model
 
     def ceo(self, task):
-        return call_super_ai(f"بصفتك CEO فائق، ضع خطة استراتيجية شاملة وتنافسية لهذا المشروع في مجال {self.domain}: {task}. عطيني SWOT + الميزة التنافسية + خطة 90 يوم", "Super CEO Agent", self.domain)
+        return call_super_ai(f"بصفتك CEO فائق، ضع خطة استراتيجية شاملة وتنافسية لهذا المشروع في مجال {self.domain}: {task}. عطيني SWOT + الميزة التنافسية + خطة 90 يوم", "Super CEO Agent", self.domain, self.selected_model)
 
     def cto(self, task):
-        return call_super_ai(f"بصفتك CTO فائق، اقترح الاستراتيجية التقنية، أدوات التشغيل، stack تقني، واستهداف الجمهور الرقمي لـ: {task} في {self.domain}", "Super CTO Agent", self.domain)
+        return call_super_ai(f"بصفتك CTO فائق، اقترح الاستراتيجية التقنية، أدوات التشغيل، stack تقني، واستهداف الجمهور الرقمي لـ: {task} في {self.domain}", "Super CTO Agent", self.domain, self.selected_model)
 
     def coo(self, task):
-        return call_super_ai(f"بصفتك COO فائق، ضع خطة تنفيذية، إدارة الموارد، KPI، وجدولة زمنية دقيقة لـ: {task} في {self.domain}", "Super COO Agent", self.domain)
+        return call_super_ai(f"بصفتك COO فائق، ضع خطة تنفيذية، إدارة الموارد، KPI، وجدولة زمنية دقيقة لـ: {task} في {self.domain}", "Super COO Agent", self.domain, self.selected_model)
 
     def copywriter(self, plan):
         whatsapp_num = st.secrets.get('WHATSAPP_BUSINESS_NUMBER', '')
         prompt = f"بناءً على هذه الخطة: {plan}. اكتب 3 إعلانات تسويقية جذابة باللهجة المغربية والعربية الفصحى مع أيقونات، كلمات مفتاحية، هاشتاقات، ودعوة للاتصال برقم الواتساب: {whatsapp_num}"
-        ad = call_super_ai(prompt, "Super Copywriter Agent", self.domain)
-        send_whatsapp_alert(f"👑 OMEGA SUPER AGENTIC v4.1\nمهمة جديدة في مجال: {self.domain}\n\n{ad}")
+        ad = call_super_ai(prompt, "Super Copywriter Agent", self.domain, self.selected_model)
+        send_whatsapp_alert(f"👑 OMEGA SUPER AGENTIC v4.2\nمهمة جديدة في مجال: {self.domain}\n\n{ad}")
         return ad
 
     def closer(self, ad):
         prompt = f"قم بتحسين نص هذا الإعلان وإضافة محفزات الاستعجال FOMO + ضمان + شهادات لزيادة المبيعات: {ad}"
-        return call_super_ai(prompt, "Super Closer Agent", self.domain)
+        return call_super_ai(prompt, "Super Closer Agent", self.domain, self.selected_model)
 
 # ===== واجهة Streamlit =====
-st.title("👑 OMEGA Super Agentic AI - متعدد المجالات")
-st.caption("النظام الذكي المتكامل للتحليل وتوليد الإعلانات عبر Llama 3.3 في Groq")
+st.title("👑 OMEGA Super Agentic AI - متعدد النماذج والمجالات")
+st.caption("النظام الذكي المتكامل المدعوم بنماذج الذكاء الاصطناعي المفتوحة على منصة Groq")
 
-domain = st.selectbox("اختر المجال", ["العقار", "التجارة الإلكترونية", "المطاعم", "التعليم", "الصحة", "التسويق"])
+# شريط جانبي أو إعدادات لاختيار النموذج والمجال
+col_opt1, col_opt2 = st.columns(2)
+
+with col_opt1:
+    domain = st.selectbox("اختر المجال الاستراتيجي", ["العقار", "التجارة الإلكترونية", "المطاعم", "التعليم", "الصحة", "التسويق"])
+
+with col_opt2:
+    selected_model = st.selectbox(
+        "اختر نموذج الذكاء الاصطناعي (Open Source Models)",
+        [
+            "llama-3.3-70b-versatile",
+            "llama-3.1-70b-versatile",
+            "mixtral-8x7b-32k",
+            "gemma2-9b-it",
+            "llama-3.1-8b-instant"
+        ]
+    )
+
 task = st.text_area("وصف المهمة / المشروع", placeholder="مثال: بيع بقع أرضية في تجزئة الهدى بقلعة السراغنة")
 
-agent = SuperOmegaAgent(domain)
+agent = SuperOmegaAgent(domain, selected_model)
 
-# تم حذف الأزرار الظاهرة للخطط الجزئية لتكون العملية تلقائية وسلسة في الخلفية
+# خيارات الأزرار: خطط مفردة (اختياري) أو التوليد التلقائي الشامل المتكامل
+col_btn1, col_btn2, col_btn3 = st.columns(3)
 
-if st.button("✍️ إنشاء الإعلان الاحترافي + إرسال واتساب"):
+with col_btn1:
+    if st.button("🧠 تشغيل استراتيجية CEO"):
+        with st.spinner(f"المدير التنفيذي يعمل عبر نموذج {selected_model}..."):
+            st.markdown(agent.ceo(task))
+with col_btn2:
+    if st.button("💻 تشغيل استراتيجية CTO"):
+        with st.spinner(f"المدير التقني يعمل عبر نموذج {selected_model}..."):
+            st.markdown(agent.cto(task))
+with col_btn3:
+    if st.button("📊 تشغيل استراتيجية COO"):
+        with st.spinner(f"مدير العمليات يعمل عبر نموذج {selected_model}..."):
+            st.markdown(agent.coo(task))
+
+st.markdown("---")
+
+if st.button("✍️ تنفيذ النظام الشامل (إنشاء الإعلان الاحترافي + إرسال واتساب تلقائي)"):
     if task.strip():
-        with st.spinner("جاري تحليل المعطيات عبر وكلاء OMEGA في الخلفية..."):
-            # الخطوات تعمل تلقائياً بشكل سري خلف الكواليس
+        with st.spinner("🔄 جاري تفعيل الوكلاء في الخلفية وتحليل المعطيات..."):
+            # الخطوات تعمل بسلاسة في الخلفية
             plan = agent.ceo(task)
             ad = agent.copywriter(plan)
             final_ad = agent.closer(ad)
             
-            st.success("تم بنجاح! تم إنشاء الإعلان وإرساله عبر الواتساب.")
+            st.success("تم التنفيذ بنجاح! تم إنشاء الإعلان وإرساله عبر الواتساب.")
             st.markdown("### 📋 الإعلان النهائي الجاهز للنشر:")
             st.markdown(final_ad)
     else:
