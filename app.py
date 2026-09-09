@@ -1,8 +1,7 @@
 from datetime import datetime
-import io
 import os
 import zipfile
-import google.generativeai as genai
+from google import genai
 import pandas as pd
 from PIL import Image, ImageEnhance
 import streamlit as st
@@ -19,19 +18,22 @@ st.set_page_config(
 GALLERY_FOLDER = "gallery"
 os.makedirs(GALLERY_FOLDER, exist_ok=True)
 
-# تهيئة الاتصالات والـ Secrets (مع معالجة الأخطاء في حال عدم توفرها محلياً)
+# تهيئة الاتصالات والـ Secrets
 @st.cache_resource
 def init_system():
     try:
         url = st.secrets["SUPABASE_URL"].strip()
         key = st.secrets["SUPABASE_KEY"].strip()
+        gemini_key = st.secrets["GEMINI_API_KEY"].strip()
+        
         supabase_client = create_client(url, key)
-        genai.configure(api_key=st.secrets["GEMINI_API_KEY"].strip())
-        return supabase_client, True
-    except Exception:
-        return None, False
+        gemini_client = genai.Client(api_key=gemini_key)
+        
+        return supabase_client, gemini_client, True
+    except Exception as e:
+        return None, None, False
 
-supabase, db_connected = init_system()
+supabase, gemini_client, db_connected = init_system()
 
 # 1. إعدادات البيئة البصرية
 ENVIRONMENT_PRESETS = {
@@ -98,7 +100,6 @@ if app_mode == "🏗️ نظام حساب تكاليف المشاريع العق
     architect_fees = st.sidebar.number_input("مصاريف المهندس، الرخص والمختبر (درهم)", value=120000, step=5000)
     contingency_rate = st.sidebar.slider("نسبة مصاريف الطوارئ والإضافات (%)", 0, 20, 10)
 
-    # الحسابات المالية
     contingency_amount = (construction_cost + architect_fees) * (contingency_rate / 100)
     total_investment = land_price + construction_cost + architect_fees + contingency_amount
 
@@ -108,7 +109,6 @@ if app_mode == "🏗️ نظام حساب تكاليف المشاريع العق
     net_profit = expected_selling_price - total_investment
     roi = (net_profit / total_investment) * 100 if total_investment > 0 else 0
 
-    # العرض الرئيسي في لوحة القيادة
     col1, col2, col3, col4 = st.columns(4)
     col1.metric("إجمالي الاستثمار", f"{total_investment:,.0f} DH")
     col2.metric("تكلفة البناء", f"{construction_cost:,.0f} DH")
@@ -235,10 +235,12 @@ def execute_autonomous_patch():
 
     user_prompt = st.text_area("أمر مباشر إضافي للذكاء الاصطناعي (Gemini):")
     if st.button("إرسال التوجيه للوكيل"):
-        if user_prompt and db_connected:
+        if user_prompt and gemini_client is not None:
             try:
-                model = genai.GenerativeModel("gemini-1.5-flash")
-                response = model.generate_content(user_prompt)
+                response = gemini_client.models.generate_content(
+                    model="gemini-2.5-flash",
+                    contents=user_prompt,
+                )
                 st.success("✅ استجابة الوكيل الذكي:")
                 st.markdown(response.text)
             except Exception as e:
