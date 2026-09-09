@@ -237,8 +237,9 @@ def execute_autonomous_patch():
     if st.button("إرسال التوجيه للوكيل"):
         if user_prompt and gemini_client is not None:
             try:
+                # تم تحديث اسم النموذج هنا إلى gemini-3.6-flash لتجنب خطأ 404
                 response = gemini_client.models.generate_content(
-                    model="gemini-2.5-flash",
+                    model="gemini-3.6-flash",
                     contents=user_prompt,
                 )
                 st.success("✅ استجابة الوكيل الذكي:")
