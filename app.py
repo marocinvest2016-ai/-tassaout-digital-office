@@ -239,7 +239,7 @@ def execute_autonomous_patch():
             try:
                 with st.spinner("جاري توليد الاستجابة عبر محرك Gemini..."):
                     response = gemini_client.models.generate_content(
-                        model="gemini-2.0-flash",
+                        model="gemini-3.6-flash",  # تم التحديث إلى النموذج المطلوب رسمياً
                         contents=user_prompt,
                     )
                     if response and hasattr(response, "text") and response.text:
