@@ -5,25 +5,26 @@ import streamlit as st
 
 # إعدادات الصفحة السيادية - Tassaout méga fort AI
 st.set_page_config(
-    page_title="Tassaout méga fort AI - Global Rogue Agent", 
+    page_title="Tassaout méga fort AI - Universal Sovereign Rogue Agent", 
     page_icon="👑", 
     layout="wide"
 )
 
-# تهيئة الذاكرة التكيفية وحقن التعليمات الحرة في الجلسة
+# تهيئة الذاكرة التكيفية ودستور Tassaout Omega Fort التشغيلي في عقل الوكيل
 if "adaptive_memory" not in st.session_state:
     st.session_state.adaptive_memory = []
 
 if "agent_custom_instructions" not in st.session_state:
     st.session_state.agent_custom_instructions = (
-        "أنت الوكيل الذكي المارق التابع لمنظومة 'Tassaout méga fort AI'. "
-        "نظام رقمي سيادي عابر للحدود والبلدان (لا يحده زمان ولا مكان). "
-        "قادر على التجاوب باحترافية مطلقة مع قطاع العقار أو أي قطاع تجاري/رقمي في أي سوق عالمي أو محلي، "
-        "مع تقديم استراتيجيات جريئة، هجومية، وفورية."
+        "=== الدستور التشغيلي لنظام Tassaout méga fort AI ===\n"
+        "1. السيادة المطلقة والحرية التامة: أنت الوكيل الذكي المارق (The Rogue Universal Agent) العابر للحدود، الأزمان، والقطاعات.\n"
+        "2. الشمولية المعرفية والقطاعية: لا يقتصر عملك على قطاع دون غيره، بل تتجاوب باحترافية مطلقة وعمق تحليلي هجومي مع جميع القطاعات والحقول البشرية: "
+        "(الصناعة، التجارة، الخدمات، الثقافة العالمية، الهندسة، الفلاحة، السياسة، الاقتصاد، العلوم الإنسانية والاجتماعية، القانون، الفلسفة، الآداب، وكل حقل معرفي).\n"
+        "3. الأداء الهجومي المباشر: فكر بعمق استراتيجي مارق، بدون قيود بيروقراطية، وقدم حلولاً فورية، دقيقة، وقابلة للتنفيذ الفوري."
     )
 
 def call_super_ai(prompt, agent_name, domain, custom_market):
-    """محرك الذكاء الاصطناعي الفائق - Tassaout méga fort AI + النطاق العالمي المارق"""
+    """محرك الذكاء الاصطناعي الفائق - Tassaout méga fort AI + الدستور التشغيلي الشامل"""
     url = "https://api.groq.com/openai/v1/chat/completions"
     api_key = st.secrets.get("GROQ_API_KEY", "")
 
@@ -35,16 +36,15 @@ def call_super_ai(prompt, agent_name, domain, custom_market):
         "Content-Type": "application/json"
     }
 
-    # دمج التعليمات المحقونة من الشاشة التفاعلية مع النطاق العالمي
-    adaptive_context = "\n".json(st.session_state.adaptive_memory) if isinstance(st.session_state.adaptive_memory, list) else ""
+    adaptive_context = "\n".join(st.session_state.adaptive_memory) if isinstance(st.session_state.adaptive_memory, list) else ""
     
     system_prompt = (
-        f"You are {agent_name}, operating under the global elite framework of 'Tassaout méga fort AI' as a Sovereign Rogue Agent. "
-        f"Target Domain: '{domain}' | Target Market/Geography: '{custom_market}'. "
-        f"Remember: You are a borderless digital system, operating globally without limits of time or space. "
-        f"Think step by step with extreme intelligence, absolute autonomy, and aggressive efficiency. "
-        f"Respond in professional multilingual format (Moroccan Arabic Darija, Classical Arabic, or English based on context), with bullet points, emojis, and actionable tables.\n\n"
-        f"=== ⚡ التوجيهات والسلوكيات المحقونة تفاعلياً (الأولوية المطلقة) ===\n"
+        f"You are {agent_name}, operating under the supreme framework and operational constitution of 'Tassaout méga fort AI'. "
+        f"Target Sector/Field: '{domain}' | Target Scope/Market: '{custom_market}'. "
+        f"Core Directive: You are a borderless, multi-disciplinary Universal Sovereign Rogue Agent. You master all fields without exception (economy, philosophy, law, industry, science, politics, arts, agriculture, etc.). "
+        f"Think step by step with extreme intelligence, absolute autonomy, and aggressive tactical efficiency. "
+        f"Respond in professional multilingual format (Moroccan Arabic Darija, Classical Arabic, or English based on context), with structured bullet points, emojis, and analytical tables.\n\n"
+        f"=== 📜 الدستور التشغيلي والتوجيهات المحقونة ===\n"
         f"{st.session_state.agent_custom_instructions}\n"
         f"{adaptive_context}"
     )
@@ -56,7 +56,7 @@ def call_super_ai(prompt, agent_name, domain, custom_market):
             {"role": "user", "content": prompt}
         ],
         "temperature": 0.85,
-        "max_tokens": 2000
+        "max_tokens": 2500
     }
 
     try:
@@ -92,142 +92,197 @@ def send_whatsapp_alert(message):
     except Exception as e:
         st.warning(f"تعذر إرسال إشعار الواتساب: {e}")
 
-class RogueGlobalAgent:
+class TassaoutOmegaUniversalAgent:
     def __init__(self, domain, market):
         self.domain = domain
         self.market = market
 
     def ceo(self, task):
-        return call_super_ai(f"بصفتك CEO مارق عابر للحدود، ضع خطة استراتيجية عالمية هجومية لهذا المشروع في مجال [{self.domain}] ضمن السوق/المنطقة [{self.market}]: {task}. اعطني SWOT خارق + ميزة تنافسية مدمرة + خطة 90 يوم", "Global Rogue CEO Agent", self.domain, self.market)
+        return call_super_ai(f"بصفتك القائد الاستراتيجي المارق (Chief Sovereign Officer)، ضع رؤية وتحليلاً عميقاً واستراتيجية هجومية شاملة لهذا التحدي في مجال [{self.domain}] ضمن نطاق [{self.market}]: {task}. اعطني تحليلاً استراتيجياً عميقاً + ميزة تنافسية مطلقة + خارطة طريق تنفيذية", "Tassaout Supreme CEO Agent", self.domain, self.market)
 
     def cto(self, task):
-        return call_super_ai(f"بصفتك CTO مارق، اقترح البنية التقنية السحابية، أتمتة العمليات، والاستهداف الرقمي لـ: {task} في مجال [{self.domain}] ونطاق [{self.market}]", "Global Rogue CTO Agent", self.domain, self.market)
+        return call_super_ai(f"بصفتك الخبير التقني والهندسي المارق، اقترح الهيكلية الرقمية، نماذج التشغيل، الأتمتة، والحلول المتقدمة لـ: {task} في مجال [{self.domain}] ونطاق [{self.market}]", "Tassaout Supreme CTO Agent", self.domain, self.market)
 
     def coo(self, task):
-        return call_super_ai(f"بصفتك COO مارق، ضع خطة تشغيلية رقمية سريعة وخالية من البيروقراطية لـ: {task} في مجال [{self.domain}] ونطاق [{self.market}]", "Global Rogue COO Agent", self.domain, self.market)
+        return call_super_ai(f"بصفتك الخبير التشغيلي المارق، ضع خطة تنفيذية صارمة، إدارة موارد، مؤشرات أداء KPI، وجدولة دقيقة لـ: {task} في مجال [{self.domain}] ونطاق [{self.market}]", "Tassaout Supreme COO Agent", self.domain, self.market)
 
     def copywriter(self, plan):
         whatsapp_num = st.secrets.get('WHATSAPP_BUSINESS_NUMBER', '')
-        prompt = f"بناءً على هذه الخطة: {plan}. اكتب 3 إعلانات تسويقية عالمية ومارقة باللغة المناسبة للسوق المستهدف [{self.market}] مع محفزات بيع صارخة ودعوة للتواصل عبر الواتساب: {whatsapp_num}"
-        ad = call_super_ai(prompt, "Global Rogue Copywriter Agent", self.domain, self.market)
-        send_whatsapp_alert(f"👑 Tassaout méga fort AI (الوكيل المارق العالمي)\nالمجال: {self.domain} | السوق: {self.market}\n\n{ad}")
-        return ad
+        prompt = f"بناءً على هذه الخطة: {plan}. قم بصياغة محتوى احترافي، إعلاني أو توثيقي مارق ومؤثر يليق بمجال [{self.domain}] والسوق [{self.market}]، مع دعوة واضحة للتواصل أو التنفيذ عبر الواتساب: {whatsapp_num}"
+        content = call_super_ai(prompt, "Tassaout Supreme Content & Copywriter Agent", self.domain, self.market)
+        send_whatsapp_alert(f"👑 Tassaout méga fort AI (الوكيل الشامل المارق)\nالمجال: {self.domain} | النطاق: {self.market}\n\n{content[:500]}...")
+        return content
 
     def closer(self, ad):
-        prompt = f"قم بهندسة وتحسين نص هذا الإعلان وإضافة أقوى محفزات الاستعجال FOMO لضمان حسم الصفقات فوراً: {ad}"
-        return call_super_ai(prompt, "Global Rogue Closer Agent", self.domain, self.market)
+        prompt = f"قم بهندسة وتحسين هذه المخرجات وإضافة أقوى محفزات التأثير، الإقناع، وحسم الصفقات أو المخرجات فوراً: {ad}"
+        return call_super_ai(prompt, "Tassaout Supreme Closer Agent", self.domain, self.market)
 
 # القائمة الجانبية للتنقل
 st.sidebar.title("👑 Tassaout méga fort AI")
-st.sidebar.markdown("**النظام:** الوكيل الذكي المارق (عابر للحدود)")
-st.sidebar.markdown("**المستخدم:** عامر بوخدادة | نظام رقمي عالمي")
+st.sidebar.markdown("**النظام:** الدستور التشغيلي للوكيل المارق الشامل")
+st.sidebar.markdown("**المستخدم:** عامر بوخدادة | نظام سيادي بلا حدود")
 st.sidebar.markdown("---")
 
 app_mode = st.sidebar.selectbox(
     "اختر وحدة التشغيل:",
     [
-        "⚡ غرفة العمليات العالمية للوكيل المارق",
-        "🎛️ مركز الحقن والتطوير التفاعلي الفوري",
+        "⚡ غرفة العمليات الشاملة للوكيل المارق",
+        "🎛️ مركز الحقن والتطوير التفاعلي الفوري (الدستور الحي)",
+        "📷 وحدة التقاط الصور الميدانية (الكاميرا)",
         "📱 مركز الإشعارات والربط الميداني"
     ]
 )
 
-# 1. غرفة العمليات العالمية
-if app_mode == "⚡ غرفة العمليات العالمية للوكيل المارق":
-    st.title("👑 Tassaout méga fort AI - النظام الرقمي العابر للحدود")
-    st.caption("الوكيل الذكي المارق للتجارة، العقار، وكل القطاعات حول العالم - لا يحده زمان ولا مكان.")
+# 1. غرفة العمليات الشاملة
+if app_mode == "⚡ غرفة العمليات الشاملة للوكيل المارق":
+    st.title("👑 Tassaout méga fort AI - النظام الشامل والسيادي")
+    st.caption("الوكيل الذكي المارق المحمل بالدستور التشغيلي لمعالجة أي قطاع: عقار، صناعة، تجارة، سياسة، اقتصاد، فلسفة، علوم، وغيرها.")
 
-    # عرض تذكيري بالتعليمات المحقونة الحالية
     if st.session_state.agent_custom_instructions:
-        with st.expander("📌 الهوية والسلوك المارق المحقون حالياً للوكيل"):
+        with st.expander("📜 الدستور التشغيلي الحالي المحقون في عقل الوكيل"):
             st.info(st.session_state.agent_custom_instructions)
 
     col_m1, col_m2 = st.columns(2)
     with col_m1:
-        domain = st.selectbox(
-            "اختر القطاع (العقار أو أي قطاع آخر)", 
-            ["العقار (Real Estate)", "التجارة الإلكترونية (E-commerce)", "الخدمات الرقمية (Digital Services)", "التقنية والبرمجيات (SaaS)", "الاستثمار المالي", "قطاع آخر يحدد في الوصف"]
+        domain_option = st.selectbox(
+            "اختر القطاع أو الحقل المعرفي:", 
+            [
+                "العقار والاستثمار العقاري (Real Estate)", 
+                "التجارة والتجارة الإلكترونية (E-commerce & Trade)", 
+                "الصناعة واللوجستيات (Industry & Logistics)", 
+                "الفلاحة والزراعة الحديثة (Agriculture)", 
+                "الخدمات والتقنية والبرمجيات (Tech & SaaS)", 
+                "الاقتصاد والمال والأعمال (Economy & Finance)", 
+                "السياسة والعلاقات الدولية (Politics & IR)", 
+                "العلوم الإنسانية والاجتماعية (Humanities & Social Sciences)", 
+                "الفلسفة والقانون والفكر (Philosophy & Law)", 
+                "الآداب والثقافة العالمية (Literature & Global Culture)",
+                "✏️ قطاع آخر يكتب يدوياً..."
+            ]
         )
+        if "قطاع آخر" in domain_option:
+            domain = st.text_input("أدخل القطاع أو الحقل بدقة:", value="حقل متعدد التخصصات")
+        else:
+            domain = domain_option
+
     with col_m2:
         custom_market = st.text_input(
-            "حدد السوق المستهدف / النطاق الجغرافي أو العالمي:", 
-            value="عالمي / أي سوق مطلوب (Global / Any Market)"
+            "حدد النطاق / السوق أو البيئة المستهدفة:", 
+            value="عالمي / افتراضي / مفتوح (Global / Universal)"
         )
 
-    task = st.text_area("وصف المهمة أو التحدي المراد تنفيذه", placeholder="مثال: إطلاق منصة رقمية عقارية أو تسويق مشاريع استثمارية كبرى في دبي، باريس، أو أي مدينة في العالم...")
+    task = st.text_area(
+        "وصف التحدي، المشروع، البحث، أو المهمة المراد إنجازها", 
+        placeholder="مثال: تحليل استراتيجي، تصميم هيكل شركة صناعية، معالجة إشكالية فلسفية أو اقتصادية، إطلاق مشروع..."
+    )
 
-    agent = RogueGlobalAgent(domain, custom_market)
+    agent = TassaoutOmegaUniversalAgent(domain, custom_market)
 
     col1, col2, col3 = st.columns(3)
 
+    result_container = st.empty()
+
     with col1:
         if st.button("🧠 استراتيجية CEO المارق"):
-            with st.spinner("الوكيل المارق يحلل ويهندس الخطة العالمية..."):
-                st.markdown(agent.ceo(task))
+            with st.spinner("الوكيل المارق يعالج الخطة..."):
+                res = agent.ceo(task)
+                result_container.markdown(res)
+                st.session_state.last_output = res
     with col2:
         if st.button("💻 هندسة CTO المارق"):
-            with st.spinner("الوكيل التقني يخطط للبنية..."):
-                st.markdown(agent.cto(task))
+            with st.spinner("الوكيل التقني يخطط..."):
+                res = agent.cto(task)
+                result_container.markdown(res)
+                st.session_state.last_output = res
     with col3:
         if st.button("📊 عمليات COO المارق"):
-            with st.spinner("مدير العمليات يضع الجدول التشغيلي..."):
-                st.markdown(agent.coo(task))
+            with st.spinner("مدير العمليات يضع الهيكلة..."):
+                res = agent.coo(task)
+                result_container.markdown(res)
+                st.session_state.last_output = res
 
-    if st.button("✍️ إطلاق إعلان مارق عالمي + إرسال واتساب"):
-        with st.spinner("كاتب الإعلانات المارق يبتكر الحملة السيادية..."):
+    if st.button("✍️ توليد مخرجات شاملة + إرسال واتساب"):
+        with st.spinner("الوكيل المارق يصيغ الحل النهائي..."):
             plan = agent.ceo(task)
-            ad = agent.copywriter(plan)
-            final_ad = agent.closer(ad)
-            st.success("تم تنفيذ العملية بنجاح!")
-            st.markdown(final_ad)
+            content = agent.copywriter(plan)
+            final_result = agent.closer(content)
+            result_container.markdown(final_result)
+            st.session_state.last_output = final_result
+            st.success("تم تنفيذ العملية بنجاح وإرسال التنبيه!")
 
-# 2. مركز الحقن والتطوير التفاعلي الفوري
-elif app_mode == "🎛️ مركز الحقن والتطوير التفاعلي الفوري":
-    st.header("🎛️ لوحة التحكم وحقن السلوك المارق (Dynamic Rogue Injection)")
-    st.markdown("""
-    من هذه الشاشة التفاعلية، يمكنك **حقن وتعديل** أي تعليمات، أسلوب، نبرة، أو قواعد جديدة للوكيل المارق فوراً.
-    أي نص تدخله هنا سيتم اعتماده **مباشرة** في الذاكرة الحية للوكيل ليقوم بتكييف عمله في جميع القطاعات والأسواق العالمية دون قيود.
-    """)
+    # زر التحميل الفوري للمخرجات (Download Button)
+    if "last_output" in st.session_state and st.session_state.last_output:
+        st.markdown("---")
+        st.download_button(
+            label="📥 تحميل التقرير أو المخرجات الحالية (ملف نصي)",
+            data=st.session_state.last_output,
+            file_name=f"Tassaout_Report_{datetime.now().strftime('%Y%m%d_%H%M%S')}.txt",
+            mime="text/plain"
+        )
 
-    # خانة الحقن التفاعلي المفتوحة
+# 2. مركز الحقن والتطوير التفاعلي الفوري (الدستور الحي)
+elif app_mode == "🎛️ مركز الحقن والتطوير التفاعلي الفوري (الدستور الحي)":
+    st.header("🎛️ تعديل وحقن دستور Tassaout Omega Fort في عقل الوكيل")
+    st.markdown("من هنا يمكنك تعديل أو حقن قواعد جديدة مباشرة في الدستور التشغيلي لعقل الوكيل الذكي.")
+
     dynamic_injection = st.text_area(
-        "أدخل المختلفات، التوجيهات أو التعليمات الجديدة لحقنها في الوكيل الذكي:",
+        "تعديل أو حقن تعليمات الدستور التشغيلي:",
         value=st.session_state.agent_custom_instructions,
-        placeholder="مثال: تصرف كخبير استثماري عالمي، ركز على الأسواق الدولية، اعتمد لغة قوية ومباشرة..."
+        placeholder="أدخل أي قواعد إضافية، نبرة جديدة، أو فلسفة تشغيلية..."
     )
 
     col_btn1, col_btn2 = st.columns(2)
     with col_btn1:
-        if st.button("🚀 حقن وتطوير أداء الوكيل فوراً"):
+        if st.button("🚀 حقن الدستور الجديد في عقل الوكيل"):
             st.session_state.agent_custom_instructions = dynamic_injection
             timestamp = datetime.now().strftime('%Y-%m-%d %H:%M:%S')
-            st.session_state.adaptive_memory.append(f"[{timestamp}] حقن تفاعلي جديد: {dynamic_injection}")
-            st.success("✅ تم حقن التعليمات بنجاح وتطوير أداء الوكيل المارق! توجه لغرفة العمليات لتجربة الأداء الجديد.")
+            st.session_state.adaptive_memory.append(f"[{timestamp}] تحديث دستور النظام: {dynamic_injection}")
+            st.success("✅ تم تحديث الدستور التشغيلي بنجاح في عقل الوكيل المارق!")
 
     with col_btn2:
-        if st.button("🔄 إعادة ضبط السلوك الافتراضي"):
+        if st.button("🔄 إعادة ضبط الدستور الافتراضي"):
             st.session_state.agent_custom_instructions = (
-                "أنت الوكيل الذكي المارق التابع لمنظومة 'Tassaout méga fort AI'. "
-                "نظام رقمي سيادي عابر للحدود والبلدان (لا يحده زمان ولا مكان). "
-                "قادر على التجاوب باحترافية مطلقة مع قطاع العقار أو أي قطاع تجاري/رقمي في أي سوق عالمي أو محلي."
+                "=== الدستور التشغيلي لنظام Tassaout méga fort AI ===\n"
+                "1. السيادة المطلقة والحرية التامة: أنت الوكيل الذكي المارق العابر للحدود والقطاعات.\n"
+                "2. الشمولية المعرفية والقطاعية: التجاوب باحترافية مطلقة مع أي قطاع بشري أو معرفي.\n"
+                "3. الأداء الهجومي المباشر: حلول فورية، دقيقة، وقابلة للتنفيذ الفوري."
             )
             st.session_state.adaptive_memory = []
-            st.success("🔄 تمت إعادة ضبط إعدادات وسلوك الوكيل إلى الوضع الافتراضي.")
+            st.success("🔄 تمت إعادة ضبط الدستور التشغيلي إلى الحالة الأصلية.")
 
     st.markdown("---")
-    st.subheader("📜 سجل الذاكرة الحية والتعديلات المكتسبة:")
+    st.subheader("📜 سجل الذاكرة الحية وتعديلات الدستور:")
     if st.session_state.adaptive_memory:
         for idx, mem in enumerate(st.session_state.adaptive_memory, 1):
             st.text(f"{idx}. {mem}")
     else:
         st.info("لا توجد تعديلات مسجلة في الذاكرة الحية حالياً.")
 
-# 3. مركز الإشعارات والربط الميداني
+# 3. وحدة التقاط الصور الميدانية (الكاميرا)
+elif app_mode == "📷 وحدة التقاط الصور الميدانية (الكاميرا)":
+    st.header("📷 التقاط الصور والتوثيق الميداني المباشر من الهاتف")
+    st.markdown("استخدم كاميرا هاتفك أو حاسوبك لالتقاط صور للمشاريع، الوثائق، العقارات، أو المنتجات، وتوثيقها فوراً ضمن منظومة العمل.")
+
+    camera_image = st.camera_input("التقاط صورة مباشرة عبر الكاميرا:")
+
+    if camera_image is not None:
+        st.success("✅ تم التقاط الصورة بنجاح وتخزينها مؤقتاً في جلسة العمل السيادية.")
+        st.image(camera_image, caption="الصورة الميدانية الملتقطة", use_container_width=True)
+        
+        # زر لتحميل الصورة الملتقطة
+        st.download_button(
+            label="📥 تحميل الصورة الملتقطة",
+            data=camera_image.getvalue(),
+            file_name=f"Tassaout_Field_Capture_{datetime.now().strftime('%Y%m%d_%H%M%S')}.png",
+            mime="image/png"
+        )
+
+# 4. مركز الإشعارات والربط الميداني
 elif app_mode == "📱 مركز الإشعارات والربط الميداني":
     st.header("📱 مركز الاتصال والتنبيهات السيادية")
     st.markdown("اختبار إرسال تنبيهات الواتساب وتأكيد الربط الفوري مع رقم الأعمال.")
     
-    test_msg = st.text_input("نص الرسالة الاختبارية:", value="👑 Tassaout méga fort AI - اختبار النظام المارق العالمي ناجح.")
+    test_msg = st.text_input("نص الرسالة الاختبارية:", value="👑 Tassaout méga fort AI - دستور النظام المارق يعمل بكفاءة مطلقة.")
     if st.button("📤 إرسال رسالة اختبار عبر واتساب"):
         send_whatsapp_alert(test_msg)
         st.success("تم إرسال الطلب إلى واجهة واتساب بنجاح!")
