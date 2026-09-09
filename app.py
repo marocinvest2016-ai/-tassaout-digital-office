@@ -237,15 +237,18 @@ def execute_autonomous_patch():
     if st.button("إرسال التوجيه للوكيل"):
         if user_prompt and gemini_client is not None:
             try:
-                # تم تحديث اسم النموذج هنا إلى gemini-3.6-flash لتجنب خطأ 404
-                response = gemini_client.models.generate_content(
-                    model="gemini-3.6-flash",
-                    contents=user_prompt,
-                )
-                st.success("✅ استجابة الوكيل الذكي:")
-                st.markdown(response.text)
+                with st.spinner("جاري توليد الاستجابة عبر محرك Gemini..."):
+                    response = gemini_client.models.generate_content(
+                        model="gemini-2.0-flash",
+                        contents=user_prompt,
+                    )
+                    if response and hasattr(response, "text") and response.text:
+                        st.success("✅ استجابة الوكيل الذكي:")
+                        st.markdown(response.text)
+                    else:
+                        st.warning("⚠️ رد النموذج فارغ أو تم حظره بواسطة إعدادات الأمان.")
             except Exception as e:
-                st.error(f"خطأ أثناء الاتصال بالذكاء الاصطناعي: {e}")
+                st.error(f"❌ خطأ تفصيلي أثناء الاتصال بالذكاء الاصطناعي: {str(e)}")
         elif user_prompt:
             st.info(f"تم استقبال الطلب محلياً: '{user_prompt}'")
         else:
