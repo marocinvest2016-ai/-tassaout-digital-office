@@ -1,10 +1,11 @@
 import streamlit as st
 import requests
 
+# قائمة نماذج Groq المحدثة والمعتمدة لعام 2026
 GROQ_MODELS = [
-    "llama-3.1-8b-instant",
-    "llama-3.2-11b-vision-preview",
-    "llama-3.3-70b-versatile",
+    "openai/gpt-oss-120b",
+    "qwen/qwen3.6-27b",
+    "openai/gpt-oss-20b",
 ]
 
 def call_super_ai(prompt, agent_name, domain):
@@ -20,8 +21,8 @@ def call_super_ai(prompt, agent_name, domain):
     }
 
     system_prompt = (
-        f"You are {agent_name}, an elite Super Agentic AI specialized in '{domain}' "
-        "powered by Meta Llama on Groq. Think step by step. "
+        f"You are {agent_name}, an elite Super Enterprise Agent specialized in '{domain}' "
+        "powered by Advanced AI on Groq. Think step by step. "
         "Respond in Moroccan Arabic Darija + العربية الفصحى."
     )
 
@@ -101,13 +102,25 @@ class SuperOmegaAgent:
         return call_super_ai(prompt, "CEO", self.domain)
 
     def cto(self, task):
-        prompt = f"""بصفتك CTO فائق، اقترح Tech Stack لـ {task} في {self.domain}.
+        prompt = f"""بصفتك CTO فائق، اقترح Tech Stack والأتمتة والحلول الهندسية لـ {task} في {self.domain}.
 
 المطلوب:
-1. البنية التقنية
-2. الأتمتة
-3. استهداف رقمي
-4. أمان
+1. البنية التقنية والبرمجية
+2. الأتمتة الرقمية وسير العمل
+3. استهداف وتكامل تقني
+4. معايير الأمان
 
 جاوب بالدارجة + الفصحى."""
-        return call
+        return call_super_ai(prompt, "CTO", self.domain)
+
+    def coo(self, task):
+        prompt = f"""بصفتك COO فائق، ضع خطة تشغيلية ولوجستية لـ {task} في {self.domain}.
+
+المطلوب:
+1. خطة إدارة العمليات والتشغيل اليومي
+2. إدارة الموارد وسلسلة الإمداد
+3. قياس الجودة والكفاءة
+4. إدارة المخاطر التشغيلية
+
+جاوب بالدارجة + الفصحى."""
+        return call_super_ai(prompt, "COO", self.domain)
