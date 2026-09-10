@@ -1,7 +1,8 @@
 import streamlit as st
 import requests
+from google_connector import get_google_sheets_data, calculate_roi_from_sheet
 
-# قائمة نماذج Groq محدثة مع fallback تلقائي
+# ===== قائمة نماذج Groq محدثة مع fallback تلقائي =====
 GROQ_MODELS = [
     "llama-3.1-8b-instant",        # أساسي: سريع ومستقر 100%
     "llama-3.2-11b-vision-preview", # بديل: أقوى شوية
@@ -149,8 +150,28 @@ class SuperOmegaAgent:
         return call_super_ai(prompt, "Super CTO Agent", self.domain)
 
     def coo(self, task):
+        # جلب البيانات المالية إلا كانت متوفرة
+        financial_context = ""
+        if hasattr(st.session_state, 'financial_data') and st.session_state.financial_data:
+            fd = st.session_state.financial_data
+            financial_context = (
+                f"
+
+[البيانات المالية الحالية من Google Drive]:
+"
+                f"• إجمالي الإيرادات: {fd['total_revenue']:,.0f} درهم
+"
+                f"• إجمالي المصاريف: {fd['total_expenses']:,.0f} درهم
+"
+                f"• الربح الإجمالي: {fd['total_profit']:,.0f} درهم
+"
+                f"• متوسط ROI: {fd['avg_roi']:.1f}%
+"
+                f"استعمل هاد البيانات باش تحط KPIs واقعية وقابلة للقياس."
+            )
+        
         prompt = (
-            f"بصفتك COO فائق، ضع خطة تنفيذية، إدارة الموارد، KPI، وجدولة زمنية دقيقة لـ: {task} في {self.domain}.
+            f"بصفتك COO فائق، ضع خطة تنفيذية، إدارة الموارد، KPI، وجدولة زمنية دقيقة لـ: {task} في {self.domain}.{financial_context}
 
 "
             f"المطلوب:
@@ -272,8 +293,22 @@ class SuperOmegaAgent:
 # ===== واجهة Streamlit =====
 st.set_page_config(page_title="👑 OMEGA SUPER AGENTIC v4.5", page_icon="🤖", layout="wide")
 
-st.title("👑 OMEGA SUPER AGENTIC v4.5")
-st.markdown("**نظام الذكاء الاصطناعي الفائق متعدد المجالات - Groq + Llama**")
+st.title("👑 OMEGA SUPER AGENTIC v4.5 + Google Drive")
+st.markdown("**نظام الذكاء الاصطناعي الفائق متعدد المجالات - Groq + Llama + Google Sheets**")
+
+# ===== تحميل البيانات المالية من Google Drive =====
+with st.spinner("📊 جاري تحميل البيانات المالية من Google Drive..."):
+    financial_data = get_google_sheets_data()
+    
+    if financial_data is not None:
+        roi_stats = calculate_roi_from_sheet(financial_data)
+        if roi_stats:
+            st.session_state.financial_data = roi_stats
+            st.success(f"✅ تم تحميل البيانات: إيرادات {roi_stats['total_revenue']:,.0f} درهم | ROI متوسط {roi_stats['avg_roi']:.1f}%")
+        else:
+            st.warning("⚠️ لم يتم العثور على أعمدة مالية (revenue, expenses, budget)")
+    else:
+        st.info("ℹ️ Google Drive غير مفعّل - النظام سيعمل بدون بيانات مالية خارجية")
 
 # اختيار المجال
 domain = st.selectbox(
@@ -323,3 +358,16 @@ if st.button("🚀 تنفيذ المهمة الكاملة", type="primary"):
             st.markdown(result["cto"])
             st.markdown("### خطة COO")
             st.markdown(result["coo"])
+
+# ===== أزرار سيادية إضافية =====
+col1, col2, col3 = st.columns(3)
+with col1:
+    if st.button("⚡ GO SPEED TEST"):
+        st.write(call_super_ai("قول كلمة واحدة", "Test", "Test"))
+with col2:
+    if st.button("📊 GO STATS"):
+        st.json(st.session_state)
+with col3:
+    if st.button("🔄 GO RESET"):
+        st.session_state.clear()
+        st.rerun()
