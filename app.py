@@ -1,14 +1,11 @@
 import streamlit as st
 import requests
 import json
-from datetime import datetime
-import concurrent.futures
 
-st.set_page_config(page_title="TASSAOUT OMEGA OS v5.0 ULTRA", page_icon="👑", layout="wide")
+st.set_page_config(page_title="OMEGA Super Agentic AI", page_icon="👑", layout="wide")
 
-@st.cache_data(show_spinner=False, ttl=3600)
-def call_super_ai(prompt, agent_name, domain):
-    """محرك الذكاء الاصطناعي الفائق متعدد المجالات - Groq + Llama مع التخزين المؤقت"""
+def call_super_ai(prompt, agent_name, domain, selected_model):
+    """محرك الذكاء الاصطناعي الفائق متعدد المجالات - Groq + Open Models"""
     url = "https://api.groq.com/openai/v1/chat/completions"
     api_key = st.secrets.get("GROQ_API_KEY", "")
 
@@ -20,25 +17,14 @@ def call_super_ai(prompt, agent_name, domain):
         "Content-Type": "application/json"
     }
 
-    # جلب البروتوكول الخارجي من الـ Gist لدمجه في النظام
-    gist_rules = ""
-    try:
-        gist_url = "https://gist.githubusercontent.com/Pythonation/6c8fd844915ba57ee6a90a28798ca06f/raw/94278ed76f90b9c5ddd6de74f01a9983f887c3c2/prompt.md"
-        res_gist = requests.get(gist_url, timeout=3)
-        if res_gist.status_code == 200:
-            gist_rules = "\n[External Protocols Loaded from Gist]:\n" + res_gist.text[:800]
-    except Exception:
-        pass
-
     system_prompt = (
-        f"You are {agent_name}, an elite Super Agentic AI specialized in '{domain}' powered by Meta Llama on Groq. "
+        f"You are {agent_name}, an elite Super Agentic AI specialized in '{domain}' powered by Open Models on Groq. "
         f"Think step by step. Provide professional, highly tailored, actionable strategies. "
         f"Respond in Moroccan Arabic Darija + العربية الفصحى, with professional formatting, bullet points, emojis, and tables when needed."
-        f"{gist_rules}"
     )
 
     payload = {
-        "model": "llama-3.1-70b-versatile",
+        "model": selected_model,  # الموديل المفتوح المختار ديناميكياً
         "messages": [
             {"role": "system", "content": system_prompt},
             {"role": "user", "content": prompt}
@@ -80,130 +66,72 @@ def send_whatsapp_alert(message):
     except Exception as e:
         st.warning(f"تعذر إرسال إشعار الواتساب: {e}")
 
-def save_to_gsheets(domain, task, result):
-    """حفظ السجل تلقائياً في Google Sheets إذا توفرت الإعدادات"""
-    try:
-        import gspread
-        if "GCP_JSON" in st.secrets:
-            gc = gspread.service_account_from_dict(st.secrets["GCP_JSON"])
-            sh = gc.open("OMEGA_HISTORY").sheet1
-            sh.append_row([domain, task[:100], result[:400], str(datetime.now())])
-    except Exception:
-        pass
-
 class SuperOmegaAgent:
-    def __init__(self, domain):
+    def __init__(self, domain, model):
         self.domain = domain
+        self.model = model
 
     def ceo(self, task):
-        return call_super_ai(f"بصفتك CEO فائق، ضع خطة استراتيجية شاملة وتنافسية لهذا المشروع في مجال {self.domain}: {task}. عطيني SWOT + الميزة التنافسية + خطة 90 يوم", "Super CEO Agent", self.domain)
+        return call_super_ai(f"بصفتك CEO فائق، ضع خطة استراتيجية شاملة وتنافسية لهذا المشروع في مجال {self.domain}: {task}. عطيني SWOT + الميزة التنافسية + خطة 90 يوم", "Super CEO Agent", self.domain, self.model)
 
     def cto(self, task):
-        return call_super_ai(f"بصفتك CTO فائق، اقترح الاستراتيجية التقنية، أدوات التشغيل، stack تقني، واستهداف الجمهور الرقمي لـ: {task} في {self.domain}", "Super CTO Agent", self.domain)
+        return call_super_ai(f"بصفتك CTO فائق، اقترح الاستراتيجية التقنية، أدوات التشغيل، stack تقني، واستهداف الجمهور الرقمي لـ: {task} في {self.domain}", "Super CTO Agent", self.domain, self.model)
 
     def coo(self, task):
-        return call_super_ai(f"بصفتك COO فائق، ضع خطة تنفيذية، إدارة الموارد، KPI، وجدولة زمنية دقيقة لـ: {task} في {self.domain}", "Super COO Agent", self.domain)
-
-    def diagnostic(self, task):
-        return call_super_ai(f"بصفتك Site Reliability Engineer (SRE) وخبير تشخيص أخطاء، قم بتحليل هذا المشكل أو الخطأ تقنياً واقترح خطوة الإنقاذ الجذري Micro-Patching والتحصين ضد التكرار لـ: {task} في {self.domain}", "Super SRE & Debugger Agent", self.domain)
-
-    def master_plan(self, task):
-        # تنفيذ متوازي (ThreadPoolExecutor) لتسريع الجلب بنسبة 60%
-        with concurrent.futures.ThreadPoolExecutor() as executor:
-            future_ceo = executor.submit(self.ceo, task)
-            future_cto = executor.submit(self.cto, task)
-            future_coo = executor.submit(self.coo, task)
-            
-            ceo = future_ceo.result()
-            cto = future_cto.result()
-            coo = future_coo.result()
-
-        integration = f"بصفتك Master Integration Agent، ادمج هذه الخطط الثلاث بشكل فائق ومتناسق في تقرير استراتيجي موحد وشامل للمشروع في مجال {self.domain} بناءً على المهمة: {task}.\n\n- خطة CEO: {ceo}\n- خطة CTO: {cto}\n- خطة COO: {coo}"
-        res = call_super_ai(integration, "Master Integration Agent", self.domain)
-        save_to_gsheets(self.domain, task, res)
-        return res
+        return call_super_ai(f"بصفتك COO فائق، ضع خطة تنفيذية، إدارة الموارد، KPI، وجدولة زمنية دقيقة لـ: {task} في {self.domain}", "Super COO Agent", self.domain, self.model)
 
     def copywriter(self, plan):
         whatsapp_num = st.secrets.get('WHATSAPP_BUSINESS_NUMBER', '')
         prompt = f"بناءً على هذه الخطة: {plan}. اكتب 3 إعلانات تسويقية جذابة باللهجة المغربية والعربية الفصحى مع أيقونات، كلمات مفتاحية، هاشتاقات، ودعوة للاتصال برقم الواتساب: {whatsapp_num}"
-        ad = call_super_ai(prompt, "Super Copywriter Agent", self.domain)
-        send_whatsapp_alert(f"👑 TASSAOUT OMEGA OS v5.0 ULTRA\nمهمة جديدة في مجال: {self.domain}\n\n{ad}")
+        ad = call_super_ai(prompt, "Super Copywriter Agent", self.domain, self.model)
+        send_whatsapp_alert(f"👑 OMEGA SUPER AGENTIC v4.1\nمهمة جديدة في مجال: {self.domain}\n\n{ad}")
         return ad
 
     def closer(self, ad):
         prompt = f"قم بتحسين نص هذا الإعلان وإضافة محفزات الاستعجال FOMO + ضمان + شهادات لزيادة المبيعات: {ad}"
-        return call_super_ai(prompt, "Super Closer Agent", self.domain)
+        return call_super_ai(prompt, "Super Closer Agent", self.domain, self.model)
 
 # ===== واجهة Streamlit =====
-st.title("👑 TASSAOUT OMEGA OS v5.0 ULTRA")
-st.caption("نظام الوكلاء الأذكياء فائق السرعة والمتكامل: CEO + CTO + COO + SRE + Master (Parallel) + Cache + Google Sheets + WhatsApp")
+st.title("👑 OMEGA Super Agentic AI - متعدد المجالات")
+st.caption("CEO + CTO + COO + Copywriter + Closer مدعوم بأقوى النماذج المفتوحة (Open Models)")
 
-# لوحة إحصائيات النظام والبيانات الرقمية
-with st.expander("📊 لوحة إحصائيات النظام والبيانات (Metrics Dashboard)"):
-    metrics_data = {
-        "GitHub_Gist_Stats": {"stars": 477, "forks": 200, "revisions": 2, "active_status_hours": 8},
-        "Prompts_Protocols_Count": 4,
-        "Comments_Analysis": {"total_comments_in_thread": 25, "active_contributors": 22},
-        "Mohammed_OS_Metrics": {
-            "total_files": 429,
-            "total_lines": 172087,
-            "code_lines": 159410,
-            "estimated_cost_usd": 5549280,
-            "development_days_actual": 9
-        }
-    }
-    st.json(metrics_data)
+col_d1, col_d2 = st.columns(2)
+with col_d1:
+    domain = st.selectbox("اختر المجال", ["العقار", "التجارة الإلكترونية", "المطاعم", "التعليم", "الصحة", "التسويق"])
+with col_d2:
+    selected_model = st.selectbox(
+        "اختر الموديل المفتوح (Open Model)", 
+        [
+            "llama-3.3-70b-versatile", # الأحدث والأقوى
+            "llama-3.1-70b-versatile", # الكلاسيكي المستقر
+            "llama-3.1-8b-instant",    # فائق السرعة
+            "mixtral-8x7b-32768"       # سياق واسع
+        ]
+    )
 
-domain = st.selectbox("اختر المجال", ["العقار", "التجارة الإلكترونية", "المطاعم", "التعليم", "الصحة", "التسويق"])
-task = st.text_area("وصف المهمة / المشروع / أو الخطأ التقني", placeholder="مثال: بيع تجزئة الهدى بقلعة السراغنة أو تشخيص خطأ في الكود")
+task = st.text_area("وصف المهمة / المشروع", placeholder="مثال: بيع بقع أرضية في تجزئة الهدى بقلعة السراغنة")
 
-agent = SuperOmegaAgent(domain)
+agent = SuperOmegaAgent(domain, selected_model)
 
-col1, col2, col3, col4 = st.columns(4)
+col1, col2, col3 = st.columns(3)
 
 with col1:
     if st.button("🧠 خطة CEO"):
         with st.spinner("المدير التنفيذي كيخدم..."):
-            res = agent.ceo(task)
-            save_to_gsheets(domain, task, res)
-            st.markdown(res)
+            st.markdown(agent.ceo(task))
 with col2:
     if st.button("💻 خطة CTO"):
         with st.spinner("المدير التقني كيخدم..."):
-            res = agent.cto(task)
-            save_to_gsheets(domain, task, res)
-            st.markdown(res)
+            st.markdown(agent.cto(task))
 with col3:
     if st.button("📊 خطة COO"):
         with st.spinner("مدير العمليات كيخدم..."):
-            res = agent.coo(task)
-            save_to_gsheets(domain, task, res)
-            st.markdown(res)
-with col4:
-    if st.button("🛠️ تشخيص SRE"):
-        with st.spinner("مهندس الموثوقية يشخص الخطأ..."):
-            res = agent.diagnostic(task)
-            save_to_gsheets(domain, task, res)
-            st.markdown(res)
-
-if st.button("👑 توليد الخطة الشاملة المتوازية (Master Plan ULTRA)"):
-    with st.spinner("اللجنة التنفيذية تعمل بتوازي (Parallel Threads) لإنجاز الخطة بسرعة فائقة..."):
-        master_res = agent.master_plan(task)
-        st.markdown(master_res)
-        
-        st.download_button(
-            label="📥 تحميل التقرير النهائي كملف نصي (.txt)",
-            data=master_res,
-            file_name="OMEGA_Master_Plan.txt",
-            mime="text/plain"
-        )
+            st.markdown(agent.coo(task))
 
 if st.button("✍️ إنشاء إعلان + إرسال واتساب"):
-    with st.spinner("المدير كيخطط والكاتب كيكتب الحملة التسويقية..."):
+    with st.spinner("الكاتب كيكتب الإعلان..."):
         plan = agent.ceo(task)
         ad = agent.copywriter(plan)
         final_ad = agent.closer(ad)
-        save_to_gsheets(domain, task, final_ad)
-        st.success("تم توليد الحملة وإرسالها بنجاح للواتساب وتخزينها في السجل!")
-        st.markdown("### 📢 الإعلان النهائي المحسن")
+        st.success("تم!")
         st.markdown(final_ad)
