@@ -22,7 +22,7 @@ def call_super_ai(prompt, agent_name, domain):
     )
 
     payload = {
-        "model": "llama-3.3-70b-versatile",
+        "model": "llama-3.1-8b-instant",  # تم التحديث إلى النموذج الأكثر استقراراً وسرعة على منصة Groq
         "messages": [
             {"role": "system", "content": system_prompt},
             {"role": "user", "content": prompt}
