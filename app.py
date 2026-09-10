@@ -61,7 +61,7 @@ model = st.sidebar.selectbox(
 temperature = st.sidebar.slider("درجة الابتكار والمرونة (Temperature)", 0.0, 1.0, 0.85, 0.05)
 max_tokens = st.sidebar.slider("الحد الأقصى للرموز (Max Tokens)", 256, 4096, 2500, 128)
 
-# ====================== دستور النظام السيادي (Super Multi-domain Autonomous Agent) ======================
+# ====================== دستور النظام السيادي ======================
 SOVEREIGN_SYSTEM_PROMPT = """
 You are an elite Super Multi-domain Autonomous Enterprise Agent. You possess advanced, autonomous, cross-disciplinary, and disruptive expertise spanning:
 1. Digital Engineering, Automated Workflows, & Enterprise Software Solutions.
@@ -185,7 +185,8 @@ with tab1:
 
     uploaded_images = []
     if capture_mode == "التقاط مباشر بالكاميرا (Camera Capture)":
-        camera_photo = st.camera_image("اضغط لالتقاط صورة ميدانية مباشرة")
+        # التصحيح هنا: استخدام st.camera_input بدلاً من st.camera_image المفقودة في الإصدارات الحديثة
+        camera_photo = st.camera_input("اضغط لالتقاط صورة ميدانية مباشرة")
         if camera_photo is not None:
             uploaded_images.append(camera_photo)
             st.success("تم التقاط الصورة الميدانية بنجاح!")
@@ -239,7 +240,7 @@ with tab2:
 
     eng_project_details = st.text_area(
         "أدخل تفاصيل المشروع، المخطط، أو التحدي الهندسي والصناعي:",
-        placeholder="مثال: تصميم معماري ومعملي مبتكر بقلعة السراغنة يحسن التكلفة ويرفع كفاءة التشغيل للقصوى",
+        placeholder="مثال: تصميم معماري ومعملي مبتكر بقلعة السراغنة يحسين التكلفة ويرفع كفاءة التشغيل للقصوى",
         height=140
     )
 
