@@ -35,7 +35,7 @@ def call_super_ai(prompt, agent_name, domain):
   )
 
   payload = {
-      "model": "llama-3.1-70b-versatile",
+      "model": "llama-3.3-70b-versatile",  # تم تحديث اسم الموديل ليتوافق تماماً مع المعايير الحديثة لمنصة Groq وتجنب خطأ 400
       "messages": [
           {"role": "system", "content": system_prompt},
           {"role": "user", "content": prompt},
@@ -112,7 +112,7 @@ class SuperOmegaAgent:
     whatsapp_num = st.secrets.get("WHATSAPP_BUSINESS_NUMBER", "")
     prompt = (
         f"بناءً على هذه الخطة: {plan}. اكتب بالضبط 3 إعلانات تسويقية جذابة"
-        " ومفصولة تماماً عن بعضها. قم بتمييز كل إعلان بالعنوان التالي حرفياً:"
+        " ومفصولة تماماً عن بعضها. قم بتتمييز كل إعلان بالعنوان التالي حرفياً:"
         " '### الإعلان الأول'، '### الإعلان الثاني'، '### الإعلان الثالث'."
         " استخدم اللهجة المغربية والعربية الفصحى مع أيقونات، كلمات مفتاحية،"
         f" هاشتاقات، ودعوة للاتصال برقم الواتساب: {whatsapp_num}"
