@@ -1,64 +1,69 @@
 # google_connector.py
 import streamlit as st
-from typing import Optional, Dict, Any
+import pandas as pd
+import json
+from google.oauth2.service_account import Credentials
+import gspread
 
-def get_google_sheets_data() -> Optional[Dict[str, Any]]:
-    """
-    يحاول يجيب البيانات من Google Sheets.
-    إذا ما كانش Service Account أو الشيت، كيرجع None بدون ما يطيح.
-    """
+def get_google_sheets_data():
+    """قراءة البيانات مباشرة من ملف Excel / Google Sheets المرتبط عبر Google Drive API"""
     try:
-        # === حط هنا معلوماتك ===
-        # 1. رفع ملف الـ Service Account JSON فـ secrets أو فـ المجلد
-        # 2. أو استعمل st.secrets["gcp_service_account"]
+        service_account_str = st.secrets.get("GOOGLE_SERVICE_ACCOUNT_JSON", "")
+        file_id = st.secrets.get("GOOGLE_DRIVE_FILE_ID", "")
 
-        # مثال بسيط (غيرو حسب الشيت ديالك):
-        # from google.oauth2.service_account import Credentials
-        # import gspread
-        # 
-        # creds = Credentials.from_service_account_info(
-        #     st.secrets["gcp_service_account"],
-        #     scopes=["https://www.googleapis.com/auth/spreadsheets.readonly"]
-        # )
-        # client = gspread.authorize(creds)
-        # sheet = client.open_by_key("SHEET_ID_هنا").sheet1
-        # records = sheet.get_all_records()
-        # return {"records": records}
+        if not service_account_str or not file_id:
+            st.warning("⚠️ إعدادات Google Drive أو Service Account غير مكتملة في Secrets")
+            return None
 
-        # حالياً: ما كاين والو → نرجع None
-        return None
+        # تحليل JSON الخاص بحساب الخدمة
+        service_account_info = json.loads(service_account_str)
+        
+        # تحديد النطاقات (Scopes) المطلوبة
+        scopes = [
+            "https://www.googleapis.com/auth/spreadsheets",
+            "https://www.googleapis.com/auth/drive"
+        ]
+
+        # المصادقة
+        creds = Credentials.from_service_account_info(service_account_info, scopes=scopes)
+        client = gspread.authorize(creds)
+
+        # فتح الملف بواسطة ID
+        sheet = client.open_by_key(file_id).sheet1
+        data = sheet.get_all_records()
+        
+        return pd.DataFrame(data)
 
     except Exception as e:
-        st.warning(f"⚠️ مقدرناش نوصلو لـ Google Sheets: {e}")
+        st.warning(f"⚠️ خطأ في الاتصال بـ Google Drive / Sheets: {type(e).__name__} - {str(e)}")
         return None
 
-
-def calculate_roi_from_sheet(data: Optional[Dict[str, Any]]) -> Optional[Dict[str, float]]:
-    """
-    يحسب الإيرادات و ROI من البيانات.
-    إذا ما كاينش بيانات، كيرجع None.
-    """
-    if not data or "records" not in data:
-        return None
-
+def calculate_roi_from_sheet(df):
+    """حساب ROI ومؤشرات مالية من بيانات Excel"""
     try:
-        total_revenue = 0.0
-        total_cost = 0.0
-
-        for row in data["records"]:
-            # غير أسماء الأعمدة حسب الشيت ديالك
-            revenue = float(row.get("إيرادات", row.get("revenue", 0)) or 0)
-            cost = float(row.get("تكلفة", row.get("cost", 0)) or 0)
-            total_revenue += revenue
-            total_cost += cost
-
-        avg_roi = ((total_revenue - total_cost) / total_cost * 100) if total_cost > 0 else 0.0
-
+        # تأكد من وجود الأعمدة المطلوبة
+        required_cols = ['revenue', 'expenses', 'budget']
+        if not all(col in df.columns for col in required_cols):
+            return None
+        
+        # حساب ROI
+        df['roi'] = ((df['revenue'] - df['expenses']) / df['expenses'].replace(0, 1)) * 100
+        df['profit'] = df['revenue'] - df['expenses']
+        df['margin'] = (df['profit'] / df['revenue'].replace(0, 1)) * 100
+        
+        # إحصائيات عامة
+        total_revenue = df['revenue'].sum()
+        total_expenses = df['expenses'].sum()
+        total_profit = total_revenue - total_expenses
+        avg_roi = df['roi'].mean()
+        
         return {
-            "total_revenue": total_revenue,
-            "total_cost": total_cost,
-            "avg_roi": avg_roi
+            'total_revenue': total_revenue,
+            'total_expenses': total_expenses,
+            'total_profit': total_profit,
+            'avg_roi': avg_roi,
+            'df_enriched': df
         }
     except Exception as e:
-        st.warning(f"⚠️ خطأ فـ حساب ROI: {e}")
+        st.warning(f"⚠️ خطأ في حساب ROI: {type(e).__name__} - {str(e)}")
         return None
