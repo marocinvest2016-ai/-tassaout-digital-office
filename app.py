@@ -4,9 +4,31 @@ import json
 
 st.set_page_config(page_title="OMEGA Super Agentic AI", page_icon="👑", layout="wide")
 
-def call_super_ai(prompt, agent_name, domain):
+def get_available_groq_models():
+    """جلب الموديلات المتاحة في حسابك على Groq أوتوماتيكياً"""
+    try:
+        api_key = st.secrets.get("GROQ_API_KEY", "")
+        if not api_key:
+            return ["llama-3.1-8b-instant"]
+        
+        headers = {"Authorization": f"Bearer {api_key}"}
+        res = requests.get("https://api.groq.com/openai/v1/models", headers=headers, timeout=5)
+        if res.status_code == 200:
+            data = res.json()
+            # استخراج أسماء الموديلات اللي كتسالي أو مرتبطة بـ chat/llama
+            models = [m['id'] for m in data.get('data', []) if 'llama' in m['id'] or 'mixtral' in m['id'] or 'gemma' in m['id']]
+            return models if models else ["llama-3.1-8b-instant"]
+    except:
+        pass
+    return ["llama-3.1-8b-instant", "llama-3.3-70b-versatile"]
+
+def call_super_ai(prompt, agent_name, domain, selected_model):
+    """محرك الذكاء الاصطناعي الفائق متعدد المجالات - Groq"""
     url = "https://api.groq.com/openai/v1/chat/completions"
-    api_key = st.secrets["GROQ_API_KEY"]
+    api_key = st.secrets.get("GROQ_API_KEY", "")
+
+    if not api_key:
+        return "❌ خطأ: مفتاح GROQ_API_KEY غير موجود في إعدادات Secrets الخاصة بـ Streamlit."
 
     headers = {
         "Authorization": f"Bearer {api_key}",
@@ -14,13 +36,13 @@ def call_super_ai(prompt, agent_name, domain):
     }
 
     system_prompt = (
-        f"You are {agent_name}, an elite Super Agentic AI specialized in '{domain}' powered by Meta Llama on Groq. "
+        f"You are {agent_name}, an elite Super Agentic AI specialized in '{domain}' powered by Open Models on Groq. "
         f"Think step by step. Provide professional, highly tailored, actionable strategies. "
         f"Respond in Moroccan Arabic Darija + العربية الفصحى, with professional formatting, bullet points, emojis, and tables when needed."
     )
 
     payload = {
-        "model": "llama-3.1-8b-instant",  # موديل مفتوح وسريع ومضمون 100% في جميع حسابات Groq
+        "model": selected_model,
         "messages": [
             {"role": "system", "content": system_prompt},
             {"role": "user", "content": prompt}
@@ -29,20 +51,24 @@ def call_super_ai(prompt, agent_name, domain):
         "max_tokens": 2000
     }
 
-    res = requests.post(url, headers=headers, json=payload, timeout=90)
-    
-    if res.status_code != 200:
-        st.error(f"❌ خطأ من سيرفر Groq (كود {res.status_code}): {res.text}")
-        res.raise_for_status()
-        
-    return res.json()['choices'][0]['message']['content']
+    try:
+        res = requests.post(url, headers=headers, json=payload, timeout=90)
+        if res.status_code != 200:
+            return f"❌ خطأ من سيرفر Groq (كود {res.status_code}): {res.text}"
+        return res.json()['choices'][0]['message']['content']
+    except Exception as e:
+        return f"❌ خطأ في الاتصال بالذكاء الاصطناعي: {e}"
 
 def send_whatsapp_alert(message):
+    """إرسال إشعار مباشر عبر واتساب API"""
     try:
-        phone_id = st.secrets['WHATSAPP_PHONE_NUMBER_ID']
-        access_token = st.secrets['WHATSAPP_ACCESS_TOKEN']
-        target_number = st.secrets['WHATSAPP_BUSINESS_NUMBER']
+        phone_id = st.secrets.get('WHATSAPP_PHONE_NUMBER_ID')
+        access_token = st.secrets.get('WHATSAPP_ACCESS_TOKEN')
+        target_number = st.secrets.get('WHATSAPP_BUSINESS_NUMBER')
         version = st.secrets.get('WHATSAPP_API_VERSION', 'v20.0')
+
+        if not all([phone_id, access_token, target_number]):
+            return
 
         url = f"https://graph.facebook.com/{version}/{phone_id}/messages"
         headers = {
@@ -60,37 +86,44 @@ def send_whatsapp_alert(message):
         st.warning(f"تعذر إرسال إشعار الواتساب: {e}")
 
 class SuperOmegaAgent:
-    def __init__(self, domain):
+    def __init__(self, domain, model):
         self.domain = domain
+        self.model = model
 
     def ceo(self, task):
-        return call_super_ai(f"بصفتك CEO فائق، ضع خطة استراتيجية شاملة وتنافسية لهذا المشروع في مجال {self.domain}: {task}. عطيني SWOT + الميزة التنافسية + خطة 90 يوم", "Super CEO Agent", self.domain)
+        return call_super_ai(f"بصفتك CEO فائق، ضع خطة استراتيجية شاملة وتنافسية لهذا المشروع في مجال {self.domain}: {task}. عطيني SWOT + الميزة التنافسية + خطة 90 يوم", "Super CEO Agent", self.domain, self.model)
 
     def cto(self, task):
-        return call_super_ai(f"بصفتك CTO فائق، اقترح الاستراتيجية التقنية، أدوات التشغيل، stack تقني، واستهداف الجمهور الرقمي لـ: {task} في {self.domain}", "Super CTO Agent", self.domain)
+        return call_super_ai(f"بصفتك CTO فائق، اقترح الاستراتيجية التقنية، أدوات التشغيل، stack تقني، واستهداف الجمهور الرقمي لـ: {task} في {self.domain}", "Super CTO Agent", self.domain, self.model)
 
     def coo(self, task):
-        return call_super_ai(f"بصفتك COO فائق، ضع خطة تنفيذية، إدارة الموارد، KPI، وجدولة زمنية دقيقة لـ: {task} في {self.domain}", "Super COO Agent", self.domain)
+        return call_super_ai(f"بصفتك COO فائق، ضع خطة تنفيذية، إدارة الموارد، KPI، وجدولة زمنية دقيقة لـ: {task} في {self.domain}", "Super COO Agent", self.domain, self.model)
 
     def copywriter(self, plan):
         whatsapp_num = st.secrets.get('WHATSAPP_BUSINESS_NUMBER', '')
         prompt = f"بناءً على هذه الخطة: {plan}. اكتب 3 إعلانات تسويقية جذابة باللهجة المغربية والعربية الفصحى مع أيقونات، كلمات مفتاحية، هاشتاقات، ودعوة للاتصال برقم الواتساب: {whatsapp_num}"
-        ad = call_super_ai(prompt, "Super Copywriter Agent", self.domain)
+        ad = call_super_ai(prompt, "Super Copywriter Agent", self.domain, self.model)
         send_whatsapp_alert(f"👑 OMEGA SUPER AGENTIC\nمهمة جديدة في مجال: {self.domain}\n\n{ad}")
         return ad
 
     def closer(self, ad):
         prompt = f"قم بتحسين نص هذا الإعلان وإضافة محفزات الاستعجال FOMO + ضمان + شهادات لزيادة المبيعات: {ad}"
-        return call_super_ai(prompt, "Super Closer Agent", self.domain)
+        return call_super_ai(prompt, "Super Closer Agent", self.domain, self.model)
 
 # ===== واجهة Streamlit =====
 st.title("👑 OMEGA Super Agentic AI - متعدد المجالات")
-st.caption("CEO + CTO + COO + Copywriter + Closer يشتغل بـ Llama 3.1 8B Instant المضمون")
+st.caption("CEO + CTO + COO + Copywriter + Closer - جلب أوتوماتيكي للموديلات المتاحة")
 
-domain = st.text_input("أدخل مجال المشروع أو النشاط", value="العقار وتجزئة الأراضي")
+col_d1, col_d2 = st.columns(2)
+with col_d1:
+    domain = st.selectbox("اختر المجال", ["العقار وتجزئة الأراضي", "التجارة الإلكترونية", "المطاعم", "التعليم", "الصحة", "التسويق"])
+with col_d2:
+    available_models = get_available_groq_models()
+    selected_model = st.selectbox("اختر الموديل النشط في حسابك", available_models)
+
 task = st.text_area("وصف المهمة / المشروع", placeholder="مثال: بيع بقع أرضية في تجزئة الهدى بقلعة السراغنة")
 
-agent = SuperOmegaAgent(domain)
+agent = SuperOmegaAgent(domain, selected_model)
 
 col1, col2, col3 = st.columns(3)
 
