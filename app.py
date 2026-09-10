@@ -11,7 +11,7 @@ st.set_page_config(
 
 
 def call_super_ai(prompt, agent_name, domain):
-  """محرك الذكاء الاصطناعي الفائق متعدد المجالات - Groq + Llama"""
+  """محرك الذكاء الاصطناعي الفائق - دعم نماذج OpenAI / Qwen / Llama عبر Groq"""
   url = "https://api.groq.com/openai/v1/chat/completions"
   api_key = st.secrets.get("GROQ_API_KEY", "")
 
@@ -28,14 +28,15 @@ def call_super_ai(prompt, agent_name, domain):
 
   system_prompt = (
       f"You are {agent_name}, an elite Super Agentic AI specialized in"
-      f" '{domain}' powered by Meta Llama on Groq. Think step by step. Provide"
-      " professional, highly tailored, actionable strategies. Respond in"
-      " Moroccan Arabic Darija + العربية الفصحى, with professional formatting,"
-      " bullet points, emojis, and tables when needed."
+      f" '{domain}' powered by advanced AI models on Groq. Think step by"
+      " step. Provide professional, highly tailored, actionable strategies."
+      " Respond in Moroccan Arabic Darija + العربية الفصحى, with professional"
+      " formatting, bullet points, emojis, and tables when needed."
   )
 
+  # قائمة النماذج المتقدمة المعتمدة
   payload = {
-      "model": "llama-3.3-70b-versatile",  # تم تحديث اسم الموديل ليتوافق تماماً مع المعايير الحديثة لمنصة Groq وتجنب خطأ 400
+      "model": "openai/gpt-oss-120b",  # النموذج الفائق الأساسي القائم على بنية OpenAI
       "messages": [
           {"role": "system", "content": system_prompt},
           {"role": "user", "content": prompt},
@@ -82,7 +83,7 @@ def send_whatsapp_alert(message):
 class SuperOmegaAgent:
 
   def __init__(self, domain):
-    self.domain = domain
+    self.domain = domain if domain else "عام"
 
   def ceo(self, task):
     return call_super_ai(
@@ -108,41 +109,52 @@ class SuperOmegaAgent:
         self.domain,
     )
 
-  def copywriter(self, plan):
+  def run_autonomous_pipeline(self, task):
+    """المنطق الخلفي الكامل: CEO يخطط -> Copywriter يصيغ 3 إعلانات -> Closer يحسنها ويفصلها"""
+    # 1. التخطيط الخفي عبر الـ CEO
+    plan = self.ceo(task)
+
+    # 2. الصياغة الخفية عبر الـ Copywriter
     whatsapp_num = st.secrets.get("WHATSAPP_BUSINESS_NUMBER", "")
-    prompt = (
-        f"بناءً على هذه الخطة: {plan}. اكتب بالضبط 3 إعلانات تسويقية جذابة"
-        " ومفصولة تماماً عن بعضها. قم بتتمييز كل إعلان بالعنوان التالي حرفياً:"
-        " '### الإعلان الأول'، '### الإعلان الثاني'، '### الإعلان الثالث'."
+    copy_prompt = (
+        f"بناءً على هذه الخطة الاستراتيجية: {plan}. اكتب بالضبط 3 إعلانات تسويقية"
+        " جذابة ومفصولة تماماً عن بعضها في مجال (تركيزك على: "
+        f"{self.domain}). قم بتمييز كل إعلان بالعنوان التالي حرفياً: '###"
+        " الإعلان الأول'، '### الإعلان الثاني'، '### الإعلان الثالث'."
         " استخدم اللهجة المغربية والعربية الفصحى مع أيقونات، كلمات مفتاحية،"
         f" هاشتاقات، ودعوة للاتصال برقم الواتساب: {whatsapp_num}"
     )
-    ad = call_super_ai(prompt, "Super Copywriter Agent", self.domain)
-    send_whatsapp_alert(
-        f"👑 Tassaout Méga Fort\nمهمة جديدة في مجال: {self.domain}\n\n{ad}"
+    draft_ads = call_super_ai(
+        copy_prompt, "Super Copywriter Agent", self.domain
     )
-    return ad
 
-  def closer(self, ad):
-    prompt = (
+    # 3. التحسين الخفي عبر الـ Closer وإضافة FOMO
+    closer_prompt = (
         f"قم بتحسين هذه الإعلانات الثلاثة وإضافة محفزات الاستعجال FOMO + ضمان +"
         " شهادات لزيادة المبيعات. يجب أن تحافظ بحرفية تامة على تقسيم الإعلانات"
         " الثلاثة وتستخدم نفس العناوين بانتظام: '### الإعلان الأول'، '### الإعلان"
-        f" الثاني'، '### الإعلان الثالث': {ad}"
+        f" الثاني'، '### الإعلان الثالث': {draft_ads}"
     )
-    return call_super_ai(prompt, "Super Closer Agent", self.domain)
+    final_ads = call_super_ai(closer_prompt, "Super Closer Agent", self.domain)
+
+    # 4. إرسال الإشعار الخفي عبر الواتساب
+    send_whatsapp_alert(
+        f"👑 Tassaout Méga Fort\nالمجال: {self.domain}\n\n{final_ads}"
+    )
+
+    return plan, final_ads
 
 
-# ===== واجهة Streamlit =====
+# ===== واجهة Streamlit التفاعلية =====
 st.title("👑 Tassaout Méga Fort")
 st.caption(
-    "OMEGA Super Agentic AI | CEO + CTO + COO + Copywriter + Closer في وكيل"
-    " واحد يخدم على Groq"
+    "OMEGA Super Agentic AI | المنصة السيادية المتقدمة بنماذج OpenAI و Groq"
 )
 
-domain = st.selectbox(
-    "اختر المجال",
-    ["العقار", "التجارة الإلكترونية", "المطاعم", "التعليم", "الصحة", "التسويق"],
+# واجهة تفاعلية حرّة وفارغة للمجال
+domain = st.text_input(
+    "اكتب المجال المطلوب (بحرية تامة)",
+    placeholder="مثال: تسويق عقاري، خدمات رقمية، صناعة...",
 )
 task = st.text_area(
     "وصف المهمة / المشروع",
@@ -154,65 +166,86 @@ agent = SuperOmegaAgent(domain)
 col1, col2, col3 = st.columns(3)
 
 with col1:
-  if st.button("🧠 خطة CEO"):
-    with st.spinner("المدير التنفيذي كيخدم..."):
-      st.markdown(agent.ceo(task))
+  if st.button("🧠 تحليل واستراتيجية CEO"):
+    if task:
+      with st.spinner("المدير التنفيذي يحلل المشروع في الخلفية..."):
+        st.markdown(agent.ceo(task))
+    else:
+      st.warning("⚠️ أدخل وصف المهمة أولاً.")
+
 with col2:
-  if st.button("💻 خطة CTO"):
-    with st.spinner("المدير التقني كيخدم..."):
-      st.markdown(agent.cto(task))
+  if st.button("💻 الاستراتيجية التقنية CTO"):
+    if task:
+      with st.spinner("المدير التقني يجهز البنية في الخلفية..."):
+        st.markdown(agent.cto(task))
+    else:
+      st.warning("⚠️ أدخل وصف المهمة أولاً.")
+
 with col3:
-  if st.button("📊 خطة COO"):
-    with st.spinner("مدير العمليات كيخدم..."):
-      st.markdown(agent.coo(task))
+  if st.button("📊 الخطة التشغيلية COO"):
+    if task:
+      with st.spinner("مدير العمليات يضبط الجدول في الخلفية..."):
+        st.markdown(agent.coo(task))
+    else:
+      st.warning("⚠️ أدخل وصف المهمة أولاً.")
 
-if st.button("✍️ إنشاء إعلان + إرسال واتساب"):
-  with st.spinner("الكاتب والكلوزر كيخدمو على الإعلانات..."):
-    plan = agent.ceo(task)
-    ad = agent.copywriter(plan)
-    final_ad = agent.closer(ad)
-    st.success("تم توليد الإعلانات وإرسالها بنجاح!")
+st.markdown("---")
 
-    st.markdown("---")
-    st.subheader("📢 البطاقات الإعلانية الملونة والسيادية")
+if st.button(
+    "🚀 تشغيل الوكلاء بالكامل (خطة + إعلانات سيادية + واتساب)", type="primary"
+):
+  if task:
+    with st.spinner(
+        "الوكلاء الأذكياء يعملون في الخلفية (CEO -> Copywriter -> Closer)..."
+    ):
+      plan, final_ads = agent.run_autonomous_pipeline(task)
+      st.success("تم تنفيذ المنطق الخلفي وتوليد الحملة بنجاح!")
 
-    parts = final_ad.split("### الإعلان")
-    card_colors = [
-        "background-color: #f0f7ff; border-right: 6px solid #1E3A8A;",  # أزرق
-        "background-color: #f4fbf7; border-right: 6px solid #059669;",  # أخضر
-        (
-            "background-color: #fffbeb; border-right: 6px solid #D97706;"
-        ),  # أصفر ذهبي
-    ]
+      with st.expander("📋 معاينة الخطة الاستراتيجية الكاملة (CEO)"):
+        st.markdown(plan)
 
-    if len(parts) > 1:
-      for idx, part in enumerate(parts[1:], 1):
-        color_style = card_colors[(idx - 1) % len(card_colors)]
+      st.markdown("---")
+      st.subheader("📢 البطاقات الإعلانية الملونة والسيادية")
+
+      parts = final_ads.split("### الإعلان")
+      card_colors = [
+          "background-color: #f0f7ff; border-right: 6px solid #1E3A8A;",  # أزرق
+          "background-color: #f4fbf7; border-right: 6px solid #059669;",  # أخضر
+          (
+              "background-color: #fffbeb; border-right: 6px solid #D97706;"
+          ),  # أصفر ذهبي
+      ]
+
+      if len(parts) > 1:
+        for idx, part in enumerate(parts[1:], 1):
+          color_style = card_colors[(idx - 1) % len(card_colors)]
+          with st.container():
+            st.markdown(
+                f"""
+                        <div style="{color_style} padding: 20px; border-radius: 12px; margin-bottom: 15px; box-shadow: 0 4px 6px rgba(0,0,0,0.05);">
+                            <h3 style="margin-top: 0; color: #1F2937;">🏷️ البطاقة الإعلانية رقم {idx}</h3>
+                            <div style="color: #374151; font-size: 16px; line-height: 1.6;">
+                                {part}
+                            </div>
+                        </div>
+                        """,
+                unsafe_allow_html=True,
+            )
+      else:
         with st.container():
           st.markdown(
               f"""
-                    <div style="{color_style} padding: 20px; border-radius: 12px; margin-bottom: 15px; box-shadow: 0 4px 6px rgba(0,0,0,0.05);">
-                        <h3 style="margin-top: 0; color: #1F2937;">🏷️ البطاقة الإعلانية رقم {idx}</h3>
+                    <div style="background-color: #f8fafc; border-right: 6px solid #4F46E5; padding: 20px; border-radius: 12px; margin-bottom: 15px; box-shadow: 0 4px 6px rgba(0,0,0,0.05);">
+                        <h3 style="margin-top: 0; color: #1F2937;">🏷️ البطاقات الإعلانية</h3>
                         <div style="color: #374151; font-size: 16px; line-height: 1.6;">
-                            {part}
+                            {final_ads}
                         </div>
                     </div>
                     """,
               unsafe_allow_html=True,
           )
-    else:
-      with st.container():
-        st.markdown(
-            f"""
-                <div style="background-color: #f8fafc; border-right: 6px solid #4F46E5; padding: 20px; border-radius: 12px; margin-bottom: 15px; box-shadow: 0 4px 6px rgba(0,0,0,0.05);">
-                    <h3 style="margin-top: 0; color: #1F2937;">🏷️ البطاقات الإعلانية</h3>
-                    <div style="color: #374151; font-size: 16px; line-height: 1.6;">
-                        {final_ad}
-                    </div>
-                </div>
-                """,
-            unsafe_allow_html=True,
-        )
+  else:
+    st.warning("⚠️ الرجاء إدخال وصف المهمة أو المشروع أولاً.")
 
 # ====================== تذييل الموقع ======================
 st.markdown("---")
