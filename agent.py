@@ -2,8 +2,6 @@ import streamlit as st
 import requests
 import json
 
-st.set_page_config(page_title="OMEGA Super Agentic AI", page_icon="👑", layout="wide")
-
 def call_super_ai(prompt, agent_name, domain):
     """محرك الذكاء الاصطناعي الفائق متعدد المجالات - Groq + Llama"""
     url = "https://api.groq.com/openai/v1/chat/completions"
@@ -89,35 +87,3 @@ class SuperOmegaAgent:
     def closer(self, ad):
         prompt = f"قم بتحسين نص هذا الإعلان وإضافة محفزات الاستعجال FOMO + ضمان + شهادات لزيادة المبيعات: {ad}"
         return call_super_ai(prompt, "Super Closer Agent", self.domain)
-
-# ===== واجهة Streamlit =====
-st.title("👑 OMEGA Super Agentic AI - متعدد المجالات")
-st.caption("CEO + CTO + COO + Copywriter + Closer في وكيل واحد يخدم على Groq")
-
-domain = st.selectbox("اختر المجال", ["العقار", "التجارة الإلكترونية", "المطاعم", "التعليم", "الصحة", "التسويق"])
-task = st.text_area("وصف المهمة / المشروع", placeholder="مثال: بيع بقع أرضية في تجزئة الهدى بقلعة السراغنة")
-
-agent = SuperOmegaAgent(domain)
-
-col1, col2, col3 = st.columns(3)
-
-with col1:
-    if st.button("🧠 خطة CEO"):
-        with st.spinner("المدير التنفيذي كيخدم..."):
-            st.markdown(agent.ceo(task))
-with col2:
-    if st.button("💻 خطة CTO"):
-        with st.spinner("المدير التقني كيخدم..."):
-            st.markdown(agent.cto(task))
-with col3:
-    if st.button("📊 خطة COO"):
-        with st.spinner("مدير العمليات كيخدم..."):
-            st.markdown(agent.coo(task))
-
-if st.button("✍️ إنشاء إعلان + إرسال واتساب"):
-    with st.spinner("الكاتب كيكتب الإعلان..."):
-        plan = agent.ceo(task)
-        ad = agent.copywriter(plan)
-        final_ad = agent.closer(ad)
-        st.success("تم بنجاح!")
-        st.markdown(final_ad)
