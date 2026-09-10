@@ -1,232 +1,108 @@
 import streamlit as st
-import requests
-from google_connector import get_google_sheets_data, calculate_roi_from_sheet
+from groq import Groq
+import os
 
-# === موديلات محدثة (سبتمبر 2026) ===
-# llama-3.1-8b و llama-3.3-70b تدهورت فـ 16 غشت 2026
-GROQ_MODELS = [
-    "openai/gpt-oss-20b",          # سريع ورخيص
-    "openai/gpt-oss-120b",         # قوي
-    "llama-3.3-70b-versatile",     # fallback (Enterprise)
-    "llama-3.1-8b-instant",        # fallback
-]
+# ====================== إعداد الصفحة ======================
+st.set_page_config(
+    page_title="أخرى | مساعد العقارات الذكي",
+    page_icon="🏠",
+    layout="wide"
+)
 
-def call_super_ai(prompt, agent_name, domain):
-    url = "https://api.groq.com/openai/v1/chat/completions"
-    api_key = st.secrets.get("GROQ_API_KEY", "")
+st.title("🏠 أخرى - مساعد العقارات الذكي")
+st.markdown("مولّد إعلانات وتحليلات عقارية بالدارجة والعربية الفصحى باستخدام نماذج Groq المفتوحة المصدر")
 
-    if not api_key:
-        return "❌ خطأ: مفتاح GROQ_API_KEY غير موجود فـ الخزنة."
+# ====================== الاتصال بـ Groq ======================
+api_key = os.getenv("GROQ_API_KEY") or st.sidebar.text_input("أدخل مفتاح Groq API", type="password")
 
-    headers = {
-        "Authorization": f"Bearer {api_key}",
-        "Content-Type": "application/json"
-    }
+if not api_key:
+    st.warning("⚠️ الرجاء إدخال مفتاح Groq API في الشريط الجانبي")
+    st.stop()
 
-    system_prompt = (
-        f"You are {agent_name}, an elite Super Agentic AI specialized in '{domain}' "
-        f"powered by fast models on Groq. Think step by step. "
-        f"Respond in Moroccan Arabic Darija + العربية الفصحى."
-    )
+client = Groq(api_key=api_key)
 
-    last_error = None
-    for model in GROQ_MODELS:
-        payload = {
-            "model": model,
-            "messages": [
-                {"role": "system", "content": system_prompt},
-                {"role": "user", "content": prompt}
-            ],
-            "temperature": 0.75,
-            "max_completion_tokens": 2000
-        }
+# ====================== الشريط الجانبي ======================
+st.sidebar.header("⚙️ الإعدادات")
 
-        try:
-            res = requests.post(url, headers=headers, json=payload, timeout=90)
+model = st.sidebar.selectbox(
+    "اختر النموذج",
+    [
+        "openai/gpt-oss-20b",
+        "openai/gpt-oss-120b",
+        "qwen/qwen3.8-27b",
+        "llama-3.1-8b-instant"
+    ],
+    index=0
+)
 
-            if res.status_code in (404, 400, 429):
-                last_error = f"⚠️ {model} غير متاح ({res.status_code}). جاري البديل..."
-                continue
+temperature = st.sidebar.slider("Temperature", 0.0, 1.0, 0.7, 0.1)
+max_tokens = st.sidebar.slider("Max Tokens", 256, 2048, 1024, 128)
 
-            res.raise_for_status()
-            st.session_state.last_model_used = model
-            st.session_state.last_model_status = "✅ نجح"
-            return res.json()["choices"][0]["message"]["content"]
-
-        except requests.exceptions.Timeout:
-            last_error = f"⏱️ {model} timeout."
-            continue
-        except Exception as e:
-            last_error = f"❌ {model}: {str(e)[:120]}"
-            continue
-
-    st.session_state.last_model_status = "❌ فشل"
-    return "❌ تعذر الاتصال بالنماذج. " + (last_error or "")
-
-
-def send_whatsapp_alert(message):
+# ====================== دالة التوليد ======================
+def chat_with_model(prompt: str, model: str, temperature: float, max_tokens: int):
     try:
-        phone_id = st.secrets.get("WHATSAPP_PHONE_NUMBER_ID")
-        access_token = st.secrets.get("WHATSAPP_ACCESS_TOKEN")
-        target_number = st.secrets.get("WHATSAPP_BUSINESS_NUMBER")
-        version = st.secrets.get("WHATSAPP_API_VERSION", "v20.0")
+        completion = client.chat.completions.create(
+            model=model,
+            messages=[
+                {
+                    "role": "system",
+                    "content": "أنت مساعد ذكي متخصص في العقارات والتحليل في المغرب. تكتب بالدارجة المغربية والعربية الفصحى حسب الطلب."
+                },
+                {
+                    "role": "user",
+                    "content": prompt
+                }
+            ],
+            temperature=temperature,
+            max_tokens=max_tokens,
+            top_p=1,
+            stream=False
+        )
+        return completion.choices[0].message.content
+    except Exception as e:
+        return f"❌ حدث خطأ: {str(e)}"
 
-        if not all([phone_id, access_token, target_number]):
-            return
+# ====================== الواجهة الرئيسية ======================
+tab1, tab2, tab3 = st.tabs(["✍️ توليد إعلان", "📊 تحليل سوق", "💡 نصائح للوسطاء"])
 
-        url = f"https://graph.facebook.com/{version}/{phone_id}/messages"
-        headers = {
-            "Authorization": f"Bearer {access_token}",
-            "Content-Type": "application/json"
-        }
-        payload = {
-            "messaging_product": "whatsapp",
-            "to": target_number,
-            "type": "text",
-            "text": {"body": message[:4096]}
-        }
-        requests.post(url, headers=headers, json=payload, timeout=10)
-    except Exception:
-        pass
+with tab1:
+    st.subheader("توليد إعلان عقاري")
+    property_desc = st.text_area(
+        "اكتب تفاصيل العقار (المدينة، النوع، المساحة، السعر...)",
+        placeholder="مثال: شقة 120 متر في قلعة السراغنة، طابق ثالث، ثمن 850.000 درهم"
+    )
+    lang = st.radio("اللغة المطلوبة", ["الدارجة", "العربية الفصحى", "الاثنين معاً"], horizontal=True)
 
-
-class SuperOmegaAgent:
-    def __init__(self, domain):
-        self.domain = domain
-
-    def ceo(self, task):
-        prompt = f"""بصفتك CEO فائق، ضع خطة استراتيجية لـ {self.domain}: {task}.
-
-المطلوب:
-1. SWOT
-2. الميزة التنافسية
-3. خطة 90 يوم
-4. KPIs
-
-جاوب بالدارجة + الفصحى."""
-        return call_super_ai(prompt, "CEO", self.domain)
-
-    def cto(self, task):
-        prompt = f"""بصفتك CTO فائق، اقترح Tech Stack لـ {task} في {self.domain}.
-
-المطلوب:
-1. البنية التقنية
-2. الأتمتة
-3. استهداف رقمي
-4. أمان
-
-جاوب بالدارجة + الفصحى."""
-        return call_super_ai(prompt, "CTO", self.domain)
-
-    def coo(self, task):
-        financial_context = ""
-        if hasattr(st.session_state, "financial_data") and st.session_state.financial_data:
-            fd = st.session_state.financial_data
-            financial_context = f"\n\n[Drive]: إيرادات {fd['total_revenue']:,.0f} درهم | ROI {fd['avg_roi']:.1f}%"
-        
-        prompt = f"""بصفتك COO فائق، ضع خطة تنفيذية لـ {task} في {self.domain}.{financial_context}
-
-المطلوب:
-1. الفريق
-2. الجدولة
-3. KPIs
-4. المخاطر
-
-جاوب بالدارجة + الفصحى."""
-        return call_super_ai(prompt, "COO", self.domain)
-
-    def copywriter(self, plan):
-        whatsapp_num = st.secrets.get("WHATSAPP_BUSINESS_NUMBER", "")
-        prompt = f"""بناءً على: {plan}
-
-اكتب 3 إعلانات بالدارجة والفصحى مع:
-• عنوان
-• نص
-• CTA: {whatsapp_num}
-• هاشتاقات
-• إيموجيز"""
-        ad = call_super_ai(prompt, "Copywriter", self.domain)
-        send_whatsapp_alert(f"👑 OMEGA v4.5\n📂 {self.domain}\n📝 {ad[:1000]}...")
-        return ad
-
-    def closer(self, ad):
-        prompt = f"""حسن هذا الإعلان:
-
-{ad}
-
-أضف:
-1. FOMO
-2. ضمان
-3. شهادات
-4. FAQ
-5. CTA أقوى"""
-        return call_super_ai(prompt, "Closer", self.domain)
-
-    def full_pipeline(self, task):
-        with st.spinner("🧠 CEO..."):
-            ceo = self.ceo(task)
-        with st.spinner("⚙️ CTO..."):
-            cto = self.cto(task)
-        with st.spinner("📋 COO..."):
-            coo = self.coo(task)
-        
-        combined = f"=== CEO ===\n{ceo}\n\n=== CTO ===\n{cto}\n\n=== COO ===\n{coo}"
-        
-        with st.spinner("✍️ Copy..."):
-            ad = self.copywriter(combined)
-        with st.spinner("🔥 Close..."):
-            final = self.closer(ad)
-        
-        return {
-            "ceo": ceo,
-            "cto": cto,
-            "coo": coo,
-            "ad_original": ad,
-            "ad_final": final
-        }
-
-
-# ==================== الواجهة ====================
-st.set_page_config(page_title="👑 OMEGA v4.5", page_icon="🤖", layout="wide")
-st.title("👑 OMEGA SUPER AGENTIC v4.5 + Google Drive")
-
-# محاولة جلب البيانات المالية
-with st.spinner("📊 جاري الاتصال بـ Drive..."):
-    financial_data = get_google_sheets_data()
-    if financial_data:
-        roi = calculate_roi_from_sheet(financial_data)
-        if roi:
-            st.session_state.financial_data = roi
-            st.success(f"✅ إيرادات: {roi['total_revenue']:,.0f} درهم | ROI: {roi['avg_roi']:.1f}%")
+    if st.button("🚀 توليد الإعلان", type="primary"):
+        if property_desc:
+            with st.spinner("جاري كتابة الإعلان..."):
+                prompt = f"اكتب إعلان عقاري جذاب بالـ {lang} للعقار التالي، مع عنوان قوي ودعوة للعمل:\n\n{property_desc}"
+                result = chat_with_model(prompt, model, temperature, max_tokens)
+                st.success("تم التوليد بنجاح!")
+                st.markdown(result)
         else:
-            st.info("ℹ️ تم الاتصال بالشيت ولكن ما قدرناش نحسبو ROI")
-    else:
-        st.info("ℹ️ ما كاينش بيانات مالية من Google Sheets (التطبيق غادي يخدم عادي)")
+            st.warning("أدخل تفاصيل العقار أولاً")
 
-domain = st.selectbox("المجال", ["العقار", "التسويق", "الزيتون", "أخرى"])
-task = st.text_area("المهمة", placeholder="مثلاً: إطلاق منصة...", height=100)
+with tab2:
+    st.subheader("تحليل فرصة استثمار عقاري")
+    city = st.text_input("المدينة أو الجهة", placeholder="مثال: جهة مراكش-آسفي أو قلعة السراغنة")
+    if st.button("📈 تحليل الفرصة", type="primary"):
+        if city:
+            with st.spinner("جاري التحليل..."):
+                prompt = f"حلل فرصة استثمار عقاري في {city}. أعطني نقاط القوة والضعف والفرص والتهديدات + توصية واضحة."
+                result = chat_with_model(prompt, model, temperature, max_tokens)
+                st.markdown(result)
+        else:
+            st.warning("أدخل المدينة أولاً")
 
-if st.button("🚀 تنفيذ", type="primary"):
-    if not task.strip():
-        st.error("⚠️ أدخل المهمة")
-    else:
-        agent = SuperOmegaAgent(domain)
-        with st.spinner("جاري التنفيذ الكامل..."):
-            result = agent.full_pipeline(task)
-        
-        st.success("✅ تم بنجاح!")
-        
-        # عرض الموديل اللي خدم
-        if hasattr(st.session_state, "last_model_used"):
-            st.caption(f"الموديل المستخدم: `{st.session_state.last_model_used}` | {st.session_state.last_model_status}")
-        
-        st.subheader("📢 الإعلان النهائي")
-        st.markdown(result["ad_final"])
-        
-        with st.expander("📋 الخطط الكاملة"):
-            st.markdown("### 🧠 CEO")
-            st.markdown(result["ceo"])
-            st.markdown("### ⚙️ CTO")
-            st.markdown(result["cto"])
-            st.markdown("### 📋 COO")
-            st.markdown(result["coo"])
+with tab3:
+    st.subheader("نصائح للوسطاء العقاريين")
+    if st.button("💡 احصل على النصائح", type="primary"):
+        with st.spinner("جاري التحضير..."):
+            prompt = "لخص أهم النصائح العملية للوسطاء العقاريين في المغرب لزيادة المبيعات في 2026"
+            result = chat_with_model(prompt, model, temperature, max_tokens)
+            st.markdown(result)
+
+# ====================== تذييل ======================
+st.markdown("---")
+st.caption(f"النموذج المستخدم حالياً: **{model}** | مدعوم بواسطة Groq")
