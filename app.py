@@ -10,8 +10,8 @@ st.set_page_config(
 )
 
 
-def call_super_ai(prompt, agent_name, domain):
-  """محرك الذكاء الاصطناعي الفائق - Groq + Llama"""
+def call_super_ai(prompt, agent_name):
+  """محرك الذكاء الاصطناعي الفائق - Groq + Llama 3.3"""
   url = "https://api.groq.com/openai/v1/chat/completions"
   api_key = st.secrets.get("GROQ_API_KEY", "")
 
@@ -27,13 +27,11 @@ def call_super_ai(prompt, agent_name, domain):
   }
 
   system_prompt = (
-      f"You are {agent_name}, an elite Super Agentic AI specialized in"
-      f" '{domain}' powered by Meta Llama on Groq. Think step by step. Provide"
-      " professional, highly tailored, ethical, and actionable strategies."
-      " Never generate fake reviews or false testimonials. Rely on real value,"
-      " authentic guarantees, and transparent facts. Respond in Moroccan"
-      " Arabic Darija + العربية الفصحى, with professional formatting, bullet"
-      " points, emojis, and tables when needed."
+      f"You are {agent_name}, an elite Super Agentic AI powered by Meta Llama"
+      " on Groq. Think step by step. Provide professional, highly tailored,"
+      " ethical, and actionable strategies. Respond in Moroccan Arabic Darija"
+      " + العربية الفصحى, with professional formatting, bullet points, emojis,"
+      " and tables when needed."
   )
 
   payload = {
@@ -83,188 +81,169 @@ def send_whatsapp_alert(message):
 
 class SuperOmegaAgent:
 
-  def __init__(self, domain):
-    self.domain = domain if domain else "عام"
-
-  def ceo(self, task):
+  def ceo(self):
     return call_super_ai(
-        f"بصفتك CEO فائق، ضع خطة استراتيجية شاملة وتنافسية لهذا المشروع في مجال"
-        f" {self.domain}: {task}. عطيني SWOT + الميزة التنافسية + خطة 90 يوم",
+        "ضع خطة استراتيجية شاملة وتنافسية متكاملة. عطيني SWOT + الميزة التنافسية"
+        " + خطة 90 يوم",
         "Super CEO Agent",
-        self.domain,
     )
 
-  def cto(self, task):
+  def cto(self):
     return call_super_ai(
-        f"بصفتك CTO فائق، اقترح الاستراتيجية التقنية، أدوات التشغيل، stack"
-        f" تقني، واستهداف الجمهور الرقمي لـ: {task} في {self.domain}",
+        "اقترح الاستراتيجية التقنية، أدوات التشغيل، stack تقني، واستهداف الجمهور"
+        " الرقمي بدقة",
         "Super CTO Agent",
-        self.domain,
     )
 
-  def coo(self, task):
+  def coo(self):
     return call_super_ai(
-        f"بصفتك COO فائق، ضع خطة تنفيذية، إدارة الموارد، KPI، وجدولة زمنية دقيقة"
-        f" لـ: {task} في {self.domain}",
+        "ضع خطة تنفيذية، إدارة الموارد، KPI، وجدولة زمنية دقيقة للعمليات",
         "Super COO Agent",
-        self.domain,
     )
 
-  def run_autonomous_pipeline(self, task):
-    """المنطق الخلفي التلقائي: CEO يخطط -> Copywriter يصيغ 3 إعلانات أخلاقية -> Closer يحسنها بالمصداقية والـ FOMO الحقيقي"""
-    plan = self.ceo(task)
-
+  def run_autonomous_pipeline(self):
+    plan = self.ceo()
     whatsapp_num = st.secrets.get("WHATSAPP_BUSINESS_NUMBER", "")
     copy_prompt = (
-        f"بناءً على هذه الخطة الاستراتيجية: {plan}. اكتب بالضبط 3 إعلانات تسويقية"
-        " احترافية وأخلاقية جذابة ومفصولة تماماً عن بعضها في مجال (تركيزك على: "
-        f"{self.domain}). تجنب تماماً أي شهادات كاذبة أو وهمية، وركز على القيمة"
-        " الحقيقية والشفافية. قم بتمييز كل إعلان بالعنوان التالي حرفياً: '###"
-        " الإعلان الأول'، '### الإعلان الثاني'، '### الإعلان الثالث'."
-        " استخدم اللهجة المغربية والعربية الفصحى مع أيقونات، كلمات مفتاحية،"
-        f" هاشتاقات، ودعوة للاتصال برقم الواتساب: {whatsapp_num}"
+        f"بناءً على هذه الخطة: {plan}. اكتب 3 إعلانات تسويقية احترافية وأخلاقية"
+        " باللهجة المغربية والفصحى، مع تمييزها بـ '### الإعلان الأول'، '### الإعلان"
+        " الثاني'، '### الإعلان الثالث'، ودعوة للاتصال برقم الواتساب:"
+        f" {whatsapp_num}"
     )
-    draft_ads = call_super_ai(
-        copy_prompt, "Super Copywriter Agent", self.domain
-    )
-
+    draft_ads = call_super_ai(copy_prompt, "Super Copywriter Agent")
     closer_prompt = (
-        f"قم بتحسين هذه الإعلانات الثلاثة وإضافة محفزات الاستعجال الحقيقية FOMO"
-        " (مثل: محدودية العرض، الأسبقية) والضمانات المهنية والشفافة بعيداً عن أي"
-        " مبالغات أو شهادات كاذبة. حافظ بحرفية تامة على تقسيم الإعلانات الثلاثة"
-        " ونفس العناوين: '### الإعلان الأول'، '### الإعلان الثاني'، '### الإعلان"
-        f" الثالث': {draft_ads}"
+        f"قم بتحسين الإعلانات الثلاثة وإضافة محفزات الاستعجال FOMO والضمانات"
+        " الشفافة مع الحفاظ على نفس التسميات: {draft_ads}"
     )
-    final_ads = call_super_ai(closer_prompt, "Super Closer Agent", self.domain)
-
-    send_whatsapp_alert(
-        f"👑 Tassaout Méga Fort\nالمجال: {self.domain}\n\n{final_ads}"
-    )
-
+    final_ads = call_super_ai(closer_prompt, "Super Closer Agent")
+    send_whatsapp_alert(f"👑 Tassaout Méga Fort\n\n{final_ads}")
     return plan, final_ads
 
 
-# ===== واجهة Streamlit التفاعلية =====
-st.title("👑 Tassaout Méga Fort")
+st.title("👑 Tassaout Méga Fort - OMEGA Super Agentic AI")
 st.caption(
-    "OMEGA Super Agentic AI | المنصة السيادية المتقدمة للذكاء الاصطناعي والمصداقية"
-    " التجارية"
+    "بدون قوائم منسدلة أو حقول نصية - 6 أزرار تشغيلية فورية عبر Groq Llama 3.3"
 )
 
-# خانة كتابة المجال بشكل حر وفارغ
-domain = st.text_input(
-    "اكتب المجال المطلوب (بحرية تامة)",
-    placeholder="مثال: تسويق عقاري، خدمات رقمية، تجارة...",
-)
-task = st.text_area(
-    "وصف المهمة / المشروع",
-    placeholder="مثال: بيع بقع أرضية في تجزئة الهدى بقلعة السراغنة",
-)
+agent = SuperOmegaAgent()
 
-agent = SuperOmegaAgent(domain)
+if "results" not in st.session_state:
+  st.session_state.results = None
 
+# 6 أزرار تشغيلية موزعة بوضوح
 col1, col2, col3 = st.columns(3)
 
 with col1:
-  if st.button("🧠 تحليل واستراتيجية CEO"):
-    if task:
-      with st.spinner("المدير التنفيذي يحلل المشروع في الخلفية..."):
-        st.markdown(agent.ceo(task))
-    else:
-      st.warning("⚠️ أدخل وصف المهمة أولاً.")
+  btn_ceo = st.button("🧠 1. تحليل واستراتيجية CEO")
+  btn_pipeline = st.button("🚀 4. تشغيل الحملة الكاملة + واتساب", type="primary")
 
 with col2:
-  if st.button("💻 الاستراتيجية التقنية CTO"):
-    if task:
-      with st.spinner("المدير التقني يجهز البنية في الخلفية..."):
-        st.markdown(agent.cto(task))
-    else:
-      st.warning("⚠️ أدخل وصف المهمة أولاً.")
+  btn_cto = st.button("💻 2. الاستراتيجية التقنية CTO")
+  btn_whatsapp_test = st.button("💬 5. إرسال اختبار سريع للواتساب")
 
 with col3:
-  if st.button("📊 الخطة التشغيلية COO"):
-    if task:
-      with st.spinner("مدير العمليات يضبط الجدول في الخلفية..."):
-        st.markdown(agent.coo(task))
-    else:
-      st.warning("⚠️ أدخل وصف المهمة أولاً.")
+  btn_coo = st.button("📊 3. الخطة التشغيلية COO")
+  btn_reset = st.button("🔄 6. مسح النتائج")
 
-st.markdown("---")
+if btn_ceo:
+  with st.spinner("المدير التنفيذي يحلل الاستراتيجية..."):
+    st.session_state.results = ("ceo", agent.ceo())
 
-if st.button(
-    "🚀 تشغيل الوكلاء بالكامل (خطة + إعلانات أخلاقية موثوقة + واتساب)",
-    type="primary",
-):
-  if task:
-    with st.spinner(
-        "الوكلاء الأذكياء يعملون في الخلفية بمصداقية تامة (CEO -> Copywriter ->"
-        " Closer)..."
-    ):
-      plan, final_ads = agent.run_autonomous_pipeline(task)
-      st.success("تم تنفيذ المنطق الخلفي وتوليد الحملة بنجاح!")
+if btn_cto:
+  with st.spinner("المدير التقني يجهز البنية..."):
+    st.session_state.results = ("cto", agent.cto())
 
-      with st.expander("📋 معاينة الخطة الاستراتيجية الكاملة (CEO)"):
-        st.markdown(plan)
+if btn_coo:
+  with st.spinner("مدير العمليات يضبط الجدول..."):
+    st.session_state.results = ("coo", agent.coo())
 
-      st.markdown("---")
-      st.subheader("📢 البطاقات الإعلانية الملونة والموثوقة")
+if btn_pipeline:
+  with st.spinner(
+      "الوكلاء يعملون في الخلفية (خطة + إعلانات موثوقة + واتساب)..."
+  ):
+    plan, final_ads = agent.run_autonomous_pipeline()
+    st.session_state.results = ("pipeline", (plan, final_ads))
+    st.success("تم تنفيذ المنطق وتوليد الحملة وإرسالها للواتساب بنجاح!")
 
-      parts = final_ads.split("### الإعلان")
-      card_colors = [
-          "background-color: #f0f7ff; border-right: 6px solid #1E3A8A;",  # أزرق
-          "background-color: #f4fbf7; border-right: 6px solid #059669;",  # أخضر
-          (
-              "background-color: #fffbeb; border-right: 6px solid #D97706;"
-          ),  # أصفر ذهبي
-      ]
+if btn_whatsapp_test:
+  with st.spinner("جاري إرسال رسالة تجريبية عبر الواتساب..."):
+    send_whatsapp_alert(
+        "👑 اختبار ناجح من منصة Tassaout Méga Fort عبر WhatsApp API!"
+    )
+    st.success("تم إرسال رسالة الواتساب بنجاح!")
 
-      if len(parts) > 1:
-        for idx, part in enumerate(parts[1:], 1):
-          color_style = card_colors[(idx - 1) % len(card_colors)]
-          card_content = f"### الإعلان {idx}\n" + part.strip()
+if btn_reset:
+  st.session_state.results = None
+  st.rerun()
 
-          with st.container():
-            st.markdown(
-                f"""
-                        <div style="{color_style} padding: 25px; border-radius: 12px; margin-bottom: 25px; box-shadow: 0 4px 10px rgba(0,0,0,0.06);">
-                            <h3 style="margin-top: 0; color: #1F2937;">🏷️ البطاقة الإعلانية رقم {idx}</h3>
-                            <div style="color: #374151; font-size: 16px; line-height: 1.7; white-space: pre-wrap;">{part.strip()}</div>
-                        </div>
-                        """,
-                unsafe_allow_html=True,
-            )
+if st.session_state.results:
+  res_type, res_data = st.session_state.results
+  if res_type in ["ceo", "cto", "coo"]:
+    st.markdown("---")
+    st.subheader(f"📋 نتيجة تحليل الـ {res_type.upper()} الفائق")
+    st.markdown(res_data)
+    st.download_button(
+        label=f"📥 تحميل تقرير {res_type.upper()} (.txt)",
+        data=res_data,
+        file_name=f"Tassaout_{res_type.upper()}_Report.txt",
+        mime="text/plain",
+    )
+  elif res_type == "pipeline":
+    plan, final_ads = res_data
+    st.markdown("---")
+    with st.expander("📋 معاينة الخطة الاستراتيجية الكاملة (CEO)"):
+      st.markdown(plan)
 
-            # زر تحميل مباشر لكل بطاقة إعلانية على حدة
-            st.download_button(
-                label=f"📥 تحميل البطاقة الإعلانية رقم {idx} (.txt)",
-                data=card_content,
-                file_name=f"Tassaout_Mega_Fort_Ad_{idx}.txt",
-                mime="text/plain",
-                key=f"download_btn_{idx}",
-            )
-            st.markdown("<br>", unsafe_allow_html=True)
-      else:
+    st.markdown("---")
+    st.subheader("📢 البطاقات الإعلانية الملونة والموثوقة")
+    parts = final_ads.split("### الإعلان")
+    card_colors = [
+        "background-color: #f0f7ff; border-right: 6px solid #1E3A8A;",
+        "background-color: #f4fbf7; border-right: 6px solid #059669;",
+        "background-color: #fffbeb; border-right: 6px solid #D97706;",
+    ]
+
+    if len(parts) > 1:
+      for idx, part in enumerate(parts[1:], 1):
+        color_style = card_colors[(idx - 1) % len(card_colors)]
+        card_content = f"### الإعلان {idx}\n" + part.strip()
         with st.container():
           st.markdown(
               f"""
-                    <div style="background-color: #f8fafc; border-right: 6px solid #4F46E5; padding: 25px; border-radius: 12px; margin-bottom: 25px; box-shadow: 0 4px 10px rgba(0,0,0,0.06);">
-                        <h3 style="margin-top: 0; color: #1F2937;">🏷️ البطاقات الإعلانية</h3>
-                        <div style="color: #374151; font-size: 16px; line-height: 1.7; white-space: pre-wrap;">{final_ads}</div>
+                    <div style="{color_style} padding: 25px; border-radius: 12px; margin-bottom: 25px; box-shadow: 0 4px 10px rgba(0,0,0,0.06);">
+                        <h3 style="margin-top: 0; color: #1F2937;">🏷️ البطاقة الإعلانية رقم {idx}</h3>
+                        <div style="color: #374151; font-size: 16px; line-height: 1.7; white-space: pre-wrap;">{part.strip()}</div>
                     </div>
                     """,
               unsafe_allow_html=True,
           )
           st.download_button(
-              label="📥 تحميل الحملة الإعلانية كاملة (.txt)",
-              data=final_ads,
-              file_name="Tassaout_Mega_Fort_Campaign.txt",
+              label=f"📥 تحميل البطاقة الإعلانية رقم {idx} (.txt)",
+              data=card_content,
+              file_name=f"Tassaout_Mega_Fort_Ad_{idx}.txt",
               mime="text/plain",
-              key="download_btn_all",
+              key=f"download_btn_{idx}",
           )
-  else:
-    st.warning("⚠️ الرجاء إدخال وصف المهمة أو المشروع أولاً.")
+          st.markdown("<br>", unsafe_allow_html=True)
+    else:
+      with st.container():
+        st.markdown(
+            f"""
+                <div style="background-color: #f8fafc; border-right: 6px solid #4F46E5; padding: 25px; border-radius: 12px; margin-bottom: 25px; box-shadow: 0 4px 10px rgba(0,0,0,0.06);">
+                    <h3 style="margin-top: 0; color: #1F2937;">🏷️ البطاقات الإعلانية</h3>
+                    <div style="color: #374151; font-size: 16px; line-height: 1.7; white-space: pre-wrap;">{final_ads}</div>
+                </div>
+                """,
+            unsafe_allow_html=True,
+        )
+        st.download_button(
+            label="📥 تحميل الحملة الإعلانية كاملة (.txt)",
+            data=final_ads,
+            file_name="Tassaout_Mega_Fort_Campaign.txt",
+            mime="text/plain",
+            key="download_btn_all",
+        )
 
-# ====================== تذييل الموقع ======================
 st.markdown("---")
 st.markdown(
     "<div style='text-align: center; color: #6B7280; font-size: 15px; font-weight:"
