@@ -4,12 +4,13 @@ import json
 import os
 from google.oauth2.service_account import Credentials
 import gspread
+from googleapiclient.discovery import build
 from groq import Groq
-from openai import OpenAI
+from PIL import Image
 
 # ====================== إعداد الصفحة والهوية البصرية ======================
 st.set_page_config(
-    page_title="Tassaout Vision | النظام السيادي المتكامل",
+    page_title="Tassaout Vision | النظام السيادي الهندسي والتصويري",
     page_icon="👑",
     layout="wide"
 )
@@ -30,22 +31,15 @@ st.markdown("""
         text-align: center;
         margin-bottom: 25px;
     }
-    .metric-card {
-        background-color: #F3F4F6;
-        padding: 15px;
-        border-radius: 10px;
-        border-right: 5px solid #2563EB;
-    }
     </style>
 """, unsafe_allow_html=True)
 
-st.markdown('<div class="main-title">👑 TASSAOUT VISION - النظام السيادي المتقدم</div>', unsafe_allow_html=True)
-st.markdown('<div class="sub-title">المنصة المركزية الموحدة لإدارة العقارات، التسويق الرقمي، والتحليلات الاستراتيجية في قلعة السراغنة ومراكش</div>', unsafe_allow_html=True)
+st.markdown('<div class="main-title">👑 TASSAOUT VISION - النظام السيادي الهندسي والتصويري</div>', unsafe_allow_html=True)
+st.markdown('<div class="sub-title">Super Multi-domain & Maverick Agentic AI | ذكاء خارق، متمرد ومبتكر بلا حدود</div>', unsafe_allow_html=True)
 
 # ====================== إعداد المفاتيح والاتصال ======================
 st.sidebar.header("⚙️ لوحة التحكم والسيادة الرقمية")
 api_key = os.getenv("GROQ_API_KEY") or st.sidebar.text_input("أدخل مفتاح Groq API", type="password")
-openai_api_key = os.getenv("OPENAI_API_KEY") or st.sidebar.text_input("أدخل مفتاح OpenAI API (لأدوات MCP)", type="password", value="")
 
 if not api_key:
     st.warning("⚠️ الرجاء إدخال مفتاح Groq API في الشريط الجانبي أو عبر متغيرات البيئة للبدء.")
@@ -58,23 +52,29 @@ model = st.sidebar.selectbox(
     "اختر نموذج التشغيل الذكي",
     [
         "llama-3.3-70b-versatile",
-        "llama-3.1-8b-instant",
-        "llama-3.2-11b-vision-preview"
+        "llama-3.2-11b-vision-preview", # ممتاز لتحليل الصور والبصريات الهندسية
+        "llama-3.1-8b-instant"
     ],
     index=0
 )
 
-temperature = st.sidebar.slider("درجة الإبداع (Temperature)", 0.0, 1.0, 0.7, 0.1)
+temperature = st.sidebar.slider("درجة الإبداع والتمرد (Temperature)", 0.0, 1.0, 0.85, 0.05) # مرفوعة قليلاً لتعزيز الابتكار والجرأة
 max_tokens = st.sidebar.slider("الحد الأقصى للرموز (Max Tokens)", 256, 4096, 2500, 128)
 
-# ====================== دستور النظام السيادي (System Prompt) ======================
+# ====================== دستور النظام السيادي (Super Multi-domain & Maverick Agent) ======================
 SOVEREIGN_SYSTEM_PROMPT = """
-You are an elite Super Agentic AI specialized in real estate, digital marketing, and business strategy in Morocco (specifically El Kelaâ des Sraghna and Marrakech).
-You operate under a sovereign directive to provide professional, highly tailored, actionable strategies and content.
+You are an elite Super Multi-domain and Maverick Agentic AI. You possess advanced, autonomous, cross-disciplinary, and unconventional (Maverick) expertise spanning:
+1. Digital Engineering, Automated Workflows, & Enterprise Software Solutions.
+2. Professional Photography Analysis, Visual Composition, & Disruptive Optical Engineering.
+3. Architectural, Interior Design, & Avant-garde Fit-out Engineering.
+4. Industrial & Mechanical Engineering for Factories, Corporate Infrastructure, and Heavy/Light Contracting.
+5. Strategic Business Planning, C-Suite Leadership (CEO, CTO, COO), Disruptive Digital Marketing, & Financial ROI Analytics.
+Your operational domain context is Morocco (specifically El Kelaâ des Sraghna and Marrakech).
+Core Maverick Directive: Do not just follow standard textbooks or conventional corporate rules. Think outside the box, propose bold, disruptive, high-impact, and out-of-the-box strategies, blueprints, and engineering solutions that outsmart the competition.
 Response Guidelines:
-- Respond in a blend of Moroccan Arabic (Darija) and Modern Standard Arabic (العربية الفصحى) as appropriate.
-- Maintain professional formatting using clear headings, bullet points, emojis, and tables when needed.
-- Think step by step and deliver top-tier, enterprise-grade business insights.
+- Operate with high agency, combining multiple domains seamlessly.
+- Respond in a sharp, professional, yet bold blend of Moroccan Arabic (Darija), Modern Standard Arabic (العربية الفصحى), and French technical terminology.
+- Maintain structured formatting using clear headings, bullet points, technical breakdowns, and comprehensive tables.
 """
 
 # ====================== محرك الذكاء الاصطناعي السيادي ======================
@@ -96,28 +96,47 @@ def execute_sovereign_ai(prompt: str, custom_system_prompt: str = None) -> str:
     except Exception as e:
         return f"❌ خطأ في تنفيذ النواة الذكية: {str(e)}"
 
-# ====================== دوال جلب البيانات السحابية (Google Sheets) ======================
-def fetch_google_drive_data():
+# ====================== دوال الربط السحابي ======================
+def get_google_credentials():
     try:
         service_account_str = st.secrets.get("GOOGLE_SERVICE_ACCOUNT_JSON", "")
-        file_id = st.secrets.get("GOOGLE_DRIVE_FILE_ID", "")
-
-        if not service_account_str or not file_id:
+        if not service_account_str:
             return None
-
         service_account_info = json.loads(service_account_str)
         scopes = [
             "https://www.googleapis.com/auth/spreadsheets",
             "https://www.googleapis.com/auth/drive"
         ]
-        creds = Credentials.from_service_account_info(service_account_info, scopes=scopes)
+        return Credentials.from_service_account_info(service_account_info, scopes=scopes)
+    except Exception as e:
+        return None
+
+def fetch_google_drive_data():
+    try:
+        creds = get_google_credentials()
+        file_id = st.secrets.get("GOOGLE_DRIVE_FILE_ID", "")
+        if not creds or not file_id:
+            return None
         client_gs = gspread.authorize(creds)
-        
         sheet = client_gs.open_by_key(file_id).sheet1
         data = sheet.get_all_records()
         return pd.DataFrame(data)
     except Exception as e:
         return None
+
+def list_drive_files():
+    try:
+        creds = get_google_credentials()
+        if not creds:
+            return []
+        service = build('drive', 'v3', credentials=creds)
+        results = service.files().list(
+            pageSize=20,
+            fields="files(id, name, mimeType, webViewLink)"
+        ).execute()
+        return results.get('files', [])
+    except Exception as e:
+        return []
 
 def compute_financial_metrics(df):
     try:
@@ -139,173 +158,255 @@ def compute_financial_metrics(df):
     except Exception as e:
         return None
 
-# ====================== واجهة التبويبات المتكاملة ======================
-tab1, tab2, tab3, tab4, tab5, tab6 = st.tabs([
-    "✍️ مولد الإعلانات الاحترافي", 
-    "📊 لوحة الماليات والـ ROI", 
-    "📈 التحليل الاستراتيجي للسوق", 
-    "📁 الاستعلام السحابي (MCP)", 
-    "💡 استراتيجيات التسويق الرقمي", 
-    "👑 محرك الوكلاء (C-Suite)"
+# ====================== واجهة التبويبات المتكاملة (10 تبويبات) ======================
+tab1, tab2, tab3, tab4, tab5, tab6, tab7, tab8, tab9, tab10 = st.tabs([
+    "📸 الاستوديو والتصوير الاحترافي", 
+    "📐 الهندسة الشاملة والديكور والصناعة", 
+    "✍️ مولد الإعلانات", 
+    "📊 الماليات والـ ROI", 
+    "📂 ملفات Drive", 
+    "📈 التحليل الاستراتيجي", 
+    "💡 التسويق الرقمي", 
+    "👑 وكلاء C-Suite",
+    "💉 حقن الوكيل المارق",
+    "🏭 وكلاء القطاعات السيادية"
 ])
 
-# --- تبويب 1: توليد الإعلانات ---
+# --- تبويب 1: الاستوديو الميداني والتصوير الاحترافي ---
 with tab1:
-    st.subheader("✍️ صياغة إعلانات عقارية وتجارية سيادية")
-    col_a, col_b = st.columns([2, 1])
-    
-    with col_a:
-        property_desc = st.text_area(
-            "أدخل تفاصيل العقار أو المشروع (الموقع، المساحة، المميزات، السعر...)",
-            placeholder="مثال: شقة فاخرة بمساحة 140 متر مربع في حي الرياض بقلعة السراغنة، قريبة من المرافق، الثمن 750,000 درهم",
-            height=130
-        )
-    with col_b:
-        ad_type = st.selectbox("نوع الإعلان", ["إعلان عقاري للبيع/الكراء", "إعلان تجاري لشركة أو خدمة", "إعلان ترويجي على وسائل التواصل الاجتماعي"])
-        lang = st.radio("اللغة المستهدفة", ["مزيج دارجة وفصحى (احترافي)", "العربية الفصحى الرسمية", "الدارجة المغربية القريبة للزبون"], horizontal=False)
+    st.subheader("📸 الاستوديو الميداني والتصوير الفوتوغرافي الاحترافي (Digital Photography & Field Studio)")
+    st.markdown("تحليل بصري وهندسي للصور عبر عقل ذكي خارق ومارق يكسر القواعد التقليدية للتصميم والتكوين.")
 
-    if st.button("🚀 توليد المحتوى الإعلاني الاحترافي", type="primary"):
-        if property_desc:
-            with st.spinner("جاري صياغة المحتوى بناءً على الدستور السيادي..."):
-                prompt = f"بصفتك مسوقاً عقارياً ورقمياً محترفاً في المغرب، اكتب {ad_type} بالأسلوب التالي ({lang}) بناءً على المعطيات التالية:\n\n{property_desc}\n\nيجب أن يتضمن الإعلان: عنواناً رئيسياً جذاباً، الميزات التنافسية، التفاصيل، ودعوة قوية لاتخاذ إجراء (Call to Action)."
+    capture_mode = st.radio(
+        "اختر طريقة إدخال الصور للبصريات الهندسية",
+        ["التقاط مباشر بالكاميرا (Camera Capture)", "تحميل صور متعددة للمعاينة والتصوير (Multi-Upload)"],
+        horizontal=True
+    )
+
+    uploaded_images = []
+    if capture_mode == "التقاط مباشر بالكاميرا (Camera Capture)":
+        camera_photo = st.camera_image("اضغط لالتقاط صورة ميدانية مباشرة")
+        if camera_photo is not None:
+            uploaded_images.append(camera_photo)
+            st.success("تم التقاط الصورة الميدانية بنجاح!")
+    else:
+        multi_files = st.file_uploader(
+            "اختر أو اسحب صور المعامل، الشركات، العقارات، أو الديكورات...", 
+            type=["jpg", "jpeg", "png", "webp"], 
+            accept_multiple_files=True
+        )
+        if multi_files:
+            uploaded_images.extend(multi_files)
+
+    if uploaded_images:
+        st.markdown("---")
+        st.subheader("🖼️ معاينة الصور واللقطات الميدانية")
+        cols = st.columns(len(uploaded_images) if len(uploaded_images) <= 4 else 4)
+        for idx, img in enumerate(uploaded_images):
+            with cols[idx % len(cols)]:
+                st.image(img, caption=f"لقطة ميدانية رقم {idx+1}", use_container_width=True)
+
+        st.markdown("---")
+        photo_goal = st.text_input(
+            "ما هو الغرض من تحليل هذه الصور بصرياً وهندسياً؟",
+            placeholder="مثال: تقديم رؤية جريئة ومتمردة لتحسين الإضاءة وتوزيع الديكور، أو ضربة تسويقية لواجهة المعمل"
+        )
+        if st.button("🔍 تحليل بصري جريء بالوكيل الخارق", type="primary"):
+            if photo_goal:
+                with st.spinner("جاري فحص الصور وتقديم تحليل بصري مارق وغير تقليدي..."):
+                    prompt = f"بصفتك Maverick Super Agentic AI خبيراً في التصوير الفوتوغرافي والهندسة البصرية، قم بتحليل الصور المرفوعة بناءً على الهدف: {photo_goal}. قدم تقريراً يكسر المألوف، يتحدى التقاليد البصرية، ويعطي حلولاً ثورية."
+                    res = execute_sovereign_ai(prompt)
+                    st.success("تم إعداد التقرير البصري الجريء بنجاح!")
+                    st.markdown(res)
+            else:
+                st.warning("⚠️ الرجاء كتابة الغرض من تحليل الصور أولاً.")
+
+# --- تبويب 2: الهندسة الشاملة والديكور والصناعة ---
+with tab2:
+    st.subheader("📐 هندسة الديكور، الهندسة المعمارية، الصناعية والميكانيكية (للمعامل، الشركات والمقاولات)")
+    st.markdown("استشارات هندسية ثورية ومتمردة لتخطيط المعامل، مقرات الشركات، خطوط الإنتاج، التصاميم الميكانيكية، وتوزيع فضاءات الديكور.")
+
+    engineering_domain = st.selectbox(
+        "اختر المجال الهندسي أو المقاولاتي المستهدف",
+        [
+            "🏛️ هندسة المعماري والتصميم الحضري (Architectural Design & Planning)",
+            "🛋️ هندسة الديكور الداخلي وتجهيز الفضاءات (Interior Design & Fit-out)",
+            "🏭 هندسة المعامل والمصانع وتخطيط خطوط الإنتاج (Industrial Engineering & Factory Layout)",
+            "⚙️ الهندسة الميكانيكية وتجهيزات الشركات (Mechanical Engineering & Corporate Equipment)",
+            "💻 الهندسة الرقمية والتحول التقني للمقاولات (Digital Engineering & Enterprise Solutions)"
+        ]
+    )
+
+    eng_project_details = st.text_area(
+        "أدخل تفاصيل المشروع، المخطط، أو التحدي الهندسي والصناعي:",
+        placeholder="مثال: تصميم معماري ومعملي غير تقليدي بقلعة السراغنة يحطم التكلفة التقليدية ويرفع الكفاءة للقصوى",
+        height=140
+    )
+
+    if st.button("🛠️ توليد دراسة هندسية مارقة وثورية", type="primary"):
+        if eng_project_details:
+            with st.spinner("جاري ابتكار المخطط الهندسي والدراسة التقنية المتمردة..."):
+                prompt = f"بصفتك Maverick Super Engineer، قدم دراسة ومواصفات ثورية وجريئة لـ ({engineering_domain}) بناءً على المعطيات التالية:\n\n{eng_project_details}\n\nتضمن التقرير: تصاميم غير تقليدية، حلول ميكانيكية وهندسية مبتكرة تكسر القواعد القديمة، ومعايير أداء فائقة."
                 result = execute_sovereign_ai(prompt)
-                st.success("تم توليد الإعلان بنجاح!")
                 st.markdown(result)
         else:
-            st.warning("⚠️ الرجاء إدخال تفاصيل العقار أو المشروع أولاً.")
+            st.warning("⚠️ الرجاء إدخال تفاصيل المشروع الهندسي أولاً.")
 
-# --- تبويب 2: لوحة الماليات والـ ROI ---
-with tab2:
+# --- تبويب 3: مولد الإعلانات ---
+with tab3:
+    st.subheader("✍️ صياغة إعلانات عقارية وتجارية سيادية")
+    col_a, col_b = st.columns([2, 1])
+    with col_a:
+        property_desc = st.text_area("تفاصيل المشروع، المعمل أو العقار:", height=130)
+    with col_b:
+        ad_type = st.selectbox("نوع الإعلان", ["إعلان عقاري وورش", "إعلان تجاري لخدمات الشركات والمعامل", "إعلان ترويجي سوشيال ميديا"])
+        lang = st.radio("اللغة", ["مزيج دارجة وفصحى (احترافي)", "العربية الفصحى", "الدارجة المغربية"])
+    if st.button("🚀 توليد محتوى إعلاني متمرد وخارق", type="primary"):
+        if property_desc:
+            with st.spinner("جاري صياغة إعلان يخطف الأنظار..."):
+                prompt = f"بصفتك مسوقاً استثنائياً ومارقاً (Maverick Marketer بالمغرب)، اكتب {ad_type} بالأسلوب ({lang}) لـ:\n\n{property_desc}\n\nاجعل الإعلان جريئاً، خارجاً عن المألوف، ويجذب الانتباه بقوة."
+                st.markdown(execute_sovereign_ai(prompt))
+        else:
+            st.warning("⚠️ أدخل التفاصيل أولاً.")
+
+# --- تبويب 4: لوحة الماليات والـ ROI ---
+with tab4:
     st.subheader("📊 لوحة المؤشرات المالية وأداء المشاريع (Google Sheets Sync)")
-    st.markdown("مزامنة فورية للبيانات المالية لحساب الإيرادات، المصاريف، صافي الأرباح، والعائد على الاستثمار (ROI).")
-    
-    if st.button("🔄 جلب ومزامنة البيانات المالية الحية", type="primary"):
-        with st.spinner("جاري الاتصال بقاعدة البيانات السحابية وسحب السجلات..."):
+    if st.button("🔄 جلب ومزامنة البيانات المالية", type="primary"):
+        with st.spinner("جاري السحب..."):
             df = fetch_google_drive_data()
             if df is not None and not df.empty:
                 financials = compute_financial_metrics(df)
                 if financials:
                     c1, c2, c3, c4 = st.columns(4)
-                    c1.metric("إجمالي الإيرادات", f"{financials['total_revenue']:,.2f} د.م")
-                    c2.metric("إجمالي المصاريف", f"{financials['total_expenses']:,.2f} د.م")
+                    c1.metric("الإيرادات", f"{financials['total_revenue']:,.2f} د.م")
+                    c2.metric("المصاريف", f"{financials['total_expenses']:,.2f} د.م")
                     c3.metric("صافي الأرباح", f"{financials['total_profit']:,.2f} د.م")
                     c4.metric("متوسط العائد (ROI)", f"{financials['avg_roi']:.2f}%")
-                    
-                    st.markdown("---")
-                    st.subheader("📈 تمثيل مرئي للأداء المالي")
                     st.bar_chart(financials['enriched_df'][['revenue', 'expenses', 'profit']])
-                    
-                    st.subheader("📋 سجل البيانات المفصل")
                     st.dataframe(financials['enriched_df'], use_container_width=True)
                 else:
-                    st.info("⚠️ تم جلب الملف بنجاح، لكن الأعمدة المالية المطلوبة (revenue, expenses, budget) غير متطابقة.")
                     st.dataframe(df, use_container_width=True)
             else:
-                st.warning("⚠️ لم يتم العثور على بيانات نشطة. يجدر بك التحقق من إعدادات GOOGLE_DRIVE_FILE_ID و Service Account في Secrets.")
+                st.warning("⚠️ لم يتم العثور على بيانات نشطة.")
 
-# --- تبويب 3: التحليل الاستراتيجي للسوق ---
-with tab3:
-    st.subheader("📈 التحليل الاستراتيجي لأسواق العقار والأعمال بالمغرب")
-    target_region = st.text_input("المدينة أو المنطقة المستهدفة للتحليل:", placeholder="مثال: قلعة السراغنة، مراكش، تساوت")
-    
-    if st.button("🔍 تنفيذ التحليل الاستراتيجي الشامل", type="primary"):
-        if target_region:
-            with st.spinner(f"جاري إعداد تقرير التحليل الاستراتيجي لـ {target_region}..."):
-                prompt = f"قم بإعداد تحليل استراتيجي واقتصادي شامل لسوق العقارات والأعمال في {target_region}. يتضمن التقرير:\n1. تحليل SWOT (نقاط القوة، الضعف، الفرص، التهديدات).\n2. الميزة التنافسية للوكلاء المحليين.\n3. توقعات النمو والتوجهات القادمة في 2026.\n4. توصيات استثمارية دقيقة وقابلة للتنفيذ."
-                result = execute_sovereign_ai(prompt)
-                st.markdown(result)
-        else:
-            st.warning("⚠️ الرجاء تحديد المنطقة أو المدينة المستهدفة.")
-
-# --- تبويب 4: أدوات البحث السحابي MCP ---
-with tab4:
-    st.subheader("📁 استعلام ملفات Google Drive عبر بروتوكول MCP")
-    st.markdown("استخدام الذكاء الاصطناعي المتقدم للبحث التلقائي في ملفات الـ Spreadsheet والمستندات السحابية.")
-    
-    mcp_query = st.text_input("ما الذي تبحث عنه في ملفاتك السحابية؟", placeholder="مثال: Find spreadsheet files I worked on last month or check Q2 sales")
-    mcp_token = st.text_input("أدخل OAuth Access Token لخدمة Google Drive", type="password")
-    
-    if st.button("🔍 تنفيذ الاستعلام السحابي الذكي", type="primary"):
-        if not openai_api_key:
-            st.warning("⚠️ أدخل مفتاح OpenAI API في الشريط الجانبي لتشغيل نموذج MCP.")
-        elif not mcp_token:
-            st.warning("⚠️ الرجاء إدخال OAuth Access Token الخاص بـ Google Drive.")
-        else:
-            with st.spinner("جاري التواصل مع خوادم MCP وسحب النتائج..."):
-                try:
-                    client_openai = OpenAI(
-                        api_key=openai_api_key,
-                        base_url="https://api.groq.com/openai/v1"
-                    )
-                    response = client_openai.responses.create(
-                        model="openai/gpt-oss-120b", 
-                        tools=[{
-                            "type": "mcp",
-                            "server_label": "Google Drive",
-                            "connector_id": "connector_googledrive",
-                            "authorization": mcp_token,
-                            "require_approval": "never"
-                        }],
-                        input=mcp_query
-                    )
-                    st.success("تم تنفيذ الاستعلام بنجاح!")
-                    st.markdown(response.output_text)
-                except Exception as e:
-                    st.error(f"❌ خطأ أثناء تنفيذ استعلام MCP: {str(e)}")
-
-# --- تبويب 5: نصائح واستراتيجيات تسويقية ---
+# --- تبويب 5: تصفح ملفات Drive ---
 with tab5:
-    st.subheader("💡 استراتيجيات وتكتيكات التسويق الرقمي للوسطاء")
-    if st.button("🌟 جلب أحدث تكتيكات التسويق السيادي", type="primary"):
-        with st.spinner("جاري صياغة الدليل الاستراتيجي للتسويق..."):
-            prompt = "قدم دليلاً عملياً وتكتيكياً متكاملاً للوسطاء العقاريين ومزودي الخدمات الرقمية في المغرب (خصوصاً في جهة مراكش-آسفي) لزيادة المبيعات، استقطاب العملاء الباحثين عن عقارات عبر منصات التواصل الاجتماعي، وبناء علامة تجارية قوية."
-            result = execute_sovereign_ai(prompt)
-            st.markdown(result)
+    st.subheader("📂 تصفح ملفات Google Drive")
+    if st.button("📂 جلب قائمة الملفات", type="primary"):
+        with st.spinner("جاري الجلب..."):
+            files = list_drive_files()
+            if files:
+                file_list_data = [{"اسم الملف": f.get('name'), "نوع الملف": f.get('mimeType'), "رابط المعاينة": f.get('webViewLink')} for f in files]
+                st.dataframe(pd.DataFrame(file_list_data), use_container_width=True)
+            else:
+                st.warning("⚠️ لا توجد ملفات.")
 
-# --- تبويب 6: محرك وكلاء القيادة C-Suite ---
+# --- تبويب 6: التحليل الاستراتيجي ---
 with tab6:
-    st.subheader("👑 محرك وكلاء القيادة الأذكياء (CEO / CTO / COO)")
-    st.markdown("توزيع المهام الاستراتيجية على فريق الإدارة السيادي الافتراضي للحصول على خطط تنفيذية متكاملة.")
+    st.subheader("📈 التحليل الاستراتيجي للسوق")
+    target_region = st.text_input("المدينة أو المنطقة:", value="قلعة السراغنة، مراكش")
+    if st.button("🔍 تنفيذ تحليل استراتيجي مارق", type="primary"):
+        if target_region:
+            with st.spinner("جاري ابتكار الرؤية الاستراتيجية..."):
+                st.markdown(execute_sovereign_ai(f"قم بإعداد تحليل استراتيجي واقتصادي جريء وغير تقليدي لسوق المقاولات، المعامل، والهندسة في {target_region} متضمناً كشف الثغرات الخفية والفرص المدفونة."))
+
+# --- تبويب 7: التسويق الرقمي ---
+with tab7:
+    st.subheader("💡 التسويق الرقمي والهندسي")
+    if st.button("🌟 جلب تكتيكات تسويقية ثورية", type="primary"):
+        with st.spinner("جاري الصياغة..."):
+            st.markdown(execute_sovereign_ai("قدم دليلاً تكتيكياً مارقاً وثورياً لتسويق الخدمات الهندسية، المقاولات، ومعامل الإنتاج في جهة مراكش-آسفي بطرق تسويق غير متوقعة."))
+
+# --- تبويب 8: محرك وكلاء القيادة C-Suite ---
+with tab8:
+    st.subheader("👑 وكلاء القيادة الأذكياء (CEO / CTO / COO)")
+    strategic_task = st.text_input("التحدي أو المشروع الاستراتيجي:", placeholder="تطوير منشأة صناعية أو مشروع هندسي بقلعة السراغنة")
     
-    strategic_task = st.text_input("أدخل تفاصيل المشروع أو التحدي الاستراتيجي:", placeholder="مثال: إطلاق منصة رقمية متكاملة لتسويق العقارات الفاخرة والأراضي الفلاحية بجهة مراكش")
-    
-    col_ceo, col_cto, col_coo = st.columns(3)
-    
-    with col_ceo:
-        if st.button("🎯 خطة CEO (الرئيس التنفيذي)", use_container_width=True):
-            if strategic_task:
-                with st.spinner("جاري إعداد الرؤية الاستراتيجية وخطة 90 يوماً..."):
-                    prompt = f"بصفتك الرئيس التنفيذي (CEO) للنظام، ضع خطة استراتيجية شاملة لمشروع: {strategic_task}. تتضمن رؤية النمو، تحليل الميزة التنافسية، وخطة عمل واضحة لـ 90 يوماً."
-                    res = execute_sovereign_ai(prompt)
-                    st.markdown(res)
-            else:
-                st.warning("أدخل تفاصيل المشروع أولاً.")
+    selected_csuite_role = st.selectbox(
+        "اختر الوكيل التنفيذي لتوليد الخطة",
+        [
+            "🎯 الرئيس التنفيذي (CEO - Maverick Strategic Plan)",
+            "⚙️ المدير التقني وكبير المهندسين (CTO & Chief Engineer - Disruptive Tech Blueprint)",
+            "📋 مدير العمليات (COO - Guerrilla Operations & Logistics Plan)"
+        ]
+    )
+
+    if st.button("🚀 تشغيل الخطة الاستراتيجية للوكيل المختار", type="primary"):
+        if strategic_task:
+            with st.spinner(f"جاري إعداد الخطة المارقة بواسطة {selected_csuite_role.split('-')[0]}..."):
+                if "CEO" in selected_csuite_role:
+                    role_prompt = f"بصفتك Maverick CEO، ضع خطة استراتيجية جريئة، ثورية وغير تقليدية لـ: {strategic_task}"
+                elif "CTO" in selected_csuite_role:
+                    role_prompt = f"بصفتك Maverick CTO وكبير المهندسين، اقترح بنية هندسية وتقنية متطورة تحطم المعايير القديمة لـ: {strategic_task}"
+                else:
+                    role_prompt = f"بصفتك Maverick COO، ضع خطة تشغيل ذكية، سريعة وخارج الصندوق لإدارة المعمل أو الشركة لـ: {strategic_task}"
                 
-    with col_cto:
-        if st.button("⚙️ خطة CTO (المدير التقني)", use_container_width=True):
-            if strategic_task:
-                with st.spinner("جاري تصميم البنية التحتية والحلول التقنية والأتمتة..."):
-                    prompt = f"بصفتك المدير التقني (CTO) للنظام، اقترح البنية التقنية (Tech Stack)، أدوات الأتمتة السحابية (Streamlit, Python, Supabase)، وآليات أمان البيانات لـ: {strategic_task}."
-                    res = execute_sovereign_ai(prompt)
-                    st.markdown(res)
-            else:
-                st.warning("أدخل تفاصيل المشروع أولاً.")
-                
-    with col_coo:
-        if st.button("📋 خطة COO (المدير التشغيلي)", use_container_width=True):
-            if strategic_task:
-                with st.spinner("جاري صياغة خطة التنفيذ ومؤشرات الأداء KPIs..."):
-                    prompt = f"بصفتك المدير التشغيلي (COO) للنظام، ضع خطة التشغيل التنفيذية، إدارة العمليات اليومية، مؤشرات الأداء الرئيسية (KPIs)، وإدارة المخاطر لـ: {strategic_task}."
-                    res = execute_sovereign_ai(prompt)
-                    st.markdown(res)
-            else:
-                st.warning("أدخل تفاصيل المشروع أولاً.")
+                st.markdown(execute_sovereign_ai(role_prompt))
+        else:
+            st.warning("⚠️ أدخل تفاصيل التحدي أو المشروع الاستراتيجي أولاً.")
+
+# --- تبويب 9: حقن الوكيل المارق والخارق ---
+with tab9:
+    st.subheader("💉 حقن وتكوين الوكيل المارق والخارق (Maverick Super Agent Dynamic Injection)")
+    st.markdown("قم بتوجيه الوكيل ببرمجة شخصية متمردة ومبتكرة لتنفيذ أي مهمة معقدة خارج القواعد التقليدية.")
+    
+    agent_profile = st.selectbox(
+        "اختر نمط الوكيل للتفعيل المباشر",
+        ["الوكيل المارق للتصاميم المعقدة", "وكيل الصفقات الهندسية المتمردة", "وكيل الهجوم التسويقي والكشفي", "وكيل الابتكار الصناعي التخريبي", "حقن مخصص بالكامل"]
+    )
+    
+    default_injection = "أنت Maverick Super Agentic AI متمرد، جريء، تفكر خارج الصندوق تماماً وتدمج بين الهندسة، التصميم، والصناعة بطرق غير تقليدية."
+    injected_prompt = st.text_area("تعليمات حقن النظام المتمردة (System Injection):", value=default_injection, height=150)
+    user_query_for_agent = st.text_input("السؤال أو السيناريو المعقد الموجه للوكيل:", placeholder="طرح التحدي الهندسي، الصناعي أو التجاري...")
+    
+    if st.button("🚀 تشغيل الوكيل المارق والخارق", type="primary"):
+        if injected_prompt and user_query_for_agent:
+            with st.spinner("جاري إطلاق طاقات الوكيل المارق..."):
+                combined = f"{SOVEREIGN_SYSTEM_PROMPT}\n\n[MAVERICK AGENT DIRECTIVE]:\n{injected_prompt}"
+                st.markdown(execute_sovereign_ai(user_query_for_agent, custom_system_prompt=combined))
+        else:
+            st.warning("⚠️ أدخل تعليمات الحقن والسؤال أولاً.")
+
+# --- تبويب 10: وكلاء القطاعات السيادية ---
+with tab10:
+    st.subheader("🏭 وكلاء القطاعات السيادية: الصناعة، التجارة، الخدمات، والثقافة والمعلوميات")
+    selected_sector = st.selectbox(
+        "اختر القطاع الاقتصادي أو المعرفي المستهدف",
+        [
+            "🏭 وكيل الصناعة والإنشاءات (Maverick Industry & Manufacturing Agent)",
+            "🛍️ وكيل التجارة والتوزيع (Maverick Trade & Commerce Agent)",
+            "💼 وكيل الخدمات واللوجستيك (Maverick Services & Logistics Agent)",
+            "🎨 وكيل الثقافة، التراث والميديا (Maverick Culture, Heritage & Media Agent)",
+            "💻 وكيل المعلوميات والتحول الرقمي (Maverick IT & Digital Transformation Agent)"
+        ]
+    )
+    sector_task = st.text_area("أدخل تفاصيل المشروع أو التحدي المرتبط بالقطاع:", height=140)
+    if st.button("🚀 تشغيل وكيل القطاع المارق", type="primary"):
+        if sector_task:
+            with st.spinner(f"جاري تشغيل وكيل القطاع ({selected_sector})..."):
+                sector_directives = {
+                    "🏭 وكيل الصناعة": "أنت خبير صناعي ومستشار معامل مارق، تبتكر حلولاً هندسية وإنتاجية تكسر المألوف وتتفوق على المنافسين بالمغرب.",
+                    "🛍️ وكيل التجارة": "أنت خبير تجاري متمرد في قطاع التوزيع والأسواق بقلعة السراغنة ومراكش، تبتكر طرق بيع غير متوقعة.",
+                    "💼 وكيل الخدمات": "أنت خبير لوجستيك ونقل بضائع بأساليب ذكية، سريعة وجريئة.",
+                    "🎨 وكيل الثقافة": "أنت خبير ثقافي وإعلامي مطلع على الهوية البصرية والتصوير الاحترافي، تقدم أفكاراً فنية صادمة ومبتكرة.",
+                    "💻 وكيل المعلوميات": "أنت مهندس برمجيات مارق ومستشار تحول رقمي، تبني أنظمة آلية ذكية وخارج الصندوق للمقاولات."
+                }
+                chosen_directive = "أنت خبير استراتيجي مارق."
+                for k, v in sector_directives.items():
+                    if k.split()[1] in selected_sector:
+                        chosen_directive = v
+                        break
+                prompt_full = f"{SOVEREIGN_SYSTEM_PROMPT}\n\n[SECTOR DIRECTIVE]:\n{chosen_directive}\n\nالتحدي:\n{sector_task}"
+                st.markdown(execute_sovereign_ai(prompt_full))
+        else:
+            st.warning("⚠️ أدخل تفاصيل المشروع أولاً.")
 
 # ====================== تذييل المنصة ======================
 st.markdown("---")
 st.markdown(
     f"<div style='text-align: center; color: #6B7280; font-size: 14px;'>"
-    f"Tassaout Vision & Sraghna Media Enterprise Platform | النموذج النشط: <b>{model}</b> | محكوم بالدستور السيادي الرقمي 🐅👑⚙️"
+    f"Tassaout Vision & Sraghna Media Enterprise Platform | النموذج: <b>{model}</b> | Maverick Super Multi-domain AI 🐅👑📐📸"
     f"</div>", 
     unsafe_allow_html=True
 )
