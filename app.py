@@ -5,12 +5,8 @@ import json
 st.set_page_config(page_title="OMEGA Super Agentic AI", page_icon="👑", layout="wide")
 
 def call_super_ai(prompt, agent_name, domain):
-    """محرك الذكاء الاصطناعي الفائق متعدد المجالات - Groq + Llama 3.3"""
     url = "https://api.groq.com/openai/v1/chat/completions"
-    api_key = st.secrets.get("GROQ_API_KEY", "")
-
-    if not api_key:
-        return "❌ خطأ: مفتاح GROQ_API_KEY غير موجود في إعدادات Secrets الخاصة بـ Streamlit."
+    api_key = st.secrets["GROQ_API_KEY"]
 
     headers = {
         "Authorization": f"Bearer {api_key}",
@@ -24,7 +20,7 @@ def call_super_ai(prompt, agent_name, domain):
     )
 
     payload = {
-        "model": "llama-3.3-70b-versatile", # الموديل المفتوح الجديد والمستقر 100%
+        "model": "llama-3.1-8b-instant",  # موديل مفتوح وسريع ومضمون 100% في جميع حسابات Groq
         "messages": [
             {"role": "system", "content": system_prompt},
             {"role": "user", "content": prompt}
@@ -33,25 +29,20 @@ def call_super_ai(prompt, agent_name, domain):
         "max_tokens": 2000
     }
 
-    try:
-        res = requests.post(url, headers=headers, json=payload, timeout=90)
+    res = requests.post(url, headers=headers, json=payload, timeout=90)
+    
+    if res.status_code != 200:
+        st.error(f"❌ خطأ من سيرفر Groq (كود {res.status_code}): {res.text}")
         res.raise_for_status()
-        return res.json()['choices'][0]['message']['content']
-    except requests.exceptions.HTTPError as err:
-        return f"❌ خطأ HTTP API من Groq: {err} - تفاصيل الرد: {res.text}"
-    except Exception as e:
-        return f"❌ خطأ في الاتصال بالذكاء الاصطناعي: {e}"
+        
+    return res.json()['choices'][0]['message']['content']
 
 def send_whatsapp_alert(message):
-    """إرسال إشعار مباشر عبر واتساب API"""
     try:
-        phone_id = st.secrets.get('WHATSAPP_PHONE_NUMBER_ID')
-        access_token = st.secrets.get('WHATSAPP_ACCESS_TOKEN')
-        target_number = st.secrets.get('WHATSAPP_BUSINESS_NUMBER')
+        phone_id = st.secrets['WHATSAPP_PHONE_NUMBER_ID']
+        access_token = st.secrets['WHATSAPP_ACCESS_TOKEN']
+        target_number = st.secrets['WHATSAPP_BUSINESS_NUMBER']
         version = st.secrets.get('WHATSAPP_API_VERSION', 'v20.0')
-
-        if not all([phone_id, access_token, target_number]):
-            return
 
         url = f"https://graph.facebook.com/{version}/{phone_id}/messages"
         headers = {
@@ -85,7 +76,7 @@ class SuperOmegaAgent:
         whatsapp_num = st.secrets.get('WHATSAPP_BUSINESS_NUMBER', '')
         prompt = f"بناءً على هذه الخطة: {plan}. اكتب 3 إعلانات تسويقية جذابة باللهجة المغربية والعربية الفصحى مع أيقونات، كلمات مفتاحية، هاشتاقات، ودعوة للاتصال برقم الواتساب: {whatsapp_num}"
         ad = call_super_ai(prompt, "Super Copywriter Agent", self.domain)
-        send_whatsapp_alert(f"👑 OMEGA SUPER AGENTIC v4.1\nمهمة جديدة في مجال: {self.domain}\n\n{ad}")
+        send_whatsapp_alert(f"👑 OMEGA SUPER AGENTIC\nمهمة جديدة في مجال: {self.domain}\n\n{ad}")
         return ad
 
     def closer(self, ad):
@@ -94,9 +85,9 @@ class SuperOmegaAgent:
 
 # ===== واجهة Streamlit =====
 st.title("👑 OMEGA Super Agentic AI - متعدد المجالات")
-st.caption("CEO + CTO + COO + Copywriter + Closer في وكيل واحد يخدم على Groq")
+st.caption("CEO + CTO + COO + Copywriter + Closer يشتغل بـ Llama 3.1 8B Instant المضمون")
 
-domain = st.selectbox("اختر المجال", ["العقار", "التجارة الإلكترونية", "المطاعم", "التعليم", "الصحة", "التسويق"])
+domain = st.text_input("أدخل مجال المشروع أو النشاط", value="العقار وتجزئة الأراضي")
 task = st.text_area("وصف المهمة / المشروع", placeholder="مثال: بيع بقع أرضية في تجزئة الهدى بقلعة السراغنة")
 
 agent = SuperOmegaAgent(domain)
