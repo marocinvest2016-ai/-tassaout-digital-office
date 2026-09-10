@@ -1,31 +1,25 @@
 import streamlit as st
 import requests
 
-# قائمة نماذج Groq محدثة مع fallback تلقائي
 GROQ_MODELS = [
-    "llama-3.1-8b-instant",        # أساسي: سريع ومستقر 100%
-    "llama-3.2-11b-vision-preview", # بديل: أقوى شوية
-    "llama-3.3-70b-versatile",      # قوي جداً (إذا كان متاح لحسابك)
+    "llama-3.1-8b-instant",
+    "llama-3.2-11b-vision-preview",
+    "llama-3.3-70b-versatile",
 ]
 
 def call_super_ai(prompt, agent_name, domain):
-    """محرك الذكاء الاصطناعي الفائق مع نظام Fallback وتتبع النموذج الناجح"""
     url = "https://api.groq.com/openai/v1/chat/completions"
     api_key = st.secrets.get("GROQ_API_KEY", "")
 
     if not api_key:
-        return "❌ خطأ: مفتاح GROQ_API_KEY غير موجود في إعدادات Secrets الخاصة بـ Streamlit."
+        return "❌ خطأ: مفتاح GROQ_API_KEY غير موجود."
 
     headers = {
         "Authorization": f"Bearer {api_key}",
         "Content-Type": "application/json"
     }
 
-    system_prompt = (
-        f"You are {agent_name}, an elite Super Agentic AI specialized in '{domain}' powered by Meta Llama on Groq. "
-        f"Think step by step. Provide professional, highly tailored, actionable strategies. "
-        f"Respond in Moroccan Arabic Darija + العربية الفصحى, with professional formatting, bullet points, emojis, and tables when needed."
-    )
+    system_prompt = f"You are {agent_name}, an elite Super Agentic AI specialized in '{domain}' powered by Meta Llama on Groq. Think step by step. Respond in Moroccan Arabic Darija + العربية الفصحى."
 
     last_error = None
     for model in GROQ_MODELS:
@@ -42,41 +36,26 @@ def call_super_ai(prompt, agent_name, domain):
         try:
             res = requests.post(url, headers=headers, json=payload, timeout=90)
             
-            # معالجة أخطاء النموذج غير المتاح
-            if res.status_code == 404:
-                last_error = f"⚠️ النموذج {model} غير موجود (404). جاري تجربة البديل..."
-                continue
-            elif res.status_code == 400:
-                last_error = f"⚠️ النموذج {model} غير صالح (400). جاري تجربة البديل..."
-                continue
-            elif res.status_code == 429:
-                last_error = f"⏳ تجاوزت حد الطلبات (429) على {model}. جاري تجربة البديل..."
+            if res.status_code in (404, 400, 429):
+                last_error = f"⚠️ {model} غير متاح ({res.status_code}). جاري البديل..."
                 continue
             
-            # أي خطأ آخر
             res.raise_for_status()
-            
-            # تسجيل النموذج الناجح في الجلسة
             st.session_state.last_model_used = model
             st.session_state.last_model_status = "✅ نجح"
-            
             return res.json()['choices'][0]['message']['content']
             
         except requests.exceptions.Timeout:
-            last_error = f"⏱️ انتهت مهلة الاتصال بالنموذج {model} (90 ثانية). جاري تجربة البديل..."
+            last_error = f"⏱️ {model} timeout."
             continue
         except Exception as e:
-            last_error = f"❌ خطأ في الاتصال (النموذج {model}): {type(e).__name__} - {str(e)}"
+            last_error = f"❌ {model}: {e}"
             continue
 
-    # إذا فشل كل النماذج
     st.session_state.last_model_status = "❌ فشل"
-    return f"❌ تعذر الاتصال بجميع النماذج المتاحة.
-
-آخر خطأ: {last_error}"
+    return "❌ تعذر الاتصال بالنماذج. " + last_error
 
 def send_whatsapp_alert(message):
-    """إرسال إشعار مباشر عبر واتساب API"""
     try:
         phone_id = st.secrets.get('WHATSAPP_PHONE_NUMBER_ID')
         access_token = st.secrets.get('WHATSAPP_ACCESS_TOKEN')
@@ -84,186 +63,127 @@ def send_whatsapp_alert(message):
         version = st.secrets.get('WHATSAPP_API_VERSION', 'v20.0')
 
         if not all([phone_id, access_token, target_number]):
-            st.warning("⚠️ إعدادات WhatsApp غير مكتملة في Secrets")
             return
 
         url = f"https://graph.facebook.com/{version}/{phone_id}/messages"
-        headers = {
-            "Authorization": f"Bearer {access_token}",
-            "Content-Type": "application/json"
-        }
+        headers = {"Authorization": f"Bearer {access_token}", "Content-Type": "application/json"}
         payload = {
             "messaging_product": "whatsapp",
             "to": target_number,
             "type": "text",
             "text": {"body": message[:4096]}
         }
-        res = requests.post(url, headers=headers, json=payload, timeout=10)
-        if res.status_code != 200:
-            st.warning(f"⚠️ فشل إرسال WhatsApp: HTTP {res.status_code}")
-    except Exception as e:
-        st.warning(f"⚠️ تعذر إرسال إشعار الواتساب: {type(e).__name__} - {str(e)}")
+        requests.post(url, headers=headers, json=payload, timeout=10)
+    except:
+        pass
 
 class SuperOmegaAgent:
     def __init__(self, domain):
         self.domain = domain
 
     def ceo(self, task):
-        prompt = (
-            f"بصفتك CEO فائق، ضع خطة استراتيجية شاملة وتنافسية لهذا المشروع في مجال {self.domain}: {task}.
+        prompt = f"بصفتك CEO فائق، ضع خطة استراتيجية لـ {self.domain}: {task}.
 
-"
-            f"المطلوب:
-"
-            f"1. تحليل SWOT مفصّل (نقاط القوة، الضعف، الفرص، التهديدات)
-"
-            f"2. الميزة التنافسية الأساسية (Unique Value Proposition)
-"
-            f"3. خطة تنفيذية لمدة 90 يوم (30-60-90) مع معالم رئيسية
-"
-            f"4. مؤشرات الأداء الرئيسية (KPIs) المقترحة
+المطلوب:
+1. SWOT
+2. الميزة التنافسية
+3. خطة 90 يوم
+4. KPIs
 
-"
-            f"جاوب بالدارجة المغربية + العربية الفصحى، مع تنسيق احترافي، نقاط، إيموجيز، وجداول عند الحاجة."
-        )
-        return call_super_ai(prompt, "Super CEO Agent", self.domain)
+جاوب بالدارجة + الفصحى."
+        return call_super_ai(prompt, "CEO", self.domain)
 
     def cto(self, task):
-        prompt = (
-            f"بصفتك CTO فائق، اقترح الاستراتيجية التقنية، أدوات التشغيل، stack تقني، واستهداف الجمهور الرقمي لـ: {task} في {self.domain}.
+        prompt = f"بصفتك CTO فائق، اقترح Tech Stack لـ {task} في {self.domain}.
 
-"
-            f"المطلوب:
-"
-            f"1. البنية التقنية المقترحة (Tech Stack: Frontend, Backend, Database, APIs)
-"
-            f"2. أدوات التشغيل والأتمتة (Automation Tools, CI/CD, Monitoring)
-"
-            f"3. استراتيجية استهداف الجمهور الرقمي (Digital Audience Targeting)
-"
-            f"4. خطة أمان وحماية البيانات الأساسية
+المطلوب:
+1. البنية التقنية
+2. الأتمتة
+3. استهداف رقمي
+4. أمان
 
-"
-            f"جاوب بالدارجة المغربية + العربية الفصحى، مع تنسيق احترافي، نقاط، إيموجيز، وجداول عند الحاجة."
-        )
-        return call_super_ai(prompt, "Super CTO Agent", self.domain)
+جاوب بالدارجة + الفصحى."
+        return call_super_ai(prompt, "CTO", self.domain)
 
     def coo(self, task):
-        prompt = (
-            f"بصفتك COO فائق، ضع خطة تنفيذية، إدارة الموارد، KPI، وجدولة زمنية دقيقة لـ: {task} في {self.domain}.
+        prompt = f"بصفتك COO فائق، ضع خطة تنفيذية لـ {task} في {self.domain}.
 
-"
-            f"المطلوب:
-"
-            f"1. هيكل الفريق والموارد البشرية المطلوبة
-"
-            f"2. الجدولة الزمنية التفصيلية (Gantt-style timeline)
-"
-            f"3. مؤشرات الأداء الرئيسية (KPIs) لكل مرحلة
-"
-            f"4. إدارة المخاطر وخطة طوارئ
+المطلوب:
+1. الفريق
+2. الجدولة
+3. KPIs
+4. المخاطر
 
-"
-            f"جاوب بالدارجة المغربية + العربية الفصحى، مع تنسيق احترافي، نقاط، إيموجيز، وجداول عند الحاجة."
-        )
-        return call_super_ai(prompt, "Super COO Agent", self.domain)
+جاوب بالدارجة + الفصحى."
+        return call_super_ai(prompt, "COO", self.domain)
 
     def copywriter(self, plan):
         whatsapp_num = st.secrets.get('WHATSAPP_BUSINESS_NUMBER', '')
-        prompt = (
-            f"بناءً على هذه الخطة الاستراتيجية:
+        prompt = f"بناءً على: {plan}
 
-{plan}
-
-"
-            f"اكتب 3 إعلانات تسويقية جذابة باللهجة المغربية والعربية الفصحى، مع:
-"
-            f"• عنوان قوي (Headline) يلفت الانتباه
-"
-            f"• نص إعلاني مقنع (Body Copy) يبرز الفوائد والحلول
-"
-            f"• دعوة واضحة للعمل (CTA) مع رقم الواتساب: {whatsapp_num}
-"
-            f"• هاشتاقات مناسبة (3-5 هاشتاقات)
-"
-            f"• أيقونات وإيموجيز لجذب الانتباه
-
-"
-            f"الإعلانات تكون مناسبة لـ Facebook, Instagram, WhatsApp Status."
-        )
-        ad = call_super_ai(prompt, "Super Copywriter Agent", self.domain)
-        
-        # إرسال إشعار WhatsApp
-        alert_msg = (
-            f"👑 OMEGA SUPER AGENTIC v4.5
-"
-            f"📂 المجال: {self.domain}
-"
-            f"🤖 النموذج المستخدم: {st.session_state.get('last_model_used', 'غير محدد')}
-
-"
-            f"📝 نص الإعلان:
-{ad[:1500]}..."  # أول 1500 حرف فقط
-        )
-        send_whatsapp_alert(alert_msg)
-        
+اكتب 3 إعلانات بالدارجة والفصحى مع:
+• عنوان
+• نص
+• CTA: {whatsapp_num}
+• هاشتاقات
+• إيموجيز"
+        ad = call_super_ai(prompt, "Copywriter", self.domain)
+        send_whatsapp_alert(f"👑 OMEGA v4.5
+📂 {self.domain}
+📝 {ad[:1000]}...")
         return ad
 
     def closer(self, ad):
-        prompt = (
-            f"قم بتحسين نص هذا الإعلان لزيادة المبيعات والتحويلات:
+        prompt = f"حسن هذا الإعلان:
 
 {ad}
 
-"
-            f"أضف العناصر التالية:
-"
-            f"1. محفزات الاستعجال (FOMO): عرض محدود، وقت محدود، كمية محدودة
-"
-            f"2. ضمان قوي (Money-back Guarantee أو ضمان الرضا)
-"
-            f"3. شهادات عملاء (Testimonials) واقعية ومقنعة
-"
-            f"4. أسئلة شائعة (FAQ) قصيرة تجاوب على اعتراضات الزبون
-"
-            f"5. دعوة أقوى للعمل (Stronger CTA) مع شعور بالاستعجال
-
-"
-            f"حافظ على اللهجة المغربية + العربية الفصحى، والتنسيق الأصلي."
-        )
-        return call_super_ai(prompt, "Super Closer Agent", self.domain)
+أضف:
+1. FOMO
+2. ضمان
+3. شهادات
+4. FAQ
+5. CTA أقوى"
+        return call_super_ai(prompt, "Closer", self.domain)
 
     def full_pipeline(self, task):
-        """تشغيل الخط الكامل: CEO → CTO → COO → Copywriter → Closer"""
-        with st.spinner("🧠 جاري تحليل المهمة..."):
-            ceo_plan = self.ceo(task)
-        
-        with st.spinner("⚙️ جاري وضع الاستراتيجية التقنية..."):
-            cto_plan = self.cto(task)
-        
-        with st.spinner("📋 جاري وضع الخطة التنفيذية..."):
-            coo_plan = self.coo(task)
-        
-        combined_plan = f"=== خطة CEO ===
-{ceo_plan}
+        with st.spinner("🧠 CEO..."):
+            ceo = self.ceo(task)
+        with st.spinner("⚙️ CTO..."):
+            cto = self.cto(task)
+        with st.spinner("📋 COO..."):
+            coo = self.coo(task)
+        combined = f"=== CEO ===
+{ceo}
 
-=== خطة CTO ===
-{cto_plan}
+=== CTO ===
+{cto}
 
-=== خطة COO ===
-{coo_plan}"
-        
-        with st.spinner("✍️ جاري كتابة الإعلانات..."):
-            ad = self.copywriter(combined_plan)
-        
-        with st.spinner("🔥 جاري تحسين الإعلان لزيادة المبيعات..."):
-            final_ad = self.closer(ad)
-        
-        return {
-            "ceo": ceo_plan,
-            "cto": cto_plan,
-            "coo": coo_plan,
-            "ad_original": ad,
-            "ad_final": final_ad,
-            "model_used": st.session_state.get('last_model_used', 'غير محدد')
-        }
+=== COO ===
+{coo}"
+        with st.spinner("✍️ Copy..."):
+            ad = self.copywriter(combined)
+        with st.spinner("🔥 Close..."):
+            final = self.closer(ad)
+        return {"ceo": ceo, "cto": cto, "coo": coo, "ad_original": ad, "ad_final": final}
+
+st.set_page_config(page_title="👑 OMEGA v4.5", page_icon="🤖", layout="wide")
+st.title("👑 OMEGA SUPER AGENTIC v4.5")
+
+domain = st.selectbox("المجال", ["العقار", "التسويق", "الزيتون", "أخرى"])
+task = st.text_area("المهمة", placeholder="مثلاً: إطلاق منصة...", height=100)
+
+if st.button("🚀 تنفيذ", type="primary"):
+    if not task.strip():
+        st.error("⚠️ أدخل المهمة")
+    else:
+        agent = SuperOmegaAgent(domain)
+        with st.spinner("جاري..."):
+            result = agent.full_pipeline(task)
+        st.success("✅ تم!")
+        st.subheader("📢 الإعلان")
+        st.markdown(result["ad_final"])
+        with st.expander("📋 الخطط"):
+            st.markdown("### CEO"); st.markdown(result["ceo"])
+            st.markdown("### CTO"); st.markdown(result["cto"])
+            st.markdown("### COO"); st.markdown(result["coo"])
