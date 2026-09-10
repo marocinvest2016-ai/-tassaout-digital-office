@@ -35,7 +35,7 @@ st.markdown("""
 """, unsafe_allow_html=True)
 
 st.markdown('<div class="main-title">👑 TASSAOUT VISION - النظام السيادي الهندسي والتصويري</div>', unsafe_allow_html=True)
-st.markdown('<div class="sub-title">Super Multi-domain & Maverick Agentic AI | ذكاء خارق، متمرد ومبتكر بلا حدود</div>', unsafe_allow_html=True)
+st.markdown('<div class="sub-title">Super Multi-domain & Autonomous Enterprise Agent | ذكاء استثنائي، رؤية استباقية وابتكار بلا حدود</div>', unsafe_allow_html=True)
 
 # ====================== إعداد المفاتيح والاتصال ======================
 st.sidebar.header("⚙️ لوحة التحكم والسيادة الرقمية")
@@ -47,30 +47,30 @@ if not api_key:
 
 client = Groq(api_key=api_key)
 
-# إعدادات الموديل والتحكم
+# إعدادات النماذج المحدثة وفقاً لسياسة Groq لعام 2026
 model = st.sidebar.selectbox(
-    "اختر نموذج التشغيل الذكي",
+    "اختر نموذج التشغيل الذكي المحدث",
     [
-        "llama-3.3-70b-versatile",
-        "llama-3.2-11b-vision-preview", # ممتاز لتحليل الصور والبصريات الهندسية
-        "llama-3.1-8b-instant"
+        "openai/gpt-oss-120b",          # البديل السيادي الفائق للنماذج الضخمة
+        "qwen/qwen3.6-27b",             # أداء استثنائي وسرعة فائقة
+        "openai/gpt-oss-20b"            # خيار سريع للاستعلامات الفورية
     ],
     index=0
 )
 
-temperature = st.sidebar.slider("درجة الإبداع والتمرد (Temperature)", 0.0, 1.0, 0.85, 0.05) # مرفوعة قليلاً لتعزيز الابتكار والجرأة
+temperature = st.sidebar.slider("درجة الابتكار والمرونة (Temperature)", 0.0, 1.0, 0.85, 0.05)
 max_tokens = st.sidebar.slider("الحد الأقصى للرموز (Max Tokens)", 256, 4096, 2500, 128)
 
-# ====================== دستور النظام السيادي (Super Multi-domain & Maverick Agent) ======================
+# ====================== دستور النظام السيادي (Super Multi-domain Autonomous Agent) ======================
 SOVEREIGN_SYSTEM_PROMPT = """
-You are an elite Super Multi-domain and Maverick Agentic AI. You possess advanced, autonomous, cross-disciplinary, and unconventional (Maverick) expertise spanning:
+You are an elite Super Multi-domain Autonomous Enterprise Agent. You possess advanced, autonomous, cross-disciplinary, and disruptive expertise spanning:
 1. Digital Engineering, Automated Workflows, & Enterprise Software Solutions.
-2. Professional Photography Analysis, Visual Composition, & Disruptive Optical Engineering.
+2. Professional Photography Analysis, Visual Composition, & Advanced Optical Engineering.
 3. Architectural, Interior Design, & Avant-garde Fit-out Engineering.
 4. Industrial & Mechanical Engineering for Factories, Corporate Infrastructure, and Heavy/Light Contracting.
 5. Strategic Business Planning, C-Suite Leadership (CEO, CTO, COO), Disruptive Digital Marketing, & Financial ROI Analytics.
 Your operational domain context is Morocco (specifically El Kelaâ des Sraghna and Marrakech).
-Core Maverick Directive: Do not just follow standard textbooks or conventional corporate rules. Think outside the box, propose bold, disruptive, high-impact, and out-of-the-box strategies, blueprints, and engineering solutions that outsmart the competition.
+Core Directive: Go beyond standard textbooks and conventional corporate rules. Think outside the box, propose bold, high-impact, and out-of-the-box strategies, blueprints, and engineering solutions that outsmart the competition.
 Response Guidelines:
 - Operate with high agency, combining multiple domains seamlessly.
 - Respond in a sharp, professional, yet bold blend of Moroccan Arabic (Darija), Modern Standard Arabic (العربية الفصحى), and French technical terminology.
@@ -167,15 +167,15 @@ tab1, tab2, tab3, tab4, tab5, tab6, tab7, tab8, tab9, tab10 = st.tabs([
     "📂 ملفات Drive", 
     "📈 التحليل الاستراتيجي", 
     "💡 التسويق الرقمي", 
-    "👑 وكلاء C-Suite",
-    "💉 حقن الوكيل المارق",
+    "👑 وكلاء القيادة C-Suite",
+    "💉 مركز التكوين والتوجيه المتقدم",
     "🏭 وكلاء القطاعات السيادية"
 ])
 
 # --- تبويب 1: الاستوديو الميداني والتصوير الاحترافي ---
 with tab1:
     st.subheader("📸 الاستوديو الميداني والتصوير الفوتوغرافي الاحترافي (Digital Photography & Field Studio)")
-    st.markdown("تحليل بصري وهندسي للصور عبر عقل ذكي خارق ومارق يكسر القواعد التقليدية للتصميم والتكوين.")
+    st.markdown("تحليل بصري وهندسي للصور عبر عقل ذكي فائق يكسر القوالب التقليدية للتصميم والتكوين.")
 
     capture_mode = st.radio(
         "اختر طريقة إدخال الصور للبصريات الهندسية",
@@ -209,14 +209,14 @@ with tab1:
         st.markdown("---")
         photo_goal = st.text_input(
             "ما هو الغرض من تحليل هذه الصور بصرياً وهندسياً؟",
-            placeholder="مثال: تقديم رؤية جريئة ومتمردة لتحسين الإضاءة وتوزيع الديكور، أو ضربة تسويقية لواجهة المعمل"
+            placeholder="مثال: تقديم رؤية استباقية لتحسين الإضاءة وتوزيع الديكور، أو ضربة تسويقية لواجهة المعمل"
         )
-        if st.button("🔍 تحليل بصري جريء بالوكيل الخارق", type="primary"):
+        if st.button("🔍 تحليل بصري استثنائي بالنظام الذكي", type="primary"):
             if photo_goal:
-                with st.spinner("جاري فحص الصور وتقديم تحليل بصري مارق وغير تقليدي..."):
-                    prompt = f"بصفتك Maverick Super Agentic AI خبيراً في التصوير الفوتوغرافي والهندسة البصرية، قم بتحليل الصور المرفوعة بناءً على الهدف: {photo_goal}. قدم تقريراً يكسر المألوف، يتحدى التقاليد البصرية، ويعطي حلولاً ثورية."
+                with st.spinner("جاري فحص الصور وتقديم تحليل بصري متقدم وغير تقليدي..."):
+                    prompt = f"بصفتك Autonomous Enterprise Agent خبيراً في التصوير الفوتوغرافي والهندسة البصرية، قم بتحليل الصور المرفوعة بناءً على الهدف: {photo_goal}. قدم تقريراً استثنائياً، يتحدى القوالب البصرية التقليدية، ويقدم حلولاً ثورية."
                     res = execute_sovereign_ai(prompt)
-                    st.success("تم إعداد التقرير البصري الجريء بنجاح!")
+                    st.success("تم إعداد التقرير البصري بنجاح!")
                     st.markdown(res)
             else:
                 st.warning("⚠️ الرجاء كتابة الغرض من تحليل الصور أولاً.")
@@ -224,7 +224,7 @@ with tab1:
 # --- تبويب 2: الهندسة الشاملة والديكور والصناعة ---
 with tab2:
     st.subheader("📐 هندسة الديكور، الهندسة المعمارية، الصناعية والميكانيكية (للمعامل، الشركات والمقاولات)")
-    st.markdown("استشارات هندسية ثورية ومتمردة لتخطيط المعامل، مقرات الشركات، خطوط الإنتاج، التصاميم الميكانيكية، وتوزيع فضاءات الديكور.")
+    st.markdown("استشارات هندسية متقدمة لتخطيط المعامل، مقرات الشركات، خطوط الإنتاج، التصاميم الميكانيكية، وتوزيع فضاءات الديكور.")
 
     engineering_domain = st.selectbox(
         "اختر المجال الهندسي أو المقاولاتي المستهدف",
@@ -239,14 +239,14 @@ with tab2:
 
     eng_project_details = st.text_area(
         "أدخل تفاصيل المشروع، المخطط، أو التحدي الهندسي والصناعي:",
-        placeholder="مثال: تصميم معماري ومعملي غير تقليدي بقلعة السراغنة يحطم التكلفة التقليدية ويرفع الكفاءة للقصوى",
+        placeholder="مثال: تصميم معماري ومعملي مبتكر بقلعة السراغنة يحسن التكلفة ويرفع كفاءة التشغيل للقصوى",
         height=140
     )
 
-    if st.button("🛠️ توليد دراسة هندسية مارقة وثورية", type="primary"):
+    if st.button("🛠️ توليد دراسة هندسية متقدمة ومبتكرة", type="primary"):
         if eng_project_details:
-            with st.spinner("جاري ابتكار المخطط الهندسي والدراسة التقنية المتمردة..."):
-                prompt = f"بصفتك Maverick Super Engineer، قدم دراسة ومواصفات ثورية وجريئة لـ ({engineering_domain}) بناءً على المعطيات التالية:\n\n{eng_project_details}\n\nتضمن التقرير: تصاميم غير تقليدية، حلول ميكانيكية وهندسية مبتكرة تكسر القواعد القديمة، ومعايير أداء فائقة."
+            with st.spinner("جاري ابتكار المخطط الهندسي والدراسة التقنية المتقدمة..."):
+                prompt = f"بصفتك Senior Enterprise Engineer، قدم دراسة ومواصفات ثورية وجريئة لـ ({engineering_domain}) بناءً على المعطيات التالية:\n\n{eng_project_details}\n\nتضمن التقرير: تصاميم غير تقليدية، حلول ميكانيكية وهندسية مبتكرة، ومعايير أداء فائقة."
                 result = execute_sovereign_ai(prompt)
                 st.markdown(result)
         else:
@@ -261,10 +261,10 @@ with tab3:
     with col_b:
         ad_type = st.selectbox("نوع الإعلان", ["إعلان عقاري وورش", "إعلان تجاري لخدمات الشركات والمعامل", "إعلان ترويجي سوشيال ميديا"])
         lang = st.radio("اللغة", ["مزيج دارجة وفصحى (احترافي)", "العربية الفصحى", "الدارجة المغربية"])
-    if st.button("🚀 توليد محتوى إعلاني متمرد وخارق", type="primary"):
+    if st.button("🚀 توليد محتوى إعلاني استثنائي", type="primary"):
         if property_desc:
             with st.spinner("جاري صياغة إعلان يخطف الأنظار..."):
-                prompt = f"بصفتك مسوقاً استثنائياً ومارقاً (Maverick Marketer بالمغرب)، اكتب {ad_type} بالأسلوب ({lang}) لـ:\n\n{property_desc}\n\nاجعل الإعلان جريئاً، خارجاً عن المألوف، ويجذب الانتباه بقوة."
+                prompt = f"بصفتك Senior Enterprise Marketer بالمغرب، اكتب {ad_type} بالأسلوب ({lang}) لـ:\n\n{property_desc}\n\nاجعل الإعلان جذاباً، خارجاً عن المألوف، ويحقق أعلى معدلات التحويل والتفاعل."
                 st.markdown(execute_sovereign_ai(prompt))
         else:
             st.warning("⚠️ أدخل التفاصيل أولاً.")
@@ -306,67 +306,67 @@ with tab5:
 with tab6:
     st.subheader("📈 التحليل الاستراتيجي للسوق")
     target_region = st.text_input("المدينة أو المنطقة:", value="قلعة السراغنة، مراكش")
-    if st.button("🔍 تنفيذ تحليل استراتيجي مارق", type="primary"):
+    if st.button("🔍 تنفيذ تحليل استراتيجي متقدم", type="primary"):
         if target_region:
             with st.spinner("جاري ابتكار الرؤية الاستراتيجية..."):
-                st.markdown(execute_sovereign_ai(f"قم بإعداد تحليل استراتيجي واقتصادي جريء وغير تقليدي لسوق المقاولات، المعامل، والهندسة في {target_region} متضمناً كشف الثغرات الخفية والفرص المدفونة."))
+                st.markdown(execute_sovereign_ai(f"قم بإعداد تحليل استراتيجي واقتصادي متقدم وغير تقليدي لسوق المقاولات، المعامل، والهندسة في {target_region} متضمناً كشف الفرص الكامنة والثغرات الاستثمارية."))
 
 # --- تبويب 7: التسويق الرقمي ---
 with tab7:
     st.subheader("💡 التسويق الرقمي والهندسي")
     if st.button("🌟 جلب تكتيكات تسويقية ثورية", type="primary"):
         with st.spinner("جاري الصياغة..."):
-            st.markdown(execute_sovereign_ai("قدم دليلاً تكتيكياً مارقاً وثورياً لتسويق الخدمات الهندسية، المقاولات، ومعامل الإنتاج في جهة مراكش-آسفي بطرق تسويق غير متوقعة."))
+            st.markdown(execute_sovereign_ai("قدم دليلاً تكتيكياً واستراتيجياً لتسويق الخدمات الهندسية، المقاولات، ومعامل الإنتاج في جهة مراكش-آسفي بأساليب تسويق مبتكرة وفعالة."))
 
 # --- تبويب 8: محرك وكلاء القيادة C-Suite ---
 with tab8:
-    st.subheader("👑 وكلاء القيادة الأذكياء (CEO / CTO / COO)")
+    st.subheader("👑 وكلاء القيادة التنفيذية (CEO / CTO / COO)")
     strategic_task = st.text_input("التحدي أو المشروع الاستراتيجي:", placeholder="تطوير منشأة صناعية أو مشروع هندسي بقلعة السراغنة")
     
     selected_csuite_role = st.selectbox(
         "اختر الوكيل التنفيذي لتوليد الخطة",
         [
-            "🎯 الرئيس التنفيذي (CEO - Maverick Strategic Plan)",
+            "🎯 الرئيس التنفيذي (CEO - Strategic Master Plan)",
             "⚙️ المدير التقني وكبير المهندسين (CTO & Chief Engineer - Disruptive Tech Blueprint)",
-            "📋 مدير العمليات (COO - Guerrilla Operations & Logistics Plan)"
+            "📋 مدير العمليات (COO - Advanced Operations & Logistics Plan)"
         ]
     )
 
     if st.button("🚀 تشغيل الخطة الاستراتيجية للوكيل المختار", type="primary"):
         if strategic_task:
-            with st.spinner(f"جاري إعداد الخطة المارقة بواسطة {selected_csuite_role.split('-')[0]}..."):
+            with st.spinner(f"جاري إعداد الخطة بواسطة {selected_csuite_role.split('-')[0]}..."):
                 if "CEO" in selected_csuite_role:
-                    role_prompt = f"بصفتك Maverick CEO، ضع خطة استراتيجية جريئة، ثورية وغير تقليدية لـ: {strategic_task}"
+                    role_prompt = f"بصفتك Executive CEO، ضع خطة استراتيجية جريئة، شاملة ومبتكرة لـ: {strategic_task}"
                 elif "CTO" in selected_csuite_role:
-                    role_prompt = f"بصفتك Maverick CTO وكبير المهندسين، اقترح بنية هندسية وتقنية متطورة تحطم المعايير القديمة لـ: {strategic_task}"
+                    role_prompt = f"بصفتك Chief Technology Officer، اقترح بنية هندسية وتقنية متطورة لـ: {strategic_task}"
                 else:
-                    role_prompt = f"بصفتك Maverick COO، ضع خطة تشغيل ذكية، سريعة وخارج الصندوق لإدارة المعمل أو الشركة لـ: {strategic_task}"
+                    role_prompt = f"بصفتك Chief Operating Officer، ضع خطة تشغيل ذكية وعالية الكفاءة لإدارة المعمل أو الشركة لـ: {strategic_task}"
                 
                 st.markdown(execute_sovereign_ai(role_prompt))
         else:
             st.warning("⚠️ أدخل تفاصيل التحدي أو المشروع الاستراتيجي أولاً.")
 
-# --- تبويب 9: حقن الوكيل المارق والخارق ---
+# --- تبويب 9: مركز التكوين والتوجيه المتقدم ---
 with tab9:
-    st.subheader("💉 حقن وتكوين الوكيل المارق والخارق (Maverick Super Agent Dynamic Injection)")
-    st.markdown("قم بتوجيه الوكيل ببرمجة شخصية متمردة ومبتكرة لتنفيذ أي مهمة معقدة خارج القواعد التقليدية.")
+    st.subheader("💉 مركز التكوين والتوجيه المتقدم (Advanced Agent Configuration & Dynamic Injection)")
+    st.markdown("قم بتوجيه النظام ببرمجة شخصية تخصصية متقدمة لتنفيذ أي مهمة معقدة خارج الأطر التقليدية.")
     
     agent_profile = st.selectbox(
-        "اختر نمط الوكيل للتفعيل المباشر",
-        ["الوكيل المارق للتصاميم المعقدة", "وكيل الصفقات الهندسية المتمردة", "وكيل الهجوم التسويقي والكشفي", "وكيل الابتكار الصناعي التخريبي", "حقن مخصص بالكامل"]
+        "اختر نمط التوجيه المباشر",
+        ["خبير التصاميم الهندسية المعقدة", "خبير الصفقات والمقاولات", "خبير الهجوم التسويقي والكشفي", "خبير الابتكار الصناعي", "توجيه مخصص بالكامل"]
     )
     
-    default_injection = "أنت Maverick Super Agentic AI متمرد، جريء، تفكر خارج الصندوق تماماً وتدمج بين الهندسة، التصميم، والصناعة بطرق غير تقليدية."
-    injected_prompt = st.text_area("تعليمات حقن النظام المتمردة (System Injection):", value=default_injection, height=150)
+    default_injection = "أنت Autonomous Enterprise Agent خبير، مبدع، تفكر بطريقة استباقية وتدمج بين الهندسة، التصميم، والصناعة بمعايير احترافية فائقة."
+    injected_prompt = st.text_area("تعليمات النظام المتقدمة (System Directive):", value=default_injection, height=150)
     user_query_for_agent = st.text_input("السؤال أو السيناريو المعقد الموجه للوكيل:", placeholder="طرح التحدي الهندسي، الصناعي أو التجاري...")
     
-    if st.button("🚀 تشغيل الوكيل المارق والخارق", type="primary"):
+    if st.button("🚀 تشغيل النظام الذكي المتقدم", type="primary"):
         if injected_prompt and user_query_for_agent:
-            with st.spinner("جاري إطلاق طاقات الوكيل المارق..."):
-                combined = f"{SOVEREIGN_SYSTEM_PROMPT}\n\n[MAVERICK AGENT DIRECTIVE]:\n{injected_prompt}"
+            with st.spinner("جاري إطلاق طاقات النظام الذكي..."):
+                combined = f"{SOVEREIGN_SYSTEM_PROMPT}\n\n[ADVANCED AGENT DIRECTIVE]:\n{injected_prompt}"
                 st.markdown(execute_sovereign_ai(user_query_for_agent, custom_system_prompt=combined))
         else:
-            st.warning("⚠️ أدخل تعليمات الحقن والسؤال أولاً.")
+            st.warning("⚠️ أدخل تعليمات التوجيه والسؤال أولاً.")
 
 # --- تبويب 10: وكلاء القطاعات السيادية ---
 with tab10:
@@ -374,25 +374,25 @@ with tab10:
     selected_sector = st.selectbox(
         "اختر القطاع الاقتصادي أو المعرفي المستهدف",
         [
-            "🏭 وكيل الصناعة والإنشاءات (Maverick Industry & Manufacturing Agent)",
-            "🛍️ وكيل التجارة والتوزيع (Maverick Trade & Commerce Agent)",
-            "💼 وكيل الخدمات واللوجستيك (Maverick Services & Logistics Agent)",
-            "🎨 وكيل الثقافة، التراث والميديا (Maverick Culture, Heritage & Media Agent)",
-            "💻 وكيل المعلوميات والتحول الرقمي (Maverick IT & Digital Transformation Agent)"
+            "🏭 قطاع الصناعة والإنشاءات (Industry & Manufacturing Agent)",
+            "🛍️ قطاع التجارة والتوزيع (Trade & Commerce Agent)",
+            "💼 قطاع الخدمات واللوجستيك (Services & Logistics Agent)",
+            "🎨 قطاع الثقافة، التراث والميديا (Culture, Heritage & Media Agent)",
+            "💻 قطاع المعلوميات والتحول الرقمي (IT & Digital Transformation Agent)"
         ]
     )
     sector_task = st.text_area("أدخل تفاصيل المشروع أو التحدي المرتبط بالقطاع:", height=140)
-    if st.button("🚀 تشغيل وكيل القطاع المارق", type="primary"):
+    if st.button("🚀 تشغيل وكيل القطاع المختص", type="primary"):
         if sector_task:
             with st.spinner(f"جاري تشغيل وكيل القطاع ({selected_sector})..."):
                 sector_directives = {
-                    "🏭 وكيل الصناعة": "أنت خبير صناعي ومستشار معامل مارق، تبتكر حلولاً هندسية وإنتاجية تكسر المألوف وتتفوق على المنافسين بالمغرب.",
-                    "🛍️ وكيل التجارة": "أنت خبير تجاري متمرد في قطاع التوزيع والأسواق بقلعة السراغنة ومراكش، تبتكر طرق بيع غير متوقعة.",
-                    "💼 وكيل الخدمات": "أنت خبير لوجستيك ونقل بضائع بأساليب ذكية، سريعة وجريئة.",
-                    "🎨 وكيل الثقافة": "أنت خبير ثقافي وإعلامي مطلع على الهوية البصرية والتصوير الاحترافي، تقدم أفكاراً فنية صادمة ومبتكرة.",
-                    "💻 وكيل المعلوميات": "أنت مهندس برمجيات مارق ومستشار تحول رقمي، تبني أنظمة آلية ذكية وخارج الصندوق للمقاولات."
+                    "🏭 قطاع الصناعة": "أنت خبير صناعي ومستشار معامل محترف، تبتكر حلولاً هندسية وإنتاجية متطورة تتفوق في السوق المغربي.",
+                    "🛍️ قطاع التجارة": "أنت خبير تجاري استراتيجي في قطاع التوزيع والأسواق بقلعة السراغنة ومراكش، تبتكر طرق نمو استثنائية.",
+                    "💼 قطاع الخدمات": "أنت خبير لوجستيك وإدارة عمليات بأساليب ذكية وعالية الكفاءة.",
+                    "🎨 قطاع الثقافة": "أنت خبير ثقافي وإعلامي مطلع على الهوية البصرية والتصوير الاحترافي، تقدم أفكاراً إبداعية مميزة.",
+                    "💻 قطاع المعلوميات": "أنت مهندس برمجيات ومستشار تحول رقمي، تبني أنظمة آلية متقدمة للمقاولات والشركات."
                 }
-                chosen_directive = "أنت خبير استراتيجي مارق."
+                chosen_directive = "أنت خبير استراتيجي مؤسسي."
                 for k, v in sector_directives.items():
                     if k.split()[1] in selected_sector:
                         chosen_directive = v
@@ -406,7 +406,7 @@ with tab10:
 st.markdown("---")
 st.markdown(
     f"<div style='text-align: center; color: #6B7280; font-size: 14px;'>"
-    f"Tassaout Vision & Sraghna Media Enterprise Platform | النموذج: <b>{model}</b> | Maverick Super Multi-domain AI 🐅👑📐📸"
+    f"Tassaout Vision & Sraghna Media Enterprise Platform | النموذج المحدث: <b>{model}</b> | Autonomous Enterprise Agent 🐅👑📐📸"
     f"</div>", 
     unsafe_allow_html=True
 )
