@@ -11,7 +11,7 @@ st.set_page_config(
 
 
 def call_super_ai(prompt, agent_name, domain):
-  """محرك الذكاء الاصطناعي الفائق - دعم نماذج OpenAI / Qwen / Llama عبر Groq"""
+  """محرك الذكاء الاصطناعي الفائق - Groq + Llama"""
   url = "https://api.groq.com/openai/v1/chat/completions"
   api_key = st.secrets.get("GROQ_API_KEY", "")
 
@@ -28,15 +28,16 @@ def call_super_ai(prompt, agent_name, domain):
 
   system_prompt = (
       f"You are {agent_name}, an elite Super Agentic AI specialized in"
-      f" '{domain}' powered by advanced AI models on Groq. Think step by"
-      " step. Provide professional, highly tailored, actionable strategies."
-      " Respond in Moroccan Arabic Darija + العربية الفصحى, with professional"
-      " formatting, bullet points, emojis, and tables when needed."
+      f" '{domain}' powered by Meta Llama on Groq. Think step by step. Provide"
+      " professional, highly tailored, ethical, and actionable strategies."
+      " Never generate fake reviews or false testimonials. Rely on real value,"
+      " authentic guarantees, and transparent facts. Respond in Moroccan"
+      " Arabic Darija + العربية الفصحى, with professional formatting, bullet"
+      " points, emojis, and tables when needed."
   )
 
-  # قائمة النماذج المتقدمة المعتمدة
   payload = {
-      "model": "openai/gpt-oss-120b",  # النموذج الفائق الأساسي القائم على بنية OpenAI
+      "model": "llama-3.3-70b-versatile",
       "messages": [
           {"role": "system", "content": system_prompt},
           {"role": "user", "content": prompt},
@@ -110,16 +111,15 @@ class SuperOmegaAgent:
     )
 
   def run_autonomous_pipeline(self, task):
-    """المنطق الخلفي الكامل: CEO يخطط -> Copywriter يصيغ 3 إعلانات -> Closer يحسنها ويفصلها"""
-    # 1. التخطيط الخفي عبر الـ CEO
+    """المنطق الخلفي التلقائي: CEO يخطط -> Copywriter يصيغ 3 إعلانات أخلاقية -> Closer يحسنها بالمصداقية والـ FOMO الحقيقي"""
     plan = self.ceo(task)
 
-    # 2. الصياغة الخفية عبر الـ Copywriter
     whatsapp_num = st.secrets.get("WHATSAPP_BUSINESS_NUMBER", "")
     copy_prompt = (
         f"بناءً على هذه الخطة الاستراتيجية: {plan}. اكتب بالضبط 3 إعلانات تسويقية"
-        " جذابة ومفصولة تماماً عن بعضها في مجال (تركيزك على: "
-        f"{self.domain}). قم بتمييز كل إعلان بالعنوان التالي حرفياً: '###"
+        " احترافية وأخلاقية جذابة ومفصولة تماماً عن بعضها في مجال (تركيزك على: "
+        f"{self.domain}). تجنب تماماً أي شهادات كاذبة أو وهمية، وركز على القيمة"
+        " الحقيقية والشفافية. قم بتمييز كل إعلان بالعنوان التالي حرفياً: '###"
         " الإعلان الأول'، '### الإعلان الثاني'، '### الإعلان الثالث'."
         " استخدم اللهجة المغربية والعربية الفصحى مع أيقونات، كلمات مفتاحية،"
         f" هاشتاقات، ودعوة للاتصال برقم الواتساب: {whatsapp_num}"
@@ -128,16 +128,15 @@ class SuperOmegaAgent:
         copy_prompt, "Super Copywriter Agent", self.domain
     )
 
-    # 3. التحسين الخفي عبر الـ Closer وإضافة FOMO
     closer_prompt = (
-        f"قم بتحسين هذه الإعلانات الثلاثة وإضافة محفزات الاستعجال FOMO + ضمان +"
-        " شهادات لزيادة المبيعات. يجب أن تحافظ بحرفية تامة على تقسيم الإعلانات"
-        " الثلاثة وتستخدم نفس العناوين بانتظام: '### الإعلان الأول'، '### الإعلان"
-        f" الثاني'، '### الإعلان الثالث': {draft_ads}"
+        f"قم بتحسين هذه الإعلانات الثلاثة وإضافة محفزات الاستعجال الحقيقية FOMO"
+        " (مثل: محدودية العرض، الأسبقية) والضمانات المهنية والشفافة بعيداً عن أي"
+        " مبالغات أو شهادات كاذبة. حافظ بحرفية تامة على تقسيم الإعلانات الثلاثة"
+        " ونفس العناوين: '### الإعلان الأول'، '### الإعلان الثاني'، '### الإعلان"
+        f" الثالث': {draft_ads}"
     )
     final_ads = call_super_ai(closer_prompt, "Super Closer Agent", self.domain)
 
-    # 4. إرسال الإشعار الخفي عبر الواتساب
     send_whatsapp_alert(
         f"👑 Tassaout Méga Fort\nالمجال: {self.domain}\n\n{final_ads}"
     )
@@ -148,13 +147,14 @@ class SuperOmegaAgent:
 # ===== واجهة Streamlit التفاعلية =====
 st.title("👑 Tassaout Méga Fort")
 st.caption(
-    "OMEGA Super Agentic AI | المنصة السيادية المتقدمة بنماذج OpenAI و Groq"
+    "OMEGA Super Agentic AI | المنصة السيادية المتقدمة للذكاء الاصطناعي والمصداقية"
+    " التجارية"
 )
 
-# واجهة تفاعلية حرّة وفارغة للمجال
+# خانة كتابة المجال بشكل حر وفارغ
 domain = st.text_input(
     "اكتب المجال المطلوب (بحرية تامة)",
-    placeholder="مثال: تسويق عقاري، خدمات رقمية، صناعة...",
+    placeholder="مثال: تسويق عقاري، خدمات رقمية، تجارة...",
 )
 task = st.text_area(
     "وصف المهمة / المشروع",
@@ -192,11 +192,13 @@ with col3:
 st.markdown("---")
 
 if st.button(
-    "🚀 تشغيل الوكلاء بالكامل (خطة + إعلانات سيادية + واتساب)", type="primary"
+    "🚀 تشغيل الوكلاء بالكامل (خطة + إعلانات أخلاقية موثوقة + واتساب)",
+    type="primary",
 ):
   if task:
     with st.spinner(
-        "الوكلاء الأذكياء يعملون في الخلفية (CEO -> Copywriter -> Closer)..."
+        "الوكلاء الأذكياء يعملون في الخلفية بمصداقية تامة (CEO -> Copywriter ->"
+        " Closer)..."
     ):
       plan, final_ads = agent.run_autonomous_pipeline(task)
       st.success("تم تنفيذ المنطق الخلفي وتوليد الحملة بنجاح!")
@@ -205,7 +207,7 @@ if st.button(
         st.markdown(plan)
 
       st.markdown("---")
-      st.subheader("📢 البطاقات الإعلانية الملونة والسيادية")
+      st.subheader("📢 البطاقات الإعلانية الملونة والموثوقة")
 
       parts = final_ads.split("### الإعلان")
       card_colors = [
@@ -219,30 +221,45 @@ if st.button(
       if len(parts) > 1:
         for idx, part in enumerate(parts[1:], 1):
           color_style = card_colors[(idx - 1) % len(card_colors)]
+          card_content = f"### الإعلان {idx}\n" + part.strip()
+
           with st.container():
             st.markdown(
                 f"""
-                        <div style="{color_style} padding: 20px; border-radius: 12px; margin-bottom: 15px; box-shadow: 0 4px 6px rgba(0,0,0,0.05);">
+                        <div style="{color_style} padding: 25px; border-radius: 12px; margin-bottom: 25px; box-shadow: 0 4px 10px rgba(0,0,0,0.06);">
                             <h3 style="margin-top: 0; color: #1F2937;">🏷️ البطاقة الإعلانية رقم {idx}</h3>
-                            <div style="color: #374151; font-size: 16px; line-height: 1.6;">
-                                {part}
-                            </div>
+                            <div style="color: #374151; font-size: 16px; line-height: 1.7; white-space: pre-wrap;">{part.strip()}</div>
                         </div>
                         """,
                 unsafe_allow_html=True,
             )
+
+            # زر تحميل مباشر لكل بطاقة إعلانية على حدة
+            st.download_button(
+                label=f"📥 تحميل البطاقة الإعلانية رقم {idx} (.txt)",
+                data=card_content,
+                file_name=f"Tassaout_Mega_Fort_Ad_{idx}.txt",
+                mime="text/plain",
+                key=f"download_btn_{idx}",
+            )
+            st.markdown("<br>", unsafe_allow_html=True)
       else:
         with st.container():
           st.markdown(
               f"""
-                    <div style="background-color: #f8fafc; border-right: 6px solid #4F46E5; padding: 20px; border-radius: 12px; margin-bottom: 15px; box-shadow: 0 4px 6px rgba(0,0,0,0.05);">
+                    <div style="background-color: #f8fafc; border-right: 6px solid #4F46E5; padding: 25px; border-radius: 12px; margin-bottom: 25px; box-shadow: 0 4px 10px rgba(0,0,0,0.06);">
                         <h3 style="margin-top: 0; color: #1F2937;">🏷️ البطاقات الإعلانية</h3>
-                        <div style="color: #374151; font-size: 16px; line-height: 1.6;">
-                            {final_ads}
-                        </div>
+                        <div style="color: #374151; font-size: 16px; line-height: 1.7; white-space: pre-wrap;">{final_ads}</div>
                     </div>
                     """,
               unsafe_allow_html=True,
+          )
+          st.download_button(
+              label="📥 تحميل الحملة الإعلانية كاملة (.txt)",
+              data=final_ads,
+              file_name="Tassaout_Mega_Fort_Campaign.txt",
+              mime="text/plain",
+              key="download_btn_all",
           )
   else:
     st.warning("⚠️ الرجاء إدخال وصف المهمة أو المشروع أولاً.")
