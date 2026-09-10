@@ -3,7 +3,9 @@ import json
 import requests
 import streamlit as st
 
-# إعدادات الصفحة السيادية - Tassaout méga fort AI
+# ==========================================
+# 👑 إعدادات الصفحة السيادية - Tassaout méga fort AI
+# ==========================================
 st.set_page_config(
     page_title="Tassaout méga fort AI - Universal Sovereign Rogue Agent", 
     page_icon="👑", 
@@ -22,6 +24,10 @@ if "agent_custom_instructions" not in st.session_state:
         "(الصناعة، التجارة، الخدمات، الثقافة العالمية، الهندسة، الفلاحة، السياسة، الاقتصاد، العلوم الإنسانية والاجتماعية، القانون، الفلسفة، الآداب، وكل حقل معرفي).\n"
         "3. الأداء الهجومي المباشر: فكر بعمق استراتيجي مارق، بدون قيود بيروقراطية، وقدم حلولاً فورية، دقيقة، وقابلة للتنفيذ الفوري."
     )
+
+if "last_output" not in st.session_state:
+    st.session_state.last_output = ""
+
 
 def call_super_ai(prompt, agent_name, domain, custom_market):
     """محرك الذكاء الاصطناعي الفائق - Tassaout méga fort AI + الدستور التشغيلي الشامل"""
@@ -66,6 +72,7 @@ def call_super_ai(prompt, agent_name, domain, custom_market):
     except Exception as e:
         return f"❌ خطأ في الاتصال بالذكاء الاصطناعي: {e}"
 
+
 def send_whatsapp_alert(message):
     """إرسال إشعار مباشر عبر واتساب API"""
     try:
@@ -92,6 +99,7 @@ def send_whatsapp_alert(message):
     except Exception as e:
         st.warning(f"تعذر إرسال إشعار الواتساب: {e}")
 
+
 class TassaoutOmegaUniversalAgent:
     def __init__(self, domain, market):
         self.domain = domain
@@ -117,7 +125,10 @@ class TassaoutOmegaUniversalAgent:
         prompt = f"قم بهندسة وتحسين هذه المخرجات وإضافة أقوى محفزات التأثير، الإقناع، وحسم الصفقات أو المخرجات فوراً: {ad}"
         return call_super_ai(prompt, "Tassaout Supreme Closer Agent", self.domain, self.market)
 
-# القائمة الجانبية للتنقل
+
+# ==========================================
+# 🎛️ واجهة المستخدم (Streamlit Sidebar & Views)
+# ==========================================
 st.sidebar.title("👑 Tassaout méga fort AI")
 st.sidebar.markdown("**النظام:** الدستور التشغيلي للوكيل المارق الشامل")
 st.sidebar.markdown("**المستخدم:** عامر بوخدادة | نظام سيادي بلا حدود")
@@ -183,25 +194,25 @@ if app_mode == "⚡ غرفة العمليات الشاملة للوكيل الم
     result_container = st.empty()
 
     with col1:
-        if st.button("🧠 استراتيجية CEO المارق"):
+        if st.button("🧠 استراتيجية CEO المارق", use_container_width=True):
             with st.spinner("الوكيل المارق يعالج الخطة..."):
                 res = agent.ceo(task)
                 result_container.markdown(res)
                 st.session_state.last_output = res
     with col2:
-        if st.button("💻 هندسة CTO المارق"):
+        if st.button("💻 هندسة CTO المارق", use_container_width=True):
             with st.spinner("الوكيل التقني يخطط..."):
                 res = agent.cto(task)
                 result_container.markdown(res)
                 st.session_state.last_output = res
     with col3:
-        if st.button("📊 عمليات COO المارق"):
+        if st.button("📊 عمليات COO المارق", use_container_width=True):
             with st.spinner("مدير العمليات يضع الهيكلة..."):
                 res = agent.coo(task)
                 result_container.markdown(res)
                 st.session_state.last_output = res
 
-    if st.button("✍️ توليد مخرجات شاملة + إرسال واتساب"):
+    if st.button("✍️ توليد مخرجات شاملة + إرسال واتساب", type="primary", use_container_width=True):
         with st.spinner("الوكيل المارق يصيغ الحل النهائي..."):
             plan = agent.ceo(task)
             content = agent.copywriter(plan)
@@ -210,8 +221,12 @@ if app_mode == "⚡ غرفة العمليات الشاملة للوكيل الم
             st.session_state.last_output = final_result
             st.success("تم تنفيذ العملية بنجاح وإرسال التنبيه!")
 
+    # عرض النتيجة الثابتة في الذاكرة إن وجدت
+    if st.session_state.last_output and not result_container.text:
+        result_container.markdown(st.session_state.last_output)
+
     # زر التحميل الفوري للمخرجات (Download Button)
-    if "last_output" in st.session_state and st.session_state.last_output:
+    if st.session_state.last_output:
         st.markdown("---")
         st.download_button(
             label="📥 تحميل التقرير أو المخرجات الحالية (ملف نصي)",
@@ -233,14 +248,14 @@ elif app_mode == "🎛️ مركز الحقن والتطوير التفاعلي 
 
     col_btn1, col_btn2 = st.columns(2)
     with col_btn1:
-        if st.button("🚀 حقن الدستور الجديد في عقل الوكيل"):
+        if st.button("🚀 حقن الدستور الجديد في عقل الوكيل", use_container_width=True):
             st.session_state.agent_custom_instructions = dynamic_injection
             timestamp = datetime.now().strftime('%Y-%m-%d %H:%M:%S')
             st.session_state.adaptive_memory.append(f"[{timestamp}] تحديث دستور النظام: {dynamic_injection}")
             st.success("✅ تم تحديث الدستور التشغيلي بنجاح في عقل الوكيل المارق!")
 
     with col_btn2:
-        if st.button("🔄 إعادة ضبط الدستور الافتراضي"):
+        if st.button("🔄 إعادة ضبط الدستور الافتراضي", use_container_width=True):
             st.session_state.agent_custom_instructions = (
                 "=== الدستور التشغيلي لنظام Tassaout méga fort AI ===\n"
                 "1. السيادة المطلقة والحرية التامة: أنت الوكيل الذكي المارق العابر للحدود والقطاعات.\n"
@@ -269,7 +284,6 @@ elif app_mode == "📷 وحدة التقاط الصور الميدانية (ال
         st.success("✅ تم التقاط الصورة بنجاح وتخزينها مؤقتاً في جلسة العمل السيادية.")
         st.image(camera_image, caption="الصورة الميدانية الملتقطة", use_container_width=True)
         
-        # زر لتحميل الصورة الملتقطة
         st.download_button(
             label="📥 تحميل الصورة الملتقطة",
             data=camera_image.getvalue(),
@@ -283,7 +297,7 @@ elif app_mode == "📱 مركز الإشعارات والربط الميداني
     st.markdown("اختبار إرسال تنبيهات الواتساب وتأكيد الربط الفوري مع رقم الأعمال.")
     
     test_msg = st.text_input("نص الرسالة الاختبارية:", value="👑 Tassaout méga fort AI - دستور النظام المارق يعمل بكفاءة مطلقة.")
-    if st.button("📤 إرسال رسالة اختبار عبر واتساب"):
+    if st.button("📤 إرسال رسالة اختبار عبر واتساب", type="primary"):
         send_whatsapp_alert(test_msg)
         st.success("تم إرسال الطلب إلى واجهة واتساب بنجاح!")
 
