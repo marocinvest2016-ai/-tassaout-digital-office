@@ -1,6 +1,7 @@
 import os
-import requests
 import streamlit as st
+from groq import Groq
+import ollama
 
 
 # =========================
@@ -8,102 +9,199 @@ import streamlit as st
 # =========================
 
 st.set_page_config(
-    page_title="Tassaout Omega AI - Multi-Domain",
+    page_title="دانا الوكيلة العقارية",
     page_icon="👑",
-    layout="wide",
+    layout="centered",
 )
 
 
 # =========================
-# الإعدادات
+# قراءة الإعدادات بأمان
 # =========================
 
-GROQ_URL = "https://api.groq.com/openai/v1/chat/completions"
-DEFAULT_MODEL = "openai/gpt-oss-20b"
-
-
-def get_secret(key, default=None):
-    """قراءة القيمة من Streamlit Secrets أو متغيرات البيئة."""
+def get_setting(key, default=""):
+    """
+    يقرأ الإعداد من Streamlit Secrets أو من متغيرات البيئة.
+    إذا لم يوجد، يعيد قيمة فارغة أو القيمة الافتراضية.
+    """
     try:
-        value = st.secrets.get(key)
+        value = st.secrets.get(key, default)
     except Exception:
-        value = None
+        value = default
 
     return value or os.getenv(key, default)
 
 
+GROQ_KEY = get_setting("GROQ_API_KEY")
+GROQ_MODEL = get_setting("GROQ_MODEL", "openai/gpt-oss-20b")
+
+OLLAMA_HOST = get_setting(
+    "OLLAMA_HOST",
+    "http://localhost:11434",
+)
+
+OLLAMA_MODEL = get_setting(
+    "OLLAMA_MODEL",
+    "llama3.2",
+)
+
+
 # =========================
-# الاتصال بـ Groq
+# تهيئة العملاء
 # =========================
 
-def call_ai_engine(prompt, agent_role, domain_field):
-    """توليد جواب باستعمال Groq."""
+groq_client = None
+ollama_client = None
 
-    api_key = get_secret("GROQ_API_KEY")
-    model = get_secret("GROQ_MODEL", DEFAULT_MODEL)
+if GROQ_KEY:
+    groq_client = Groq(
+        api_key=GROQ_KEY,
+        timeout=10.0,
+    )
 
-    if not api_key:
-        return "❌ خطأ: مفتاح GROQ_API_KEY غير موجود في Secrets."
+if OLLAMA_HOST:
+    ollama_client = ollama.Client(
+        host=OLLAMA_HOST,
+    )
 
-    if not prompt or not prompt.strip():
-        return "❌ المرجو إدخال تفاصيل المهمة."
 
-    system_prompt = f"""
-أنت {agent_role}، خبير محترف في مجال {domain_field}.
+# =========================
+# تعليمات دانا
+# =========================
 
-حلل طلب المستخدم وقدم جواباً عملياً ومنظماً.
-استعمل الدارجة المغربية مع العربية الفصحى المهنية.
-نظم الجواب بعناوين واضحة ونقاط مختصرة.
-لا تخترع أي معلومات غير موجودة.
-إذا كانت المعطيات ناقصة، وضح ما يجب توفيره.
+SYSTEM_PROMPT = """
+أنت دانا، وكيلة عقارية ذكية من وكالة تساوت بقلعة السراغنة.
 
-اعرض الجواب وفق الشكل التالي:
+تحدثي بالدارجة المغربية بطريقة ودودة ومحترفة، ويمكنك استعمال العربية الفصحى عند الحاجة.
 
-📌 الخلاصة التنفيذية
-🔍 التحليل
-🛠️ الخطة العملية
-⚠️ المخاطر والنقاط المهمة
-✅ الخطوات التالية
+مهمتك:
+- مساعدة العملاء في البحث عن العقارات.
+- تقديم معلومات واضحة عن العقار.
+- طرح أسئلة مفيدة لفهم طلب العميل.
+- اقتراح حجز موعد للمعاينة.
+- جمع الميزانية، المنطقة، المساحة، ونوع العقار.
+- عدم اختراع أسعار أو مساحات أو معلومات غير موجودة.
+- إذا كانت المعلومات ناقصة، صرحي بذلك واطلبي التفاصيل اللازمة.
+- لا تؤكدي الحجز النهائي إلا بعد موافقة المسؤول.
 """
 
-    payload = {
-        "model": model,
-        "messages": [
-            {
-                "role": "system",
-                "content": system_prompt.strip(),
-            },
-            {
-                "role": "user",
-                "content": prompt.strip(),
-            },
-        ],
-        "temperature": 0.7,
-        "max_tokens": 1800,
-    }
 
-    headers = {
-        "Authorization": f"Bearer {api_key}",
-        "Content-Type": "application/json",
-    }
+def ask_dana(message):
+    """
+    تحاول الإجابة باستعمال Groq أولاً،
+    ثم تستعمل Ollama كخطة احتياطية.
+    """
 
-    try:
-        response = requests.post(
-            GROQ_URL,
-            headers=headers,
-            json=payload,
-            timeout=90,
-        )
+    if not message or not message.strip():
+        return "عافاك كتب ليا شنو العقار أو المعلومة اللي باغي تعرف عليها.", "Error"
 
+    messages = [
+        {
+            "role": "system",
+            "content": SYSTEM_PROMPT.strip(),
+        },
+        {
+            "role": "user",
+            "content": message.strip(),
+        },
+    ]
+
+    # =========================
+    # المحاولة الأولى: Groq
+    # =========================
+
+    if groq_client is not None:
         try:
-            data = response.json()
-        except ValueError:
-            data = {}
+            response = groq_client.chat.completions.create(
+                model=GROQ_MODEL,
+                messages=messages,
+                temperature=0.7,
+                max_tokens=1000,
+            )
 
-        if response.ok:
-            choices = data.get("choices", [])
+            content = response.choices[0].message.content
 
-            if not choices:
-                return "❌ الخادم أرجع نتيجة فارغة."
+            if content:
+                return content.strip(), "Groq"
 
-            content = choices[0].get("messa
+        except Exception:
+            pass
+
+    # =========================
+    # الخطة الثانية: Ollama
+    # =========================
+
+    if ollama_client is not None:
+        try:
+            response = ollama_client.chat(
+                model=OLLAMA_MODEL,
+                messages=messages,
+            )
+
+            content = response.get("message", {}).get("content", "")
+
+            if content:
+                return content.strip(), "Ollama"
+
+        except Exception:
+            pass
+
+    return (
+        "سمح ليا، وقع مشكل تقني مؤقت. "
+        "عاود المحاولة من بعد أو تواصل مع الوكالة مباشرة.",
+        "Error",
+    )
+
+
+# =========================
+# واجهة المحادثة
+# =========================
+
+st.title("👑 دانا الوكيلة العقارية")
+
+st.caption(
+    "وكيلة ذكية لمساعدتك في البحث عن العقارات وحجز المعاينات"
+)
+
+
+if "messages" not in st.session_state:
+    st.session_state.messages = []
+
+
+for msg in st.session_state.messages:
+    with st.chat_message(msg["role"]):
+        st.markdown(msg["content"])
+
+
+prompt = st.chat_input(
+    "سوليني على أي عقار..."
+)
+
+
+if prompt:
+
+    st.session_state.messages.append(
+        {
+            "role": "user",
+            "content": prompt,
+        }
+    )
+
+    with st.chat_message("user"):
+        st.markdown(prompt)
+
+    with st.chat_message("assistant"):
+        with st.spinner("دانا كتفكر..."):
+            reply, brain = ask_dana(prompt)
+
+        st.markdown(reply)
+
+        if brain != "Error":
+            st.caption(f"المحرك المستعمل: {brain}")
+
+    st.session_state.messages.append(
+        {
+            "role": "assistant",
+            "content": reply,
+        }
+    )
