@@ -39,8 +39,7 @@ supabase = init_supabase()
 # واجهة المستخدم
 st.title("🏢 وكيل تساوت للعقارات - دانا")
 st.markdown(
-    "مرحباً! أنا **دانا**، مساعدتك الذكية للعقارات في قلعة السراغنة ومراكش"
-    " وقادرة على البحث في الويب عند الحاجة."
+    "مرحباً! أنا **دانا**، مساعدتك الذكية للعقارات في قلعة السراغنة ومراكش."
 )
 
 if "messages" not in st.session_state:
@@ -56,7 +55,7 @@ if prompt := st.chat_input("اطرح سؤالك العقاري أو استفسر
     st.markdown(prompt)
 
   with st.chat_message("assistant"):
-    with st.spinner("جاري البحث والتفكير..."):
+    with st.spinner("جاري التفكير..."):
       try:
         system_instruction = (
             "أنت 'دانا'، مساعدة ذكية ومحترفة خاصة بـ 'وكيل تساوت للعقارات'"
@@ -66,13 +65,12 @@ if prompt := st.chat_input("اطرح سؤالك العقاري أو استفسر
             " 0691897126."
         )
 
-        # توليد المحتوى مع تفعيل أداة البحث في Google Search
+        # توليد المحتوى بالطريقة المستقرة بدون أخطاء إضافية في الـ tools
         response = client.models.generate_content(
             model="gemini-2.5-flash",
             contents=prompt,
             config=types.GenerateContentConfig(
                 system_instruction=system_instruction,
-                tools=[{"type": "google_search"}],  # تفعيل البحث في الإنترنت
                 temperature=0.7,
                 max_output_tokens=800,
             ),
