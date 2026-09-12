@@ -9,7 +9,7 @@ st.set_page_config(page_title="وكيل تساوت العقاري", page_icon="�
 st.title("🏠 وكيل تساوت العقاري والخدمات")
 st.markdown("مرحباً بك! اسأل عن الشقق، البقع الأرضية، أو العقارات في قلعة السراغنة ومراكش.")
 
-# 1. الاتصال بقاعدة بيانات Supabase (تأكد من وضع المتغيرات في Streamlit Secrets)
+# 1. الاتصال بقاعدة بيانات Supabase
 SUPABASE_URL = st.secrets.get("SUPABASE_URL", os.getenv("SUPABASE_URL", ""))
 SUPABASE_KEY = st.secrets.get("SUPABASE_KEY", os.getenv("SUPABASE_KEY", ""))
 GEMINI_API_KEY = st.secrets.get("GEMINI_API_KEY", os.getenv("GEMINI_API_KEY", ""))
@@ -54,11 +54,11 @@ if prompt := st.chat_input("اكتب سؤالك هنا (مثال: بغيت شق�
             - يجب أن ختم أي رد برقم الهاتف للتواصل: 0691897126.
             """
             
-            full_prompt = f"{system_instruction}\n\nبيانات العقارات المتوفرة: {db_data}\n\sؤال العميل: {prompt}"
+            full_prompt = f"{system_instruction}\n\nبيانات العقارات المتوفرة: {db_data}\nسؤال العميل: {prompt}"
             
             try:
                 response = client.models.generate_content(
-                    model="gemini-2.5-flash",
+                    model="gemini-3.7-flash",
                     contents=full_prompt,
                 )
                 response_text = response.text
