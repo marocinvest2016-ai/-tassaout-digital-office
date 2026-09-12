@@ -1,5 +1,6 @@
 import streamlit as st
 import os
+import time
 from google import genai
 from supabase import create_client, Client
 
@@ -56,14 +57,23 @@ if prompt := st.chat_input("اكتب سؤالك هنا (مثال: بغيت شق�
             
             full_prompt = f"{system_instruction}\n\nبيانات العقارات المتوفرة: {db_data}\nسؤال العميل: {prompt}"
             
-            try:
-                response = client.models.generate_content(
-                    model="gemini-3.7-flash",
-                    contents=full_prompt,
-                )
-                response_text = response.text
-            except Exception as e:
-                response_text = f"عذراً، حدث خطأ أثناء معالجة طلبك: {str(e)}"
+            # محاولة إرسال الطلب مع إعادة المحاولة تلقائياً في حالة الضغط (503)
+            response_text = ""
+            max_retries = 3
+            for attempt in range(max_retries):
+                try:
+                    response = client.models.generate_content(
+                        model="gemini-3.7-flash",
+                        contents=full_prompt,
+                    )
+                    response_text = response.text
+                    break
+                except Exception as e:
+                    if "503" in str(e) and attempt < max_retries - 1:
+                        time.sleep(2) # انتظار ثانيتين قبل إعادة المحاولة
+                        continue
+                    else:
+                        response_text = f"عذراً، الخوادم تشهد ضغطاً مؤقتاً حالياً. يجدر بك إعادة المحاولة بعد لحظات، أو الاتصال مباشرة على الرقم: 0691897126."
                 
         st.markdown(response_text)
         st.session_state.messages.append({"role": "assistant", "content": response_text})
