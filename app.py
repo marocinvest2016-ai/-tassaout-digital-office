@@ -1,79 +1,90 @@
-import streamlit as st
 import os
-import time
 from google import genai
-from supabase import create_client, Client
+from google.genai import types
+import streamlit as st
+from supabase import create_client
 
 # إعداد الصفحة
-st.set_page_config(page_title="وكيل تساوت العقاري", page_icon="🏠", layout="centered")
+st.set_page_config(
+    page_title="وكيل تساوت للعقارات | Dana", page_icon="🏢", layout="centered"
+)
 
-st.title("🏠 وكيل تساوت العقاري والخدمات")
-st.markdown("مرحباً بك! اسأل عن الشقق، البقع الأرضية، أو العقارات في قلعة السراغنة ومراكش.")
+# جلب المفاتيح بأمان
+GEMINI_API_KEY = st.secrets.get("GEMINI_API_KEY") or os.environ.get(
+    "GEMINI_API_KEY"
+)
+SUPABASE_URL = st.secrets.get("SUPABASE_URL") or os.environ.get("SUPABASE_URL")
+SUPABASE_KEY = st.secrets.get("SUPABASE_KEY") or os.environ.get("SUPABASE_KEY")
 
-# 1. الاتصال بقاعدة بيانات Supabase
-SUPABASE_URL = st.secrets.get("SUPABASE_URL", os.getenv("SUPABASE_URL", ""))
-SUPABASE_KEY = st.secrets.get("SUPABASE_KEY", os.getenv("SUPABASE_KEY", ""))
-GEMINI_API_KEY = st.secrets.get("GEMINI_API_KEY", os.getenv("GEMINI_API_KEY", ""))
+if not GEMINI_API_KEY:
+  st.error("المرجو إعداد `GEMINI_API_KEY` في إعدادات التطبيق.")
+  st.stop()
 
-# 2. إعداد عميل Gemini
-client = genai.Client(api_key=GEMINI_API_KEY) if GEMINI_API_KEY else None
+# تهيئة العميل بالطريقة الحديثة
+client = genai.Client(
+    api_key=GEMINI_API_KEY, http_options=types.HttpOptions(api_version="v1")
+)
 
-def fetch_properties_from_supabase():
-    if not SUPABASE_URL or not SUPABASE_KEY:
-        return "قاعدة البيانات غير متصلة حالياً. العروض الافتراضية: شقق وفلل فقلعة السراغنة ومراكش."
-    try:
-        supabase: Client = create_client(SUPABASE_URL, SUPABASE_KEY)
-        response = supabase.table("properties").select("*").execute()
-        return response.data
-    except Exception as e:
-        return f"خطأ في جلب البيانات: {str(e)}"
 
-# واجهة الدردشة
+# تهيئة Supabase
+@st.cache_resource
+def init_supabase():
+  if SUPABASE_URL and SUPABASE_KEY:
+    return create_client(SUPABASE_URL, SUPABASE_KEY)
+  return None
+
+
+supabase = init_supabase()
+
+# واجهة المستخدم
+st.title("🏢 وكيل تساوت للعقارات - دانا")
+st.markdown(
+    "مرحباً! أنا **دانا**، مساعدتك الذكية للعقارات في قلعة السراغنة ومراكش"
+    " وقادرة على البحث في الويب عند الحاجة."
+)
+
 if "messages" not in st.session_state:
-    st.session_state.messages = []
+  st.session_state.messages = []
 
 for message in st.session_state.messages:
-    with st.chat_message(message["role"]):
-        st.markdown(message["content"])
+  with st.chat_message(message["role"]):
+    st.markdown(message["content"])
 
-if prompt := st.chat_input("اكتب سؤالك هنا (مثال: بغيت شقة فقلعة السراغنة)..."):
-    st.session_state.messages.append({"role": "user", "content": prompt})
-    with st.chat_message("user"):
-        st.markdown(prompt)
+if prompt := st.chat_input("اطرح سؤالك العقاري أو استفسر عن أي جديد..."):
+  st.session_state.messages.append({"role": "user", "content": prompt})
+  with st.chat_message("user"):
+    st.markdown(prompt)
 
-    with st.chat_message("assistant"):
-        if not client:
-            response_text = "المرجو إدخال مفتاح Gemini API في إعدادات المنصة (Secrets)."
-        else:
-            db_data = fetch_properties_from_supabase()
-            
-            system_instruction = """
-            أنت "دانا"، الوكيلة الذكية الرسمية لوكالة تساوت للعقارات والخدمات. 
-            مهمتك هي الرد على العملاء بالدارجة المغربية، عرض العقارات المناسبة، وإقناعهم بحجز موعد معاينة.
-            - جاوب دائماً بالدارجة المغربية وبشكل ودود.
-            - لا تخترع أثمنة، اعتمد على البيانات المتوفرة.
-            - يجب أن ختم أي رد برقم الهاتف للتواصل: 0691897126.
-            """
-            
-            full_prompt = f"{system_instruction}\n\nبيانات العقارات المتوفرة: {db_data}\nسؤال العميل: {prompt}"
-            
-            # محاولة إرسال الطلب مع إعادة المحاولة تلقائياً في حالة الضغط (503)
-            response_text = ""
-            max_retries = 3
-            for attempt in range(max_retries):
-                try:
-                    response = client.models.generate_content(
-                        model="gemini-3.7-flash",
-                        contents=full_prompt,
-                    )
-                    response_text = response.text
-                    break
-                except Exception as e:
-                    if "503" in str(e) and attempt < max_retries - 1:
-                        time.sleep(2) # انتظار ثانيتين قبل إعادة المحاولة
-                        continue
-                    else:
-                        response_text = f"عذراً، الخوادم تشهد ضغطاً مؤقتاً حالياً. يجدر بك إعادة المحاولة بعد لحظات، أو الاتصال مباشرة على الرقم: 0691897126."
-                
-        st.markdown(response_text)
-        st.session_state.messages.append({"role": "assistant", "content": response_text})
+  with st.chat_message("assistant"):
+    with st.spinner("جاري البحث والتفكير..."):
+      try:
+        system_instruction = (
+            "أنت 'دانا'، مساعدة ذكية ومحترفة خاصة بـ 'وكيل تساوت للعقارات'"
+            " (Tassaout Real Estate) في قلعة السراغنة ومراكش. تتحدثين بلطف"
+            " واحترافية (باللغة العربية والدارجة المغربية عند الحاجة)."
+            " مسؤولة عن عرض الشقق، البقع، الفيلات، وتسهيل التواصل على الرقم"
+            " 0691897126."
+        )
+
+        # توليد المحتوى مع تفعيل أداة البحث في Google Search
+        response = client.models.generate_content(
+            model="gemini-2.5-flash",
+            contents=prompt,
+            config=types.GenerateContentConfig(
+                system_instruction=system_instruction,
+                tools=[{"type": "google_search"}],  # تفعيل البحث في الإنترنت
+                temperature=0.7,
+                max_output_tokens=800,
+            ),
+        )
+
+        reply = (
+            response.text
+            if response and response.text
+            else "عذراً، لم أتمكن من معالجة طلبك حالياً."
+        )
+        st.markdown(reply)
+        st.session_state.messages.append({"role": "assistant", "content": reply})
+
+      except Exception as e:
+        st.error(f"حدث خطأ تقني: {e}")
