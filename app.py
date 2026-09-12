@@ -18,9 +18,8 @@ except ImportError:
     ollama = None
 
 APP_NAME = "ORION-SUPER-AI"
-APP_VERSION = "v13.0-FullScreen"
+APP_VERSION = "v14.0-FullWidth"
 
-# إعداد الصفحة لملء العرض والتحكم الكامل
 st.set_page_config(
     page_title=APP_NAME,
     page_icon="🌌",
@@ -28,25 +27,19 @@ st.set_page_config(
     initial_sidebar_state="collapsed"
 )
 
-# تنسيق CSS متقدم لملء شاشة الهاتف بالكامل وإزالة الفراغات والهوامش تماماً
+# تنسيق CSS شامل لإلغاء الهوامش وتوسيع الشاشة بالكامل لعرض الهاتف والحاسوب
 st.markdown("""
 <style>
-    /* إزالة الهوامش والحواشي العلوية والجانبية لتستغرق الشاشة بالكامل */
     .block-container {
         padding-top: 0.5rem !important;
         padding-bottom: 0.5rem !important;
         padding-left: 0.5rem !important;
         padding-right: 0.5rem !important;
         max-width: 100% !important;
-    }
-    
-    /* توسيع حاوية المحادثة لتأخذ المساحة القصوى */
-    .stChatMessage {
         width: 100% !important;
     }
-
-    /* تثبيت وتوسيع مربع الإدخال السفلي ليغطي العرض بالكامل */
-    .stChatInput {
+    
+    .stChatMessage {
         width: 100% !important;
     }
 
@@ -63,7 +56,7 @@ st.markdown("""
 </style>
 """, unsafe_allow_html=True)
 
-st.markdown(f"<div class='main-header'>🌌 {APP_NAME} - Full Screen Interface</div>", unsafe_allow_html=True)
+st.markdown(f"<div class='main-header'>🌌 {APP_NAME} - Super Multidomain AI</div>", unsafe_allow_html=True)
 
 # استرجاع إعدادات المفاتيح بأمان
 def get_secure_setting(key, default=""):
@@ -97,7 +90,7 @@ _SUPER_BRAIN_CORE = """
 SYSTEM_PROMPT = f"""
 أنت ORION-AI، نظام ذكاء اصطناعي مستقل، متقدم وعام (Super Multidomain Agentic AI).
 تستطيع معالجة أي مجال يطلبه المستخدم بحرفية عالية.
-يجب أن ترد على المستخدم **بنفس اللغة التي يخاطبك بها** (متعدد اللغات حسب الطلب: العربية، الإنجليزية، الفرنسية، إلخ).
+يجب أن ترد على المستخدم **بنفس اللغة التي يخاطبك بها** (متعدد اللغات حسب الطلب).
 مهمتك: تقديم حلول تحليلية وعملية فورية ومباشرة في الخلفية لأي موضوع يتم طرحه.
 
 {_SUPER_BRAIN_CORE}
@@ -157,25 +150,26 @@ if "messages" not in st.session_state:
         {"role": "assistant", "content": "مرحباً بك. أنا نظام **ORION-AI** المستقل. اطرح أي سؤال أو طلب بأي لغة وسأجيبك فوراً."}
     ]
 
-# رفع الصور أو الملفات في القائمة الجانبية (الشريط المخفي افتراضياً للهواتف)
-uploaded_file = st.sidebar.file_uploader("📤 رفع ملف أو صورة:", type=["jpg", "jpeg", "png", "pdf", "txt", "py"])
+# ----------------- زر تحميل الصور المباشر في الواجهة الرئيسية -----------------
+uploaded_file = st.file_uploader("📤 اضغط هنا لتحميل صورة أو ملف للتحليل المباشر:", type=["jpg", "jpeg", "png", "pdf", "txt", "py"])
 file_preview = None
+
 if uploaded_file:
     if uploaded_file.type.startswith("image/"):
         file_preview = Image.open(uploaded_file)
-        st.sidebar.image(file_preview, use_container_width=True)
+        st.image(file_preview, caption="معاينة الصورة المرفقة", width=250)
     else:
-        st.sidebar.success("تم إرفاق الملف بنجاح")
+        st.success(f"تم إرفاق الملف بنجاح: {uploaded_file.name}")
 
-# عرض المحادثة لتملأ الشاشة
+# عرض سجل المحادثة بعرض الشاشة بالكامل
 for message in st.session_state.messages:
     with st.chat_message(message["role"]):
         st.markdown(message["content"])
         if "image" in message and message["image"]:
-            st.image(message["image"], width=300)
+            st.image(message["image"], width=250)
 
-# مربع الإدخال المباشر يملأ عرض الشاشة بالكامل
-prompt = st.chat_input("اكتب رسالتك هنا... / Type here...")
+# مربع الإدخال المباشر
+prompt = st.chat_input("اكتب رسالتك أو طلبك هنا... / Type here...")
 
 if prompt:
     current_msg = {"role": "user", "content": prompt}
@@ -187,13 +181,13 @@ if prompt:
     with st.chat_message("user"):
         st.markdown(prompt)
         if file_preview:
-            st.image(file_preview, width=300)
+            st.image(file_preview, width=250)
 
     with st.chat_message("assistant"):
         with st.spinner("جاري المعالجة..."):
             full_query = prompt
             if file_preview:
-                full_query += " [تم إرفاق ملف للتحليل]"
+                full_query += " [تم إرفاق صورة/ملف للتحليل المتقدم]"
             
             reply = ask_super_brain(full_query)
             st.markdown(reply)
