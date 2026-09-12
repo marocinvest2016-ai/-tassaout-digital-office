@@ -10,10 +10,6 @@ from datetime import datetime
 import PyPDF2
 import requests
 
-# =========================
-# إعدادات النظام العامة والمعرفات
-# =========================
-
 APP_NAME = "ORION-AI & دانا الوكيلة العقارية"
 APP_VERSION = "v9.5"
 LOCATION = "قلعة السراغنة - مراكش"
@@ -27,17 +23,12 @@ st.set_page_config(
     initial_sidebar_state="expanded"
 )
 
-# CSS مخصص للواجهة
 st.markdown("""
 <style>
    .main-header {text-align: center; padding: 10px;}
    .footer {text-align: center; color: gray; font-size: 12px; margin-top: 50px;}
 </style>
 """, unsafe_allow_html=True)
-
-# =========================
-# جلب المفاتيح بأمان تام من البيئة أو Streamlit Secrets (لا مفاتيح مكشوفة)
-# =========================
 
 def get_secure_setting(key, default=""):
     try:
@@ -64,10 +55,6 @@ WHATSAPP_PHONE_NUMBER_ID = get_secure_setting("WHATSAPP_PHONE_NUMBER_ID")
 WHATSAPP_ACCESS_TOKEN = get_secure_setting("WHATSAPP_ACCESS_TOKEN")
 WHATSAPP_BUSINESS_NUMBER = get_secure_setting("WHATSAPP_BUSINESS_NUMBER", "212691897126")
 
-# =========================
-# تهيئة العملاء الذكيين (معالجة الأخطاء لتجنب التوقف)
-# =========================
-
 groq_client = None
 openai_client = None
 ollama_client = None
@@ -89,10 +76,6 @@ if OLLAMA_HOST:
         ollama_client = ollama.Client(host=OLLAMA_HOST)
     except Exception:
         pass
-
-# =========================
-# الكبسولة البرمجية الخلفية لذكاء دانا
-# =========================
 
 _SILENT_BRAIN_CORE = """
 [Internal Core Logic & Execution Patterns]
@@ -127,7 +110,6 @@ def ask_dana(message, current_context=""):
         {"role": "user", "content": message.strip()},
     ]
 
-    # 1. المحاولة عبر Groq (الأسرع والأول)
     if groq_client is not None:
         try:
             response = groq_client.chat.completions.create(
@@ -142,7 +124,6 @@ def ask_dana(message, current_context=""):
         except Exception:
             pass
 
-    # 2. المحاولة عبر OpenAI كاحتياط أول
     if openai_client is not None:
         try:
             response = openai_client.chat.completions.create(
@@ -157,7 +138,6 @@ def ask_dana(message, current_context=""):
         except Exception:
             pass
 
-    # 3. المحاولة عبر Ollama المحلي (إذا كان السيرفر المحلي مشتغلاً)
     if ollama_client is not None:
         try:
             response = ollama_client.chat(
@@ -175,10 +155,6 @@ def ask_dana(message, current_context=""):
         f"تواصل معنا مباشرة عبر الرقم: {AGENCY_PHONE}.",
         "Error",
     )
-
-# =========================
-# مصفوفة الـ 100 قطاع كاملة ومتكاملة
-# =========================
 
 sectors_matrix = {
     "1. العقارات والبناء (1-15)": [
@@ -229,10 +205,6 @@ sectors_matrix = {
     ]
 }
 
-# =========================
-# واجهة الاستخدام عبر Streamlit
-# =========================
-
 st.markdown(f"<div class='main-header'><h1>👑 {APP_NAME}</h1><p>الذكاء الاصطناعي المتكامل لإدارة العقارات والخدمات بـ {LOCATION}</p></div>", unsafe_allow_html=True)
 
 st.sidebar.title("🎛️ لوحة تحكم المنظومة")
@@ -248,7 +220,6 @@ app_mode = st.sidebar.radio("اختر وضع التشغيل:", [
 st.sidebar.markdown("---")
 st.sidebar.info(f"📌 هاتف الوكالة المباشر: {AGENCY_PHONE}")
 
-# 1. وضع محادثة دانا
 if app_mode == "💬 محادثة دانا المباشرة":
     st.subheader("🤖 محادثة ذكية مع دانا")
     st.caption("اسألي دانا عن عروض المنارة 1 و 3، البقع التجارية، الأسعار، أو حجز معاينة.")
@@ -279,7 +250,6 @@ if app_mode == "💬 محادثة دانا المباشرة":
 
         st.session_state.messages.append({"role": "assistant", "content": reply})
 
-# 2. وضع مصفوفة الـ 100 قطاع
 elif app_mode == "📊 مصفوفة الـ 100 قطاع والإدارة":
     st.subheader("⚙️ مصفوفة التشغيل الإستراتيجي (ORION-AI)")
     st.write("اختر القطاع المناسب لإدارة المشاريع، توليد الإعلانات المنظمة، وإعداد التقارير الفورية.")
@@ -342,7 +312,6 @@ elif app_mode == "📊 مصفوفة الـ 100 قطاع والإدارة":
             """
             st.code(formatted_ad, language="text")
 
-# 3. وضع استوديو التحليل المتقدم
 elif app_mode == "🧠 استوديو التحليل المتقدم":
     st.subheader("🧠 استوديو معالجة النصوص والتحليل الذكي")
     st.write("استفد من خوارزميات وأنماط المعالجة العميقة لاستخراج وتحليل النصوص والعقود.")
@@ -373,7 +342,6 @@ elif app_mode == "🧠 استوديو التحليل المتقدم":
                 st.markdown(res)
                 st.caption(f"⚡ المحرك المستعمل: {engine}")
 
-# 4. وضع حالة الربط والمفاتيح
 elif app_mode == "🔗 حالة الربط والمفاتيح":
     st.subheader("🔗 لوحة حالة الربط والمفاتيح البرمجية")
     st.write("التحقق من حالة الاتصال بالمحركات وقاعدة البيانات والسحابة:")
