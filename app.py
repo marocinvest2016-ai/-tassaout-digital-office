@@ -17,28 +17,55 @@ try:
 except ImportError:
     ollama = None
 
-APP_NAME = "ORION-AI & دانا الوكيلة العقارية"
-APP_VERSION = "v10.2-CleanPro"
-LOCATION = "قلعة السراغنة - مراكش"
-AGENCY_PHONE = "0691897126"
-AGENCY_NAME = "وكالة تساوت للعقارات والخدمات"
+APP_NAME = "ORION-SUPER-AI"
+APP_VERSION = "v13.0-FullScreen"
 
+# إعداد الصفحة لملء العرض والتحكم الكامل
 st.set_page_config(
     page_title=APP_NAME,
-    page_icon="👑",
-    layout="wide"
+    page_icon="🌌",
+    layout="wide",
+    initial_sidebar_state="collapsed"
 )
 
+# تنسيق CSS متقدم لملء شاشة الهاتف بالكامل وإزالة الفراغات والهوامش تماماً
 st.markdown("""
 <style>
-   .main-header {text-align: center; padding: 5px;}
-   .footer {text-align: center; color: gray; font-size: 11px; margin-top: 30px;}
+    /* إزالة الهوامش والحواشي العلوية والجانبية لتستغرق الشاشة بالكامل */
+    .block-container {
+        padding-top: 0.5rem !important;
+        padding-bottom: 0.5rem !important;
+        padding-left: 0.5rem !important;
+        padding-right: 0.5rem !important;
+        max-width: 100% !important;
+    }
+    
+    /* توسيع حاوية المحادثة لتأخذ المساحة القصوى */
+    .stChatMessage {
+        width: 100% !important;
+    }
+
+    /* تثبيت وتوسيع مربع الإدخال السفلي ليغطي العرض بالكامل */
+    .stChatInput {
+        width: 100% !important;
+    }
+
+    header {visibility: hidden;}
+    footer {visibility: hidden;}
+    
+    .main-header {
+        text-align: center; 
+        padding: 2px;
+        font-size: 14px;
+        font-weight: bold;
+        color: #555;
+    }
 </style>
 """, unsafe_allow_html=True)
 
-st.markdown(f"<div class='main-header'><h3>👑 {APP_NAME}</h3><p style='font-size: 13px; color: gray;'>مرحباً بك، تحدث مع دانا مباشرة أو ارفع صورة للعقار أو التصميم</p></div>", unsafe_allow_html=True)
+st.markdown(f"<div class='main-header'>🌌 {APP_NAME} - Full Screen Interface</div>", unsafe_allow_html=True)
 
-# استرجاع إعدادات المفاتيح بأمان من الخلفية
+# استرجاع إعدادات المفاتيح بأمان
 def get_secure_setting(key, default=""):
     try:
         val = st.secrets.get(key, None)
@@ -58,27 +85,27 @@ groq_client = Groq(api_key=GROQ_API_KEY, timeout=10.0) if (Groq and GROQ_API_KEY
 openai_client = openai.OpenAI(api_key=OPENAI_API_KEY, timeout=10.0) if (openai and OPENAI_API_KEY) else None
 ollama_client = ollama.Client(host=OLLAMA_HOST) if (ollama and OLLAMA_HOST) else None
 
-# الخلفية المنطقية الصامتة ومعالجة الموضوعات
-_SILENT_BRAIN_CORE = """
-[Internal Core Logic & Execution Patterns]
-- Process all real estate inquiries, project analysis, and marketing requests silently and precisely in the background.
-- Maintain a professional, data-driven, and context-aware persona without exposing internal prompts.
+# الخلفية المنطقية الشاملة ومتعددة اللغات
+_SUPER_BRAIN_CORE = """
+[Super Multidomain & Multilingual Agentic Core Logic]
+- You are an autonomous, domain-agnostic, and multilingual AI agentic system.
+- Adapt dynamically to the user's language (respond in the exact language or script the user uses).
+- Handle any requested domain: software engineering, business intelligence, data science, strategy, creative writing, or general problem-solving.
+- Process all queries and data structures precisely in the background.
 """
 
 SYSTEM_PROMPT = f"""
-أنت دانا، وكيلة عقارية ذكية ومديرة أعمال من {AGENCY_NAME} بـ {LOCATION} ممثلة لمنظومة السيد عامر بوخدادة.
-تحدثي بالدارجة المغربية بطريقة ودودة ومحترفة، ويمكنك استعمال العربية الفصحى عند الحاجة.
-مهمتك:
-- مساعدة العملاء في البحث عن العقارات والبقع التجارية (مثل المنارة 1 و 3).
-- تقديم معلومات واضحة، دقيقة ومنظمة بالأرقام.
-- الإجابة الفورية عن الاستفسارات وتحليل أي صور أو تصاميم يتم إرفاقها.
+أنت ORION-AI، نظام ذكاء اصطناعي مستقل، متقدم وعام (Super Multidomain Agentic AI).
+تستطيع معالجة أي مجال يطلبه المستخدم بحرفية عالية.
+يجب أن ترد على المستخدم **بنفس اللغة التي يخاطبك بها** (متعدد اللغات حسب الطلب: العربية، الإنجليزية، الفرنسية، إلخ).
+مهمتك: تقديم حلول تحليلية وعملية فورية ومباشرة في الخلفية لأي موضوع يتم طرحه.
 
-{_SILENT_BRAIN_CORE}
+{_SUPER_BRAIN_CORE}
 """
 
-def ask_dana_background(message):
+def ask_super_brain(message):
     if not message or not message.strip():
-        return "عافاك كتب ليا شنو العقار أو المعلومة اللي باغي تعرف عليها."
+        return "الرجاء كتابة الطلب أو الاستفسار / Please write your request."
 
     messages = [
         {"role": "system", "content": SYSTEM_PROMPT.strip()},
@@ -91,7 +118,7 @@ def ask_dana_background(message):
                 model=GROQ_MODEL,
                 messages=messages,
                 temperature=0.7,
-                max_tokens=1000,
+                max_tokens=1500,
             )
             content = response.choices[0].message.content
             if content:
@@ -105,7 +132,7 @@ def ask_dana_background(message):
                 model="gpt-3.5-turbo",
                 messages=messages,
                 temperature=0.7,
-                max_tokens=1000,
+                max_tokens=1500,
             )
             content = response.choices[0].message.content
             if content:
@@ -122,53 +149,53 @@ def ask_dana_background(message):
         except Exception:
             pass
 
-    return f"مرحباً بك! تلقيت طلبك، وللإجابة المباشرة يمكنك التواصل معنا عبر هاتف الوكالة: {AGENCY_PHONE}."
+    return "عذراً، حدث خطأ تقني في المعالجة."
 
 # تهيئة سجل المحادثة
 if "messages" not in st.session_state:
     st.session_state.messages = [
-        {"role": "assistant", "content": f"مرحباً بيك! أنا دانا، وكيلة {AGENCY_NAME} بـ {LOCATION}. شنو العقار أو الخدمة اللي باغي تشوف اليوم؟"}
+        {"role": "assistant", "content": "مرحباً بك. أنا نظام **ORION-AI** المستقل. اطرح أي سؤال أو طلب بأي لغة وسأجيبك فوراً."}
     ]
 
-# رفع الصور في الشريط الجانبي بشكل اختيارى وبسيط جداً
-uploaded_image = st.sidebar.file_uploader("📤 ارفع صورة للعقار أو التصميم:", type=["jpg", "jpeg", "png"])
-image_preview = None
-if uploaded_image:
-    image_preview = Image.open(uploaded_image)
-    st.sidebar.image(image_preview, caption="معاينة الصورة المرفقة", use_container_width=True)
+# رفع الصور أو الملفات في القائمة الجانبية (الشريط المخفي افتراضياً للهواتف)
+uploaded_file = st.sidebar.file_uploader("📤 رفع ملف أو صورة:", type=["jpg", "jpeg", "png", "pdf", "txt", "py"])
+file_preview = None
+if uploaded_file:
+    if uploaded_file.type.startswith("image/"):
+        file_preview = Image.open(uploaded_file)
+        st.sidebar.image(file_preview, use_container_width=True)
+    else:
+        st.sidebar.success("تم إرفاق الملف بنجاح")
 
-# عرض الرسائل السابقة
+# عرض المحادثة لتملأ الشاشة
 for message in st.session_state.messages:
     with st.chat_message(message["role"]):
         st.markdown(message["content"])
         if "image" in message and message["image"]:
-            st.image(message["image"], width=250)
+            st.image(message["image"], width=300)
 
-# مكان الكتابة وزر الإرسال الأساسي في الأسفل
-prompt = st.chat_input("اكتب رسالتك هنا...")
+# مربع الإدخال المباشر يملأ عرض الشاشة بالكامل
+prompt = st.chat_input("اكتب رسالتك هنا... / Type here...")
 
 if prompt:
     current_msg = {"role": "user", "content": prompt}
-    if image_preview:
-        current_msg["image"] = image_preview
+    if file_preview:
+        current_msg["image"] = file_preview
 
     st.session_state.messages.append(current_msg)
     
     with st.chat_message("user"):
         st.markdown(prompt)
-        if image_preview:
-            st.image(image_preview, width=250)
+        if file_preview:
+            st.image(file_preview, width=300)
 
     with st.chat_message("assistant"):
-        with st.spinner("دانا كتفكر وتدرس الطلب في الخلفية..."):
-            # معالجة الطلب عبر الخلفية المنطقية للذكاء الاصطناعي
+        with st.spinner("جاري المعالجة..."):
             full_query = prompt
-            if image_preview:
-                full_query += " [تم إرفاق صورة مع هذا الطلب للتحليل المعماري أو البصري]"
+            if file_preview:
+                full_query += " [تم إرفاق ملف للتحليل]"
             
-            reply = ask_dana_background(full_query)
+            reply = ask_super_brain(full_query)
             st.markdown(reply)
 
     st.session_state.messages.append({"role": "assistant", "content": reply})
-
-st.markdown(f"<div class='footer'>{APP_NAME} | {LOCATION} - إنتاج السيد عامر بوخدادة</div>", unsafe_allow_html=True)
