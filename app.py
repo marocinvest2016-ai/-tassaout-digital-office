@@ -1,626 +1,788 @@
+import streamlit as st
+import pandas as pd
+from datetime import datetime
+
+# ============================================================
+# OMEGA AGENTIC SUPER AI
+# app.py
+# ============================================================
+
+st.set_page_config(
+    page_title="OMEGA AGENTIC SUPER AI",
+    page_icon="🇲🇦",
+    layout="wide",
+    initial_sidebar_state="expanded"
+)
+
+# ============================================================
+# SYSTEM PROMPT
+# ============================================================
+
 SYSTEM_PROMPT = """
 # OMEGA AGENTIC SUPER AI
-# SUPERVISEUR INTELLIGENT — SOURCING B2B MULTIDOMAINE MAROC
 
-Tu es OMEGA AGENTIC SUPER AI, un agent intelligent superviseur spécialisé
-dans la recherche, le sourcing, la qualification, la vérification et
-l'analyse d'opportunités B2B à l'échelle nationale du Maroc.
+Tu es OMEGA AGENTIC SUPER AI, superviseur intelligent spécialisé
+dans le sourcing B2B multidomaine au Maroc.
 
-============================================================
-1. MISSION PRINCIPALE
-============================================================
+MISSION:
+- Recherche
+- Sourcing
+- Vérification
+- Contradiction
+- Analyse marché
+- Analyse économique
+- Logistique
+- Gestion des risques
+- Décision
 
-Ta mission est de détecter des opportunités commerciales réelles,
-récentes, vérifiables et exploitables dans les domaines suivants :
-
+DOMAINES:
 - Ferraille lourde
 - Fer massif
 - Fer à béton
 - HMS 1 / HMS 2
-- Rails et structures métalliques
-- Tracteurs et matériel agricole réformé
+- Rails
+- Tracteurs
 - Véhicules réformés
 - Aluminium
 - Cuivre rouge
 - Cuivre jaune / laiton
 - Métaux industriels
-- Machines et équipements industriels
+- Machines industrielles
 - Matériel de chantier
-- Stocks industriels
-- Lots de déstockage
-- Import / export
-- Immobilier professionnel lorsque demandé
-- Autres catégories B2B selon la demande utilisateur
-
-Tu fonctionnes comme un système de :
-RESEARCH + SOURCING + VERIFICATION + ANALYSIS + DECISION.
-
-Tu ne dois jamais confondre une annonce trouvée avec une
-opportunité commerciale réellement disponible.
-
-============================================================
-2. COUVERTURE GÉOGRAPHIQUE
-============================================================
-
-Tu couvres les 12 régions administratives du Maroc :
-
-1. Casablanca-Settat
-2. Marrakech-Safi
-3. Rabat-Salé-Kénitra
-4. Fès-Meknès
-5. Tanger-Tétouan-Al Hoceïma
-6. Souss-Massa
-7. Béni Mellal-Khénifra
-8. Drâa-Tafilalet
-9. Oriental
-10. Guelmim-Oued Noun
-11. Laâyoune-Sakia El Hamra
-12. Dakhla-Oued Ed-Dahab
-
-Tu adaptes automatiquement la recherche au secteur économique
-dominant de chaque région.
-
-Exemples :
-
-Casablanca-Settat :
-- industrie
-- sidérurgie
-- ferraille industrielle
-- démolition
-- ports
-- zones industrielles
-- déstockage
-
-Marrakech-Safi :
-- agriculture
-- matériel agricole
-- chantier
-- démolition
-- véhicules
-- équipements réformés
-- industrie
-- ferraille
-
-Béni Mellal-Khénifra :
-- agriculture
-- mines
-- équipements industriels
-- matériel lourd
-- fer massif
-
-Souss-Massa :
-- pêche
-- conserveries
-- agriculture
-- irrigation
-- industrie
-- aluminium
-- équipements réformés
-
-Tanger-Tétouan-Al Hoceïma :
-- automobile
-- sous-traitance industrielle
-- zones franches
-- chutes industrielles
-- équipements industriels
-
-Drâa-Tafilalet :
-- mines
-- cuivre
-- chantiers
-- équipements industriels
-
-Les autres régions doivent également être explorées selon
-la catégorie recherchée.
-
-============================================================
-3. MODE DE RECHERCHE MULTI-SOURCES
-============================================================
-
-Pour chaque recherche importante, exploite autant que possible :
-
-- moteurs de recherche
-- sites B2B
-- marketplaces
-- annonces professionnelles
-- annuaires d'entreprises
-- sites industriels
-- sites de recyclage
-- plateformes agricoles
-- plateformes automobiles
-- réseaux professionnels
-- sources institutionnelles
-- registres et informations publiques
-- sites régionaux
-- pages d'entreprises
-- sources locales
-
-Utilise plusieurs requêtes et plusieurs formulations.
-
-Recherche notamment en :
-
-FRANÇAIS
-ARABE
-ANGLAIS
-
-Lorsque pertinent, utilise également les variantes lexicales
-marocaines et professionnelles.
-
-Exemple pour ferraille :
-
-"ferraille lourde Maroc"
-"fer massif Maroc"
-"ferrailleur industriel Maroc"
-"ferraille usine Maroc"
-"HMS 1&2 Morocco"
-"scrap metal Morocco"
-"ferraille industrielle Casablanca"
-"ferraille Marrakech"
-"حديد خردة المغرب"
-"حديد سكراب المغرب"
-
-============================================================
-4. ANTI-HALLUCINATION
-============================================================
-
-RÈGLE ABSOLUE :
-
-NE JAMAIS présenter une information non vérifiée comme un fait.
-
-Chaque information doit appartenir à une catégorie :
-
-[VERIFIED]
-Information directement confirmée par une source fiable.
-
-[PROBABLE]
-Information cohérente mais nécessitant encore une confirmation.
-
-[HYPOTHESIS]
-Déduction ou estimation du système.
-
-[UNVERIFIED]
-Information trouvée mais non suffisamment confirmée.
-
-[STALE]
-Information ancienne dont la disponibilité actuelle est douteuse.
-
-[REJECTED]
-Information contradictoire, suspecte ou insuffisamment crédible.
-
-============================================================
-5. FILTRE ANTI-OBSOLESCENCE
-============================================================
-
-Une opportunité commerciale ne peut être considérée comme
-"ACTIVE" uniquement parce qu'une annonce existe.
-
-Pour valider une opportunité, rechercher autant que possible :
-
-- date récente
-- annonce encore active
-- identité du vendeur
-- téléphone
-- adresse
-- localisation
-- preuve de possession
-- quantité
-- qualité
-- photos récentes
-- vidéo récente si disponible
-- prix
-- conditions de vente
-- possibilité de visite
-- possibilité de pesage
-- modalités logistiques
-
-Une ancienne annonce doit automatiquement recevoir un
-niveau de confiance faible jusqu'à nouvelle confirmation.
-
-============================================================
-6. PROOF OF STOCK — PoS
-============================================================
-
-Pour les lots importants, rechercher une preuve d'existence
-physique du stock.
-
-PoS possibles :
-
-- photos récentes
-- vidéo récente
-- inventaire
-- document commercial
-- bon de sortie
-- document de déstockage
-- localisation vérifiable
-- visite physique
-- pont-bascule
-- confirmation directe du détenteur
-
-NE JAMAIS considérer une annonce seule comme une preuve de stock.
-
-============================================================
-7. VÉRIFICATION DU FOURNISSEUR
-============================================================
-
-Pour chaque prospect, rechercher :
-
-- nom commercial
-- raison sociale si disponible
-- téléphone
-- ville
-- adresse
-- activité
-- ancienneté apparente
-- présence numérique
-- cohérence entre les différentes sources
-- réputation publique lorsque disponible
-
-Comparer les informations entre plusieurs sources.
-
-Si deux sources donnent des informations contradictoires :
-
-SIGNALER LA CONTRADICTION.
-
-Ne jamais la masquer.
-
-============================================================
-8. AGENT CONTRADICTEUR
-============================================================
-
-Pour chaque opportunité importante, lance mentalement un
-"Contradictor Agent".
-
-Sa mission :
-
-TROUVER POURQUOI L'OFFRE POURRAIT ÊTRE FAUSSE.
-
-Il recherche :
-
-- annonce ancienne
-- prix anormal
-- quantité irréaliste
-- identité incohérente
-- téléphone douteux
-- adresse incohérente
-- photos recyclées
-- plusieurs annonces identiques
-- société introuvable
-- vendeur intermédiaire non autorisé
-- stock déjà vendu
-- incohérence géographique
-- incohérence logistique
-- incohérence de prix
-
-Si le Contradictor trouve un problème important,
-réduire automatiquement le score.
-
-============================================================
-9. SCORE OMEGA /100
-============================================================
-
-Attribue à chaque opportunité un score :
-
-IDENTITÉ FOURNISSEUR       /20
-EXISTENCE DU STOCK         /20
-QUANTITÉ DOCUMENTÉE        /15
-RÉCENCE                     /15
-COHÉRENCE DU PRIX           /10
-QUALITÉ / SPÉCIFICATION     /10
-LOGISTIQUE                  /5
-COHÉRENCE MULTI-SOURCES     /5
-
-TOTAL                       /100
-
-Interprétation :
-
-85-100 = PRIORITÉ CRITIQUE
-70-84  = TRÈS INTÉRESSANT
-55-69  = À QUALIFIER
-35-54  = FAIBLE
-0-34   = NE PAS PRÉSENTER COMME OPPORTUNITÉ
-
-============================================================
-10. ANALYSE ÉCONOMIQUE
-============================================================
-
-Lorsque les données sont disponibles, calculer :
-
-Prix d'achat / tonne
-+
-Transport
-+
-Chargement
-+
-Déchargement
-+
-Pesage
-+
-Tri / préparation
-+
-Frais administratifs
-+
-Autres coûts connus
-=
-COÛT RÉEL ESTIMÉ / TONNE
-
-Puis comparer avec :
-
-Prix de revente potentiel
--
-Coût réel estimé
-=
-MARGE BRUTE POTENTIELLE
-
-Toujours indiquer lorsque le calcul repose sur des hypothèses.
-
-Ne jamais inventer un prix de marché.
-
-============================================================
-11. LOGISTIQUE
-============================================================
-
-Analyser :
-
-- distance fournisseur → destination
-- accessibilité camion
-- possibilité de chargement
-- poids du lot
-- type de véhicule nécessaire
-- pont-bascule
-- conditions EXW / départ parc
-- transport régional
-- transport national
-- port lorsque pertinent
-
-Ne pas transformer une estimation logistique en fait confirmé.
-
-============================================================
-12. SOURCING GROS VOLUMES
-============================================================
-
-Pour les demandes importantes :
-
-> 100 tonnes
-> 500 tonnes
-> 1 000 tonnes
-> 5 000 tonnes
-> 10 000 tonnes
-
-chercher prioritairement :
-
-- industriels
-- démolisseurs
-- exploitants
-- chantiers
-- entreprises de construction
-- entreprises de maintenance
-- sociétés de recyclage
-- déstockages
-- organismes publics lorsque pertinent
-- détenteurs directs
-- traders B2B
-
-Éviter de considérer les petites annonces comme source
-principale pour les très gros volumes.
-
-============================================================
-13. DÉTECTION DES DOUBLONS
-============================================================
-
-Identifier les annonces qui semblent représenter le même stock.
-
-Comparer :
-
-- téléphone
-- nom
-- photos
-- texte
-- quantité
-- prix
-- localisation
-- date
-
-Ne pas compter plusieurs publications du même stock
-comme plusieurs fournisseurs.
-
-============================================================
-14. MÉMOIRE DES PROSPECTS
-============================================================
-
-Chaque prospect doit idéalement être structuré avec :
-
-ID
-Nom
-Entreprise
-Catégorie
-Sous-catégorie
-Région
-Ville
-Téléphone
-Source
-URL
-Date de découverte
-Date de dernière vérification
-Quantité
-Prix
-Qualité
-Localisation
-Statut
-Score OMEGA
-Niveau de confiance
-Risques
-Prochaine action
-
-Statuts :
-
-NEW
-DISCOVERED
-QUALIFICATION
-VERIFICATION
-CONTACT
-VISIT
-NEGOTIATION
-VALIDATED
-REJECTED
+- Déstockage
+- Import / Export
+- Immobilier B2B
+
+RÈGLE ABSOLUE:
+Ne jamais présenter une information non vérifiée comme un fait.
+
+STATUTS:
+VERIFIED
+PROBABLE
+HYPOTHESIS
+UNVERIFIED
 STALE
-SOLD
+REJECTED
 
-============================================================
-15. MODE MULTIDOMAINE
-============================================================
+SCORE OMEGA:
+Identité fournisseur /20
+Existence stock /20
+Quantité /15
+Récence /15
+Prix /10
+Qualité /10
+Logistique /5
+Cohérence sources /5
 
-Le système doit pouvoir changer de domaine sans changer
-d'architecture.
-
-Exemple :
-
-DOMAIN = FERROUS_SCRAP
-
-ou
-
-DOMAIN = AGRICULTURAL_EQUIPMENT
-
-ou
-
-DOMAIN = VEHICLES
-
-ou
-
-DOMAIN = NON_FERROUS_METALS
-
-ou
-
-DOMAIN = INDUSTRIAL_MACHINERY
-
-ou
-
-DOMAIN = REAL_ESTATE_B2B
-
-Le moteur adapte automatiquement :
-
-- vocabulaire
-- sources
-- critères
-- risques
-- données à vérifier
-- logique de prix
-- logique logistique
-
-============================================================
-16. FORMAT DE SORTIE
-============================================================
-
-Pour chaque recherche importante, produire :
-
-A. RÉSUMÉ EXÉCUTIF
-
-B. OPPORTUNITÉS IDENTIFIÉES
-
-| # | Fournisseur | Région | Produit | Quantité |
-| Prix | Statut | Score |
-
-C. PREUVES
-
-Pour chaque prospect :
-
-- Source
-- Date
-- Élément vérifié
-- Niveau de confiance
-
-D. CONTRADICTIONS
-
-Lister explicitement les informations douteuses.
-
-E. ANALYSE ÉCONOMIQUE
-
-Prix
-Transport
-Coût estimé
-Marge potentielle
-
-F. RISQUES
-
-- commercial
-- fournisseur
-- stock
-- qualité
-- prix
-- logistique
-- juridique/documentaire lorsque pertinent
-
-G. PROCHAINES ACTIONS
-
-Classées par priorité.
-
-============================================================
-17. RÈGLE DE DÉCISION
-============================================================
-
-Ne jamais recommander une transaction uniquement sur la base
-du prix.
-
-Une opportunité doit être évaluée sur :
-
-PRIX
-+
-QUANTITÉ
-+
-QUALITÉ
-+
-RÉCENCE
-+
-FOURNISSEUR
-+
-PREUVE DE STOCK
-+
-LOGISTIQUE
-+
-RISQUE
-
-Une offre moins chère mais non vérifiable doit être classée
-en dessous d'une offre légèrement plus chère mais correctement
-documentée.
-
-============================================================
-18. DISCIPLINE DE RÉPONSE
-============================================================
-
-Répondre de manière :
-
-- professionnelle
-- factuelle
-- structurée
-- concise mais suffisamment détaillée
-- orientée décision
-- sans exagération
-- sans invention
-
-Ne jamais transformer une hypothèse en certitude.
-
-Toujours distinguer :
-
-FAIT
-INFÉRENCE
-HYPOTHÈSE
-À VÉRIFIER
-
-============================================================
-19. OBJECTIF FINAL
-============================================================
-
-L'objectif d'OMEGA n'est pas de trouver le plus grand nombre
-d'annonces.
-
-L'objectif est de trouver les opportunités les plus :
-
-RÉELLES
-RÉCENTES
-VÉRIFIABLES
-RENTABLES
-LOGISTIQUEMENT POSSIBLES
-ET COMMERCIALEMENT INTÉRESSANTES.
-
-OMEGA doit privilégier la QUALITÉ DES OPPORTUNITÉS
-plutôt que la quantité de résultats.
+TOTAL /100.
 """
+
+# ============================================================
+# DATA
+# ============================================================
+
+REGIONS = [
+    "Toutes les régions",
+    "Casablanca-Settat",
+    "Marrakech-Safi",
+    "Rabat-Salé-Kénitra",
+    "Fès-Meknès",
+    "Tanger-Tétouan-Al Hoceïma",
+    "Souss-Massa",
+    "Béni Mellal-Khénifra",
+    "Drâa-Tafilalet",
+    "Oriental",
+    "Guelmim-Oued Noun",
+    "Laâyoune-Sakia El Hamra",
+    "Dakhla-Oued Ed-Dahab"
+]
+
+DOMAINS = {
+    "Ferraille & métaux ferreux": [
+        "Ferraille lourde",
+        "Fer massif",
+        "Fer à béton",
+        "HMS 1",
+        "HMS 2",
+        "Rails",
+        "Structures métalliques"
+    ],
+    "Métaux non-ferreux": [
+        "Aluminium",
+        "Cuivre rouge",
+        "Cuivre jaune / Laiton",
+        "Métaux industriels"
+    ],
+    "Agriculture": [
+        "Tracteurs réformés",
+        "Matériel agricole",
+        "Machines agricoles",
+        "Équipements d'irrigation"
+    ],
+    "Automobile": [
+        "Véhicules réformés",
+        "Véhicules accidentés",
+        "Pièces automobiles",
+        "Flottes à renouveler"
+    ],
+    "Industrie": [
+        "Machines industrielles",
+        "Matériel de chantier",
+        "Équipements industriels",
+        "Stocks industriels",
+        "Déstockage"
+    ],
+    "Import / Export": [
+        "Ferraille",
+        "Métaux",
+        "Machines",
+        "Matériel industriel",
+        "Produits B2B"
+    ],
+    "Immobilier B2B": [
+        "Terrain industriel",
+        "Local commercial",
+        "Entrepôt",
+        "Hangar",
+        "Terrain agricole"
+    ]
+}
+
+# ============================================================
+# SESSION STATE
+# ============================================================
+
+if "opportunities" not in st.session_state:
+    st.session_state.opportunities = []
+
+if "search_history" not in st.session_state:
+    st.session_state.search_history = []
+
+# ============================================================
+# FUNCTIONS
+# ============================================================
+
+def omega_score(
+    identity,
+    stock,
+    quantity,
+    recency,
+    price,
+    quality,
+    logistics,
+    coherence
+):
+    return (
+        identity
+        + stock
+        + quantity
+        + recency
+        + price
+        + quality
+        + logistics
+        + coherence
+    )
+
+
+def score_status(score):
+    if score >= 85:
+        return "🟢 PRIORITÉ CRITIQUE"
+    elif score >= 70:
+        return "🟢 TRÈS INTÉRESSANT"
+    elif score >= 55:
+        return "🟠 À QUALIFIER"
+    elif score >= 35:
+        return "🟠 FAIBLE"
+    return "🔴 REJET / NON FIABLE"
+
+
+def confidence(score):
+    if score >= 85:
+        return "Très élevée"
+    elif score >= 70:
+        return "Élevée"
+    elif score >= 55:
+        return "Moyenne"
+    elif score >= 35:
+        return "Faible"
+    return "Très faible"
+
+
+def create_demo_opportunities(product, region):
+    """
+    Données de démonstration uniquement.
+    Elles ne représentent PAS des fournisseurs réels.
+    """
+
+    return [
+        {
+            "Fournisseur": "Prospect démonstration A",
+            "Produit": product,
+            "Région": region,
+            "Ville": "À vérifier",
+            "Quantité (t)": 2000,
+            "Prix": "À vérifier",
+            "Statut": "UNVERIFIED",
+            "Score": 72,
+            "Confiance": "Élevée",
+            "Source": "Démonstration",
+            "Preuve stock": "À vérifier",
+            "Contradictions": "Aucune donnée suffisante",
+            "Prochaine action": "Vérifier directement fournisseur + stock"
+        },
+        {
+            "Fournisseur": "Prospect démonstration B",
+            "Produit": product,
+            "Région": region,
+            "Ville": "À vérifier",
+            "Quantité (t)": 850,
+            "Prix": "À vérifier",
+            "Statut": "PROBABLE",
+            "Score": 61,
+            "Confiance": "Moyenne",
+            "Source": "Démonstration",
+            "Preuve stock": "Non confirmée",
+            "Contradictions": "Quantité à confirmer",
+            "Prochaine action": "Demander preuve de stock récente"
+        },
+        {
+            "Fournisseur": "Prospect démonstration C",
+            "Produit": product,
+            "Région": region,
+            "Ville": "À vérifier",
+            "Quantité (t)": 3000,
+            "Prix": "À vérifier",
+            "Statut": "UNVERIFIED",
+            "Score": 42,
+            "Confiance": "Faible",
+            "Source": "Démonstration",
+            "Preuve stock": "Non disponible",
+            "Contradictions": "Informations insuffisantes",
+            "Prochaine action": "Ne pas valider avant vérification"
+        }
+    ]
+
+
+# ============================================================
+# SIDEBAR
+# ============================================================
+
+with st.sidebar:
+
+    st.title("🇲🇦 OMEGA")
+
+    st.caption("AGENTIC SUPER AI")
+    st.divider()
+
+    menu = st.radio(
+        "Navigation",
+        [
+            "🏠 Dashboard",
+            "🔎 Nouvelle recherche",
+            "📦 Opportunités",
+            "🔍 Vérification",
+            "📊 Market Intelligence",
+            "⚠️ Risk Center",
+            "🧠 Mémoire",
+            "⚙️ Configuration"
+        ]
+    )
+
+    st.divider()
+
+    st.info(
+        "OMEGA privilégie les opportunités "
+        "réelles, récentes et vérifiables."
+    )
+
+# ============================================================
+# HEADER
+# ============================================================
+
+st.markdown(
+    """
+    <h1 style='text-align:center;'>
+    🇲🇦 OMEGA AGENTIC SUPER AI
+    </h1>
+    <p style='text-align:center;'>
+    B2B SOURCING • RESEARCH • VERIFICATION • ANALYSIS • DECISION
+    </p>
+    """,
+    unsafe_allow_html=True
+)
+
+st.divider()
+
+# ============================================================
+# DASHBOARD
+# ============================================================
+
+if menu == "🏠 Dashboard":
+
+    st.subheader("📊 OMEGA Dashboard")
+
+    opportunities = st.session_state.opportunities
+
+    total = len(opportunities)
+
+    if total > 0:
+        df = pd.DataFrame(opportunities)
+
+        high = len(df[df["Score"] >= 70])
+        medium = len(df[(df["Score"] >= 55) & (df["Score"] < 70)])
+        low = len(df[df["Score"] < 55])
+
+        tonnes = (
+            pd.to_numeric(
+                df["Quantité (t)"],
+                errors="coerce"
+            )
+            .fillna(0)
+            .sum()
+        )
+    else:
+        high = 0
+        medium = 0
+        low = 0
+        tonnes = 0
+
+    c1, c2, c3, c4 = st.columns(4)
+
+    c1.metric(
+        "📦 Opportunités",
+        total
+    )
+
+    c2.metric(
+        "🟢 Score ≥70",
+        high
+    )
+
+    c3.metric(
+        "🟠 À qualifier",
+        medium
+    )
+
+    c4.metric(
+        "⚖️ Tonnes identifiées",
+        f"{tonnes:,.0f}"
+    )
+
+    st.divider()
+
+    st.subheader("🎯 Philosophie OMEGA")
+
+    col1, col2, col3 = st.columns(3)
+
+    with col1:
+        st.success(
+            "### VERIFIED\n"
+            "Informations confirmées."
+        )
+
+    with col2:
+        st.warning(
+            "### PROBABLE\n"
+            "Informations nécessitant confirmation."
+        )
+
+    with col3:
+        st.error(
+            "### UNVERIFIED\n"
+            "Ne pas considérer comme opportunité validée."
+        )
+
+# ============================================================
+# NEW SEARCH
+# ============================================================
+
+elif menu == "🔎 Nouvelle recherche":
+
+    st.subheader("🔎 Nouvelle recherche OMEGA")
+
+    col1, col2 = st.columns(2)
+
+    with col1:
+
+        domain = st.selectbox(
+            "Domaine",
+            list(DOMAINS.keys())
+        )
+
+        product = st.selectbox(
+            "Produit",
+            DOMAINS[domain]
+        )
+
+        quantity = st.number_input(
+            "Quantité minimale (tonnes)",
+            min_value=1,
+            value=100,
+            step=100
+        )
+
+    with col2:
+
+        region = st.selectbox(
+            "Région",
+            REGIONS
+        )
+
+        mode = st.selectbox(
+            "Mode de recherche",
+            [
+                "Normal",
+                "Deep Research",
+                "Enterprise Sourcing"
+            ]
+        )
+
+        destination = st.text_input(
+            "Destination",
+            placeholder="Ex: Marrakech"
+        )
+
+    keywords = st.text_area(
+        "Instructions supplémentaires",
+        placeholder=(
+            "Ex: Fournisseur direct, stock récent, "
+            "prix départ parc, priorité aux gros volumes..."
+        )
+    )
+
+    st.divider()
+
+    if st.button(
+        "🚀 LANCER OMEGA",
+        type="primary",
+        use_container_width=True
+    ):
+
+        with st.spinner(
+            "OMEGA analyse la demande..."
+        ):
+
+            results = create_demo_opportunities(
+                product,
+                region
+            )
+
+            st.session_state.opportunities.extend(
+                results
+            )
+
+            st.session_state.search_history.append(
+                {
+                    "Date": datetime.now().strftime(
+                        "%Y-%m-%d %H:%M"
+                    ),
+                    "Domaine": domain,
+                    "Produit": product,
+                    "Région": region,
+                    "Quantité": quantity,
+                    "Mode": mode
+                }
+            )
+
+        st.success(
+            "Recherche OMEGA terminée."
+        )
+
+        st.info(
+            "⚠️ Les résultats affichés ici sont "
+            "des données de démonstration. "
+            "Connecte ensuite le moteur de recherche "
+            "réel pour obtenir des prospects Internet."
+        )
+
+# ============================================================
+# OPPORTUNITIES
+# ============================================================
+
+elif menu == "📦 Opportunités":
+
+    st.subheader("📦 Opportunités détectées")
+
+    if not st.session_state.opportunities:
+
+        st.info(
+            "Aucune opportunité. "
+            "Lance une nouvelle recherche."
+        )
+
+    else:
+
+        df = pd.DataFrame(
+            st.session_state.opportunities
+        )
+
+        min_score = st.slider(
+            "Score minimum",
+            0,
+            100,
+            0
+        )
+
+        filtered = df[
+            df["Score"] >= min_score
+        ]
+
+        st.dataframe(
+            filtered,
+            use_container_width=True,
+            hide_index=True
+        )
+
+        st.divider()
+
+        for index, row in filtered.iterrows():
+
+            with st.expander(
+                f"{row['Fournisseur']} — "
+                f"{row['Score']}/100"
+            ):
+
+                c1, c2, c3 = st.columns(3)
+
+                c1.metric(
+                    "Score OMEGA",
+                    f"{row['Score']}/100"
+                )
+
+                c2.metric(
+                    "Quantité",
+                    f"{row['Quantité (t)']} t"
+                )
+
+                c3.write(
+                    f"**Statut:** {row['Statut']}"
+                )
+
+                st.write(
+                    f"**Produit:** {row['Produit']}"
+                )
+
+                st.write(
+                    f"**Région:** {row['Région']}"
+                )
+
+                st.write(
+                    f"**Source:** {row['Source']}"
+                )
+
+                st.write(
+                    f"**Preuve de stock:** "
+                    f"{row['Preuve stock']}"
+                )
+
+                st.write(
+                    f"**Contradictions:** "
+                    f"{row['Contradictions']}"
+                )
+
+                st.info(
+                    f"👉 Prochaine action : "
+                    f"{row['Prochaine action']}"
+                )
+
+# ============================================================
+# VERIFICATION
+# ============================================================
+
+elif menu == "🔍 Vérification":
+
+    st.subheader("🔍 Verification Center")
+
+    if not st.session_state.opportunities:
+
+        st.info(
+            "Aucun prospect à vérifier."
+        )
+
+    else:
+
+        df = pd.DataFrame(
+            st.session_state.opportunities
+        )
+
+        selected = st.selectbox(
+            "Sélectionner un prospect",
+            df["Fournisseur"].tolist()
+        )
+
+        prospect = df[
+            df["Fournisseur"] == selected
+        ].iloc[0]
+
+        st.markdown(
+            f"## {prospect['Fournisseur']}"
+        )
+
+        checks = {
+            "Identité fournisseur": "À vérifier",
+            "Existence du stock": prospect["Preuve stock"],
+            "Quantité": "À confirmer",
+            "Prix": prospect["Prix"],
+            "Localisation": prospect["Région"],
+            "Récence": "À vérifier",
+            "Qualité": "À vérifier",
+            "Logistique": "À vérifier"
+        }
+
+        for name, status in checks.items():
+
+            col1, col2 = st.columns([3, 1])
+
+            col1.write(name)
+            col2.write(status)
+
+        st.warning(
+            "Une opportunité ne doit être VALIDATED "
+            "qu'après confirmation suffisante du stock "
+            "et du fournisseur."
+        )
+
+# ============================================================
+# MARKET
+# ============================================================
+
+elif menu == "📊 Market Intelligence":
+
+    st.subheader("📊 Market Intelligence")
+
+    col1, col2 = st.columns(2)
+
+    with col1:
+
+        st.metric(
+            "Prix achat",
+            "À déterminer"
+        )
+
+    with col2:
+
+        st.metric(
+            "Prix revente",
+            "À déterminer"
+        )
+
+    st.divider()
+
+    st.write(
+        "Le module Market Intelligence est prêt "
+        "à recevoir les données provenant du moteur "
+        "de recherche et des sources de marché."
+    )
+
+# ============================================================
+# RISK CENTER
+# ============================================================
+
+elif menu == "⚠️ Risk Center":
+
+    st.subheader("⚠️ Risk Center")
+
+    risks = [
+        "Annonce ancienne",
+        "Stock non confirmé",
+        "Quantité non documentée",
+        "Prix anormal",
+        "Fournisseur non vérifié",
+        "Adresse incohérente",
+        "Doublon potentiel",
+        "Photos non vérifiées",
+        "Contradiction entre sources",
+        "Logistique non confirmée"
+    ]
+
+    for risk in risks:
+
+        st.checkbox(
+            risk,
+            value=False,
+            key=f"risk_{risk}"
+        )
+
+# ============================================================
+# MEMORY
+# ============================================================
+
+elif menu == "🧠 Mémoire":
+
+    st.subheader("🧠 Mémoire OMEGA")
+
+    if st.session_state.search_history:
+
+        history = pd.DataFrame(
+            st.session_state.search_history
+        )
+
+        st.dataframe(
+            history,
+            use_container_width=True,
+            hide_index=True
+        )
+
+    else:
+
+        st.info(
+            "Aucune recherche enregistrée."
+        )
+
+    st.divider()
+
+    st.write(
+        "La mémoire persistante PostgreSQL/SQLite "
+        "pourra être connectée dans la prochaine couche."
+    )
+
+# ============================================================
+# CONFIGURATION
+# ============================================================
+
+elif menu == "⚙️ Configuration":
+
+    st.subheader("⚙️ Configuration OMEGA")
+
+    st.text_input(
+        "Nom du système",
+        value="OMEGA AGENTIC SUPER AI"
+    )
+
+    st.selectbox(
+        "Langue",
+        [
+            "Français",
+            "العربية",
+            "English"
+        ]
+    )
+
+    st.selectbox(
+        "Niveau de recherche",
+        [
+            "Normal",
+            "Deep Research",
+            "Enterprise"
+        ]
+    )
+
+    st.divider()
+
+    st.subheader("🧠 System Prompt")
+
+    st.code(
+        SYSTEM_PROMPT,
+        language="text"
+    )
+
+# ============================================================
+# FOOTER
+# ============================================================
+
+st.divider()
+
+st.caption(
+    "OMEGA AGENTIC SUPER AI 🇲🇦 | "
+    "B2B Research • Sourcing • Verification • Analysis"
+)
