@@ -1,3 +1,4 @@
+```python
 # OMEGA V12.0 x JEANETTE V11.0 - BASSATINE 80m² EDITION
 # File: app_v12_bassatine.py
 # pip install streamlit groq google-generativeai pandas Pillow
@@ -87,7 +88,7 @@ elif menu=="📸 Photo Studio 61MP":
     up=st.file_uploader("رفع صورة Bassatine 80m²", type=["jpg","png","webp","jpeg"])
     if up:
         img=Image.open(up)
-        st.image(img, caption="61MP Preview - Bassatine", use_column_width=True)
+        st.image(img, caption="61MP Preview - Bassatine", use_container_width=True)
         if st.button("🔍 GEMINI Vision + GROQ Decision", type="primary"):
             with st.spinner("👁️ GEMINI 61MP + ⚡ GROQ 0.3s..."):
                 time.sleep(1.5)
@@ -142,3 +143,4 @@ elif menu=="⚙️ Config":
 
 st.divider()
 st.caption("OMEGA V12.0 x JEANETTE V11.0 👑 - Bassatine 80m² 75M - 2 Façades - Route Droite ✅ - 0691897126 - Sraghna Digital")
+```
