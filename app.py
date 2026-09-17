@@ -1,4 +1,3 @@
-```python
 # OMEGA V12.0 x JEANETTE V11.0 - BASSATINE 80m² EDITION
 # File: app_v12_bassatine.py
 # pip install streamlit groq google-generativeai pandas Pillow
@@ -143,4 +142,3 @@ elif menu=="⚙️ Config":
 
 st.divider()
 st.caption("OMEGA V12.0 x JEANETTE V11.0 👑 - Bassatine 80m² 75M - 2 Façades - Route Droite ✅ - 0691897126 - Sraghna Digital")
-```
